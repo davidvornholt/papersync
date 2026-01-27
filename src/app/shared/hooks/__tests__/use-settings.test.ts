@@ -83,7 +83,7 @@ describe("Settings Persistence", () => {
 
       localStorageMock.setItem("papersync-settings", stored);
       const parsed = JSON.parse(
-        localStorageMock.getItem("papersync-settings")!,
+        localStorageMock.getItem("papersync-settings") ?? "{}",
       );
 
       expect(parsed.vault.mode).toBe("github");

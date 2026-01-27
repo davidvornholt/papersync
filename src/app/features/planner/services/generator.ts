@@ -1,8 +1,5 @@
-import { pdf } from "@react-pdf/renderer";
 import { Data, Effect } from "effect";
-import type { Subject, WeekId } from "@/app/shared/types";
-import { PlannerDocument } from "../components/planner-document";
-import { encodeQRPayload, type QREncodeError } from "./qr";
+import type { WeekId } from "@/app/shared/types";
 
 // ============================================================================
 // Error Types
@@ -56,50 +53,6 @@ export const getWeekDateRange = (
   start: getWeekStartDate(weekId),
   end: getWeekEndDate(weekId),
 });
-
-// ============================================================================
-// PDF Generation
-// ============================================================================
-
-export type GeneratePlannerOptions = {
-  readonly weekId?: WeekId;
-  readonly subjects: readonly Subject[];
-  readonly vaultPath: string;
-};
-
-export const generatePlannerPdf = ({
-  weekId = getWeekId(),
-  subjects,
-  vaultPath,
-}: GeneratePlannerOptions): Effect.Effect<
-  Blob,
-  PlannerGenerationError | QREncodeError
-> =>
-  Effect.gen(function* () {
-    const dateRange = getWeekDateRange(weekId);
-    const qrDataUrl = yield* encodeQRPayload(weekId, vaultPath);
-
-    const blob = yield* Effect.tryPromise({
-      try: async () => {
-        const document = PlannerDocument({
-          weekId,
-          dateRange,
-          subjects,
-          qrDataUrl,
-        });
-
-        // Cast needed due to @react-pdf/renderer type mismatch with React 19
-        return await pdf(document as Parameters<typeof pdf>[0]).toBlob();
-      },
-      catch: (error) =>
-        new PlannerGenerationError({
-          message: "Failed to generate planner PDF",
-          cause: error,
-        }),
-    });
-
-    return blob;
-  });
 
 // ============================================================================
 // Download Helper

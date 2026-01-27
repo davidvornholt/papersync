@@ -11,10 +11,31 @@ import { useCallback, useEffect, useState } from "react";
 const VaultMethodSchema = S.Union(S.Literal("local"), S.Literal("github"));
 const AIProviderSchema = S.Union(S.Literal("google"), S.Literal("ollama"));
 
+const DayOfWeekSchema = S.Union(
+  S.Literal("monday"),
+  S.Literal("tuesday"),
+  S.Literal("wednesday"),
+  S.Literal("thursday"),
+  S.Literal("friday"),
+  S.Literal("saturday"),
+  S.Literal("sunday"),
+);
+
 const SubjectSchema = S.Struct({
   id: S.String,
   name: S.String,
-  order: S.optional(S.Number),
+  color: S.optional(S.String),
+  order: S.Number,
+});
+
+const TimetableSlotSchema = S.Struct({
+  id: S.String,
+  subjectId: S.String,
+});
+
+const TimetableDaySchema = S.Struct({
+  day: DayOfWeekSchema,
+  slots: S.Array(TimetableSlotSchema),
 });
 
 const SettingsSchema = S.Struct({
@@ -23,6 +44,8 @@ const SettingsSchema = S.Struct({
     localPath: S.optional(S.String),
     githubConnected: S.optional(S.Boolean),
     githubRepo: S.optional(S.String),
+    githubUsername: S.optional(S.String),
+    githubToken: S.optional(S.String),
   }),
   ai: S.Struct({
     provider: AIProviderSchema,
@@ -30,16 +53,37 @@ const SettingsSchema = S.Struct({
     ollamaEndpoint: S.optional(S.String),
   }),
   subjects: S.Array(SubjectSchema),
+  timetable: S.Array(TimetableDaySchema),
 });
 
 type Settings = S.Schema.Type<typeof SettingsSchema>;
 type VaultMethod = S.Schema.Type<typeof VaultMethodSchema>;
 type AIProvider = S.Schema.Type<typeof AIProviderSchema>;
 type Subject = S.Schema.Type<typeof SubjectSchema>;
+type DayOfWeek = S.Schema.Type<typeof DayOfWeekSchema>;
+type TimetableSlot = S.Schema.Type<typeof TimetableSlotSchema>;
+type TimetableDay = S.Schema.Type<typeof TimetableDaySchema>;
+
+// ============================================================================
+// Constants
+// ============================================================================
+
+const DAYS_OF_WEEK: DayOfWeek[] = [
+  "monday",
+  "tuesday",
+  "wednesday",
+  "thursday",
+  "friday",
+  "saturday",
+  "sunday",
+];
 
 // ============================================================================
 // Default Settings
 // ============================================================================
+
+const createDefaultTimetable = (): TimetableDay[] =>
+  DAYS_OF_WEEK.map((day) => ({ day, slots: [] }));
 
 const defaultSettings: Settings = {
   vault: {
@@ -59,6 +103,7 @@ const defaultSettings: Settings = {
     { id: "3", name: "Chemistry", order: 3 },
     { id: "4", name: "Literature", order: 4 },
   ],
+  timetable: createDefaultTimetable(),
 };
 
 // ============================================================================
@@ -80,6 +125,10 @@ const loadSettings = (): Effect.Effect<Settings, never> =>
       if (!stored) return defaultSettings;
 
       const parsed = JSON.parse(stored);
+      // Ensure timetable exists (migration for old settings)
+      if (!parsed.timetable) {
+        parsed.timetable = createDefaultTimetable();
+      }
       const decoded = S.decodeUnknownSync(SettingsSchema)(parsed);
       return decoded;
     } catch {
@@ -107,10 +156,21 @@ export type UseSettingsReturn = {
   readonly isLoading: boolean;
   readonly updateVault: (updates: Partial<Settings["vault"]>) => void;
   readonly updateAI: (updates: Partial<Settings["ai"]>) => void;
+  // Subject management
   readonly addSubject: (name: string) => void;
   readonly removeSubject: (id: string) => void;
   readonly updateSubject: (id: string, name: string) => void;
   readonly reorderSubjects: (subjects: Subject[]) => void;
+  // Timetable management
+  readonly updateTimetable: (timetable: TimetableDay[]) => void;
+  readonly addTimetableSlot: (day: DayOfWeek, subjectId: string) => void;
+  readonly removeTimetableSlot: (day: DayOfWeek, slotId: string) => void;
+  readonly updateTimetableSlot: (
+    day: DayOfWeek,
+    slotId: string,
+    subjectId: string,
+  ) => void;
+  // Persistence
   readonly save: () => Promise<void>;
   readonly reset: () => void;
 };
@@ -126,6 +186,13 @@ export const useSettings = (): UseSettingsReturn => {
       setIsLoading(false);
     });
   }, []);
+
+  // Auto-save settings whenever they change (after initial load)
+  useEffect(() => {
+    if (!isLoading) {
+      Effect.runPromise(saveSettings(settings));
+    }
+  }, [settings, isLoading]);
 
   const updateVault = useCallback(
     (updates: Partial<Settings["vault"]>): void => {
@@ -144,6 +211,7 @@ export const useSettings = (): UseSettingsReturn => {
     }));
   }, []);
 
+  // Subject management
   const addSubject = useCallback((name: string): void => {
     setSettings((prev) => ({
       ...prev,
@@ -162,6 +230,11 @@ export const useSettings = (): UseSettingsReturn => {
     setSettings((prev) => ({
       ...prev,
       subjects: prev.subjects.filter((s) => s.id !== id),
+      // Also remove from timetable
+      timetable: prev.timetable.map((day) => ({
+        ...day,
+        slots: day.slots.filter((slot) => slot.subjectId !== id),
+      })),
     }));
   }, []);
 
@@ -178,6 +251,64 @@ export const useSettings = (): UseSettingsReturn => {
       subjects,
     }));
   }, []);
+
+  // Timetable management
+  const updateTimetable = useCallback((timetable: TimetableDay[]): void => {
+    setSettings((prev) => ({
+      ...prev,
+      timetable,
+    }));
+  }, []);
+
+  const addTimetableSlot = useCallback(
+    (day: DayOfWeek, subjectId: string): void => {
+      setSettings((prev) => ({
+        ...prev,
+        timetable: prev.timetable.map((d) =>
+          d.day === day
+            ? {
+                ...d,
+                slots: [...d.slots, { id: `slot-${Date.now()}`, subjectId }],
+              }
+            : d,
+        ),
+      }));
+    },
+    [],
+  );
+
+  const removeTimetableSlot = useCallback(
+    (day: DayOfWeek, slotId: string): void => {
+      setSettings((prev) => ({
+        ...prev,
+        timetable: prev.timetable.map((d) =>
+          d.day === day
+            ? { ...d, slots: d.slots.filter((s) => s.id !== slotId) }
+            : d,
+        ),
+      }));
+    },
+    [],
+  );
+
+  const updateTimetableSlot = useCallback(
+    (day: DayOfWeek, slotId: string, subjectId: string): void => {
+      setSettings((prev) => ({
+        ...prev,
+        timetable: prev.timetable.map((d) =>
+          d.day === day
+            ? {
+                ...d,
+                slots: d.slots.map((s) =>
+                  s.id === slotId ? { ...s, subjectId } : s,
+                ),
+              }
+            : d,
+        ),
+      }));
+    },
+    [],
+  );
 
   const save = useCallback(async (): Promise<void> => {
     await Effect.runPromise(saveSettings(settings));
@@ -197,10 +328,25 @@ export const useSettings = (): UseSettingsReturn => {
     removeSubject,
     updateSubject,
     reorderSubjects,
+    updateTimetable,
+    addTimetableSlot,
+    removeTimetableSlot,
+    updateTimetableSlot,
     save,
     reset,
   };
 };
 
 // Re-export types
-export type { Settings, VaultMethod, AIProvider, Subject };
+export type {
+  Settings,
+  VaultMethod,
+  AIProvider,
+  Subject,
+  DayOfWeek,
+  TimetableSlot,
+  TimetableDay,
+};
+
+// Export constants
+export { DAYS_OF_WEEK };

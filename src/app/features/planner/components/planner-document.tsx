@@ -7,39 +7,35 @@ import {
   Text,
   View,
 } from "@react-pdf/renderer";
+import type React from "react";
 import type { Subject, WeekId } from "@/app/shared/types";
 
 // ============================================================================
 // Font Registration
 // ============================================================================
 
+// Using Roboto font (TTF format) - @react-pdf/renderer only supports TTF/WOFF
+// Note: Google Fonts CDN provides single-weight TTF files that work with react-pdf
 Font.register({
-  family: "IBM Plex Sans",
-  fonts: [
-    {
-      src: "https://fonts.gstatic.com/s/ibmplexsans/v19/zYXgKVElMYYaJe8bpLHnCwDKhdHeFaxOedc.woff2",
-      fontWeight: 400,
-    },
-    {
-      src: "https://fonts.gstatic.com/s/ibmplexsans/v19/zYX9KVElMYYaJe8bpLHnCwDKjSL9AIxsdO_q.woff2",
-      fontWeight: 500,
-    },
-    {
-      src: "https://fonts.gstatic.com/s/ibmplexsans/v19/zYX9KVElMYYaJe8bpLHnCwDKjXr8AIxsdO_q.woff2",
-      fontWeight: 600,
-    },
-  ],
+  family: "Roboto",
+  src: "https://cdnjs.cloudflare.com/ajax/libs/ink/3.1.10/fonts/Roboto/roboto-regular-webfont.ttf",
+  fontWeight: 400,
 });
 
 Font.register({
-  family: "Newsreader",
-  fonts: [
-    {
-      src: "https://fonts.gstatic.com/s/newsreader/v21/cY9qfjOCX1hbuyalUrK49dLac06G1ZGsZBtoBCzBDXXD9JVF438w-I_ADOxEPjCggA.woff2",
-      fontWeight: 400,
-    },
-  ],
+  family: "Roboto",
+  src: "https://cdnjs.cloudflare.com/ajax/libs/ink/3.1.10/fonts/Roboto/roboto-medium-webfont.ttf",
+  fontWeight: 500,
 });
+
+Font.register({
+  family: "Roboto",
+  src: "https://cdnjs.cloudflare.com/ajax/libs/ink/3.1.10/fonts/Roboto/roboto-bold-webfont.ttf",
+  fontWeight: 700,
+});
+
+// Disable hyphenation globally for cleaner PDF text
+Font.registerHyphenationCallback((word) => [word]);
 
 // ============================================================================
 // Styles
@@ -48,7 +44,7 @@ Font.register({
 const styles = StyleSheet.create({
   page: {
     padding: 24,
-    fontFamily: "IBM Plex Sans",
+    fontFamily: "Roboto",
     fontSize: 9,
     color: "#1C1917",
     backgroundColor: "#FFFFFF",
@@ -66,7 +62,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   title: {
-    fontFamily: "Newsreader",
+    fontFamily: "Roboto",
     fontSize: 20,
     fontWeight: 400,
     marginBottom: 4,

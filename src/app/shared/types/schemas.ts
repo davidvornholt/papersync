@@ -38,6 +38,53 @@ export const SubjectsConfig = Schema.Array(Subject);
 export type SubjectsConfig = typeof SubjectsConfig.Type;
 
 // ============================================================================
+// Timetable Configuration Schema
+// ============================================================================
+
+export const DayOfWeek = Schema.Literal(
+  "monday",
+  "tuesday",
+  "wednesday",
+  "thursday",
+  "friday",
+  "saturday",
+  "sunday",
+);
+export type DayOfWeek = typeof DayOfWeek.Type;
+
+export const TimeSlot = Schema.Struct({
+  id: Schema.String,
+  subjectId: Schema.String,
+  startTime: Schema.String, // HH:MM format
+  endTime: Schema.String, // HH:MM format
+});
+export type TimeSlot = typeof TimeSlot.Type;
+
+export const DaySchedule = Schema.Struct({
+  day: DayOfWeek,
+  slots: Schema.Array(TimeSlot),
+});
+export type DaySchedule = typeof DaySchedule.Type;
+
+export const ScheduleException = Schema.Struct({
+  id: Schema.String,
+  date: ISODate,
+  reason: Schema.optional(Schema.String),
+  slots: Schema.Array(TimeSlot), // Override slots for this specific date
+});
+export type ScheduleException = typeof ScheduleException.Type;
+
+export const Timetable = Schema.Struct({
+  id: Schema.String,
+  name: Schema.String,
+  weeklySchedule: Schema.Array(DaySchedule),
+  exceptions: Schema.Array(ScheduleException),
+  createdAt: ISODateTime,
+  updatedAt: ISODateTime,
+});
+export type Timetable = typeof Timetable.Type;
+
+// ============================================================================
 // Task Entry Schema
 // ============================================================================
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "motion/react";
+import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useRef, useState } from "react";
 import { syncToVault } from "@/app/features/vault/actions";
@@ -138,10 +139,13 @@ const ImagePreview = ({
     className="space-y-4"
   >
     <div className="relative rounded-xl overflow-hidden border border-border group">
-      <img
+      <Image
         src={preview}
         alt="Scanned planner preview"
         className="w-full h-auto"
+        width={800}
+        height={600}
+        unoptimized
       />
       <div className="absolute inset-0 bg-gradient-to-t from-foreground/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-center pb-4">
         <Button variant="secondary" size="sm" onClick={onClear}>
@@ -239,7 +243,7 @@ type ResultsPanelProps = {
   readonly entries: readonly ExtractedEntry[];
   readonly confidence: number;
   readonly onSync: () => void;
-  readonly errorMessage?: string;
+  readonly _errorMessage?: string;
 };
 
 const ResultsPanel = ({
@@ -247,7 +251,7 @@ const ResultsPanel = ({
   entries,
   confidence,
   onSync,
-  errorMessage,
+  _errorMessage,
 }: ResultsPanelProps): React.ReactElement => (
   <Card elevated className="h-full">
     <CardHeader>
@@ -646,7 +650,7 @@ export const ScanScreen = (): React.ReactElement => {
     },
   });
   const [isDragging, setIsDragging] = useState(false);
-  const [isSyncing, setIsSyncing] = useState(false);
+  const [, setIsSyncing] = useState(false);
   const { addToast } = useToast();
 
   // Map scan state to panel state
@@ -857,7 +861,7 @@ export const ScanScreen = (): React.ReactElement => {
                 scan.state.status === "complete" ? scan.state.confidence : 0
               }
               onSync={handleSync}
-              errorMessage={
+              _errorMessage={
                 scan.state.status === "error" ? scan.state.error : undefined
               }
             />

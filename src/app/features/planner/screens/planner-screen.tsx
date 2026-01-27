@@ -2,197 +2,510 @@
 
 import { AnimatePresence, motion } from "motion/react";
 import Link from "next/link";
-import { useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Button,
   Card,
   CardContent,
   CardHeader,
+  Modal,
   PageTransition,
   Spinner,
   StaggerContainer,
   StaggerItem,
   useToast,
 } from "@/app/shared/components";
-import type { Subject } from "@/app/shared/types";
+import {
+  DAYS_OF_WEEK,
+  type TimetableDay,
+  useSettings,
+} from "@/app/shared/hooks/use-settings";
+import type { DayOfWeek, ISODate, Subject, WeekId } from "@/app/shared/types";
 import { usePlanner } from "../hooks";
+import { getWeekId, getWeekStartDate } from "../services/generator";
 
 // ============================================================================
-// Subject Item Component
+// Types
 // ============================================================================
 
-type SubjectItemProps = {
-  readonly subject: Subject;
-  readonly index: number;
-  readonly onRemove: (id: string) => void;
-  readonly onMove: (id: string, direction: "up" | "down") => void;
-  readonly isFirst: boolean;
-  readonly isLast: boolean;
+type ScheduleException = {
+  id: string;
+  date: ISODate;
+  dayOfWeek: DayOfWeek;
+  reason?: string;
+  slots: Array<{ id: string; subjectId: string }>;
 };
 
-const SubjectItem = ({
-  subject,
-  index,
-  onRemove,
-  onMove,
-  isFirst,
-  isLast,
-}: SubjectItemProps): React.ReactElement => (
-  <motion.li
-    layout
-    initial={{ opacity: 0, x: -10 }}
-    animate={{ opacity: 1, x: 0 }}
-    exit={{ opacity: 0, x: 10, height: 0 }}
-    className="flex items-center justify-between p-3 bg-background rounded-lg border border-border group"
-  >
-    <div className="flex items-center gap-3">
-      <div className="flex flex-col gap-0.5">
-        <button
-          type="button"
-          onClick={() => onMove(subject.id, "up")}
-          disabled={isFirst}
-          className="p-0.5 text-muted hover:text-accent disabled:opacity-30 transition-colors"
-          title="Move up"
-        >
-          <svg
-            className="w-3 h-3"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <title>Move up</title>
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M5 15l7-7 7 7"
-            />
-          </svg>
-        </button>
-        <button
-          type="button"
-          onClick={() => onMove(subject.id, "down")}
-          disabled={isLast}
-          className="p-0.5 text-muted hover:text-accent disabled:opacity-30 transition-colors"
-          title="Move down"
-        >
-          <svg
-            className="w-3 h-3"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <title>Move down</title>
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M19 9l-7 7-7-7"
-            />
-          </svg>
-        </button>
-      </div>
-      <span className="text-foreground font-medium">{subject.name}</span>
-    </div>
-    <div className="flex items-center gap-2">
-      <span className="text-xs text-muted bg-surface px-2 py-0.5 rounded">
-        Slot {index + 1}
-      </span>
-      <button
-        type="button"
-        onClick={() => onRemove(subject.id)}
-        className="opacity-0 group-hover:opacity-100 p-1 text-muted hover:text-red-500 transition-all"
-        title="Remove subject"
-      >
-        <svg
-          className="w-4 h-4"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <title>Remove</title>
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M6 18L18 6M6 6l12 12"
-          />
-        </svg>
-      </button>
-    </div>
-  </motion.li>
-);
-
 // ============================================================================
-// Add Subject Modal
+// Constants
 // ============================================================================
 
-type AddSubjectModalProps = {
+const DAY_SHORT_LABELS: Record<DayOfWeek, string> = {
+  monday: "Mon",
+  tuesday: "Tue",
+  wednesday: "Wed",
+  thursday: "Thu",
+  friday: "Fri",
+  saturday: "Sat",
+  sunday: "Sun",
+};
+
+// ============================================================================
+// Week Selection Modal
+// ============================================================================
+
+type WeekSelectionModalProps = {
   readonly isOpen: boolean;
   readonly onClose: () => void;
-  readonly onAdd: (name: string) => void;
+  readonly currentWeekId: WeekId;
+  readonly onSelect: (weekId: WeekId) => void;
 };
 
-const AddSubjectModal = ({
+const WeekSelectionModal = ({
   isOpen,
   onClose,
-  onAdd,
-}: AddSubjectModalProps): React.ReactElement => {
-  const [name, setName] = useState("");
+  currentWeekId,
+  onSelect,
+}: WeekSelectionModalProps): React.ReactElement => {
+  const [selectedWeekId, setSelectedWeekId] = useState<WeekId>(currentWeekId);
 
-  const handleSubmit = (e: React.FormEvent): void => {
-    e.preventDefault();
-    if (name.trim()) {
-      onAdd(name.trim());
-      setName("");
-      onClose();
+  // Generate available weeks (current week ± 4 weeks)
+  const availableWeeks = useMemo(() => {
+    const weeks: { weekId: WeekId; label: string; dateRange: string }[] = [];
+    const today = new Date();
+
+    for (let offset = -4; offset <= 8; offset++) {
+      const date = new Date(today);
+      date.setDate(date.getDate() + offset * 7);
+      const weekId = getWeekId(date);
+      const startDate = getWeekStartDate(weekId);
+      const endDate = new Date(startDate);
+      endDate.setDate(startDate.getDate() + 6);
+
+      const dateOptions: Intl.DateTimeFormatOptions = {
+        month: "short",
+        day: "numeric",
+      };
+
+      weeks.push({
+        weekId,
+        label:
+          offset === 0
+            ? "This Week"
+            : offset === 1
+              ? "Next Week"
+              : offset === -1
+                ? "Last Week"
+                : weekId,
+        dateRange: `${startDate.toLocaleDateString("en-US", dateOptions)} – ${endDate.toLocaleDateString("en-US", { ...dateOptions, year: "numeric" })}`,
+      });
     }
+
+    return weeks;
+  }, []);
+
+  const handleSelect = (): void => {
+    onSelect(selectedWeekId);
+    onClose();
   };
 
   return (
-    <AnimatePresence>
-      {isOpen && (
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Select Week"
+      description="Choose a week for your planner"
+      size="md"
+      footer={
         <>
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={onClose}
-            className="fixed inset-0 bg-foreground/20 backdrop-blur-sm z-40"
-          />
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-md"
-          >
-            <Card elevated className="p-6">
-              <h3 className="text-lg font-semibold font-display mb-4">
-                Add Subject
-              </h3>
-              <form onSubmit={handleSubmit}>
-                <input
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="Subject name"
-                  className="w-full px-4 py-3 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent mb-4"
-                  autoFocus
-                />
-                <div className="flex gap-3 justify-end">
-                  <Button type="button" variant="secondary" onClick={onClose}>
-                    Cancel
-                  </Button>
-                  <Button type="submit" disabled={!name.trim()}>
-                    Add Subject
-                  </Button>
-                </div>
-              </form>
-            </Card>
-          </motion.div>
+          <Button variant="secondary" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button onClick={handleSelect}>Select Week</Button>
         </>
-      )}
-    </AnimatePresence>
+      }
+    >
+      <div className="space-y-2 max-h-96 overflow-y-auto">
+        {availableWeeks.map((week) => (
+          <button
+            key={week.weekId}
+            type="button"
+            onClick={() => setSelectedWeekId(week.weekId)}
+            className={`w-full p-4 rounded-lg border text-left transition-all ${
+              selectedWeekId === week.weekId
+                ? "border-accent bg-accent/10 ring-2 ring-accent/20"
+                : "border-border hover:border-accent/50 hover:bg-surface"
+            }`}
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-medium text-foreground">{week.label}</p>
+                <p className="text-sm text-muted">{week.dateRange}</p>
+              </div>
+              <span className="text-xs px-2 py-1 rounded bg-surface text-muted font-mono">
+                {week.weekId}
+              </span>
+            </div>
+          </button>
+        ))}
+      </div>
+    </Modal>
+  );
+};
+
+// ============================================================================
+// Exception Editor Modal
+// ============================================================================
+
+type ExceptionEditorModalProps = {
+  readonly isOpen: boolean;
+  readonly onClose: () => void;
+  readonly date: Date;
+  readonly dayOfWeek: DayOfWeek;
+  readonly subjects: readonly Subject[];
+  readonly defaultSlots: Array<{ id: string; subjectId: string }>;
+  readonly exception: ScheduleException | null;
+  readonly onSave: (exception: Omit<ScheduleException, "id">) => void;
+  readonly onRemove: () => void;
+};
+
+const ExceptionEditorModal = ({
+  isOpen,
+  onClose,
+  date,
+  dayOfWeek,
+  subjects,
+  defaultSlots,
+  exception,
+  onSave,
+  onRemove,
+}: ExceptionEditorModalProps): React.ReactElement => {
+  const [slots, setSlots] = useState(exception?.slots ?? defaultSlots);
+  const [reason, setReason] = useState(exception?.reason ?? "");
+
+  const isEditing = exception !== null;
+
+  // Reset when modal opens with new data
+  useEffect(() => {
+    if (isOpen) {
+      setSlots(exception?.slots ?? defaultSlots);
+      setReason(exception?.reason ?? "");
+    }
+  }, [isOpen, exception, defaultSlots]);
+
+  const handleAddSlot = (): void => {
+    if (subjects.length > 0) {
+      setSlots((prev) => [
+        ...prev,
+        { id: `slot-${Date.now()}`, subjectId: subjects[0].id },
+      ]);
+    }
+  };
+
+  const handleRemoveSlot = (slotId: string): void => {
+    setSlots((prev) => prev.filter((s) => s.id !== slotId));
+  };
+
+  const handleChangeSlot = (slotId: string, subjectId: string): void => {
+    setSlots((prev) =>
+      prev.map((s) => (s.id === slotId ? { ...s, subjectId } : s)),
+    );
+  };
+
+  const handleSave = (): void => {
+    const isoDate = date.toISOString().split("T")[0] as ISODate;
+    onSave({
+      date: isoDate,
+      dayOfWeek,
+      reason: reason.trim() || undefined,
+      slots,
+    });
+    onClose();
+  };
+
+  const dateStr = date.toLocaleDateString("en-US", {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+  });
+
+  return (
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={isEditing ? "Edit Exception" : "Add Exception"}
+      description={`Modify the schedule for ${dateStr}`}
+      size="md"
+      footer={
+        <>
+          {isEditing && (
+            <Button
+              variant="ghost"
+              onClick={() => {
+                onRemove();
+                onClose();
+              }}
+              className="mr-auto text-red-500 hover:text-red-600"
+            >
+              Remove Exception
+            </Button>
+          )}
+          <Button variant="secondary" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button onClick={handleSave}>
+            {isEditing ? "Save Changes" : "Add Exception"}
+          </Button>
+        </>
+      }
+    >
+      <div className="space-y-4">
+        {/* Reason */}
+        <div>
+          <label
+            htmlFor="exception-reason"
+            className="block text-sm font-medium text-foreground mb-2"
+          >
+            Reason (optional)
+          </label>
+          <input
+            id="exception-reason"
+            type="text"
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            placeholder="e.g., Field trip, Guest speaker, Exam"
+            className="w-full px-4 py-3 border border-border rounded-lg bg-background text-foreground placeholder:text-muted-light focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent transition-all"
+          />
+        </div>
+
+        {/* Slots */}
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <span className="block text-sm font-medium text-foreground">
+              Classes for this day
+            </span>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleAddSlot}
+              disabled={subjects.length === 0}
+            >
+              <svg
+                className="w-4 h-4 mr-1"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <title>Add</title>
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 4v16m8-8H4"
+                />
+              </svg>
+              Add
+            </Button>
+          </div>
+
+          {slots.length === 0 ? (
+            <div className="text-center py-6 text-muted border-2 border-dashed border-border rounded-lg">
+              <p className="text-sm">No classes (day off)</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {slots.map((slot, index) => (
+                <div
+                  key={slot.id}
+                  className="flex items-center gap-3 p-3 bg-background rounded-lg border border-border"
+                >
+                  <span className="text-xs text-muted bg-surface w-6 h-6 rounded flex items-center justify-center font-medium">
+                    {index + 1}
+                  </span>
+                  <select
+                    value={slot.subjectId}
+                    onChange={(e) => handleChangeSlot(slot.id, e.target.value)}
+                    className="flex-1 px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-accent text-sm"
+                  >
+                    {subjects.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.name}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveSlot(slot.id)}
+                    className="p-2 text-muted hover:text-red-500 transition-colors"
+                  >
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <title>Remove</title>
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M6 18L18 6M6 6l12 12"
+                      />
+                    </svg>
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </Modal>
+  );
+};
+
+// ============================================================================
+// Week Schedule Overview
+// ============================================================================
+
+type WeekScheduleOverviewProps = {
+  readonly weekStartDate: Date;
+  readonly timetable: readonly TimetableDay[];
+  readonly exceptions: ScheduleException[];
+  readonly subjects: readonly Subject[];
+  readonly onEditException: (date: Date, dayOfWeek: DayOfWeek) => void;
+};
+
+const WeekScheduleOverview = ({
+  weekStartDate,
+  timetable,
+  exceptions,
+  subjects,
+  onEditException,
+}: WeekScheduleOverviewProps): React.ReactElement => {
+  const getSubjectName = (subjectId: string): string => {
+    return subjects.find((s) => s.id === subjectId)?.name ?? "Unknown";
+  };
+
+  const getDayDate = (dayIndex: number): Date => {
+    const date = new Date(weekStartDate);
+    date.setDate(date.getDate() + dayIndex);
+    return date;
+  };
+
+  const getExceptionForDate = (date: Date): ScheduleException | undefined => {
+    const isoDate = date.toISOString().split("T")[0] as ISODate;
+    return exceptions.find((e) => e.date === isoDate);
+  };
+
+  return (
+    <div className="space-y-2">
+      {DAYS_OF_WEEK.map((day, index) => {
+        const daySchedule = timetable.find((d) => d.day === day);
+        const dayDate = getDayDate(index);
+        const exception = getExceptionForDate(dayDate);
+        const hasException = exception !== undefined;
+        const slots = hasException
+          ? exception.slots
+          : (daySchedule?.slots ?? []);
+        const dateStr = dayDate.toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+        });
+
+        return (
+          <motion.div
+            key={day}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: index * 0.05 }}
+            className={`p-3 rounded-lg border transition-all ${
+              hasException
+                ? "border-amber-500/50 bg-amber-500/5"
+                : "border-border bg-background"
+            }`}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="text-center min-w-[48px]">
+                  <p className="text-xs text-muted uppercase">
+                    {DAY_SHORT_LABELS[day]}
+                  </p>
+                  <p className="font-semibold text-foreground">{dateStr}</p>
+                </div>
+                <div className="h-8 w-px bg-border" />
+                <div className="flex-1">
+                  {slots.length === 0 ? (
+                    <span className="text-sm text-muted italic">
+                      No classes
+                    </span>
+                  ) : (
+                    <div className="flex flex-wrap gap-1">
+                      {slots.map((slot, idx) => (
+                        <span
+                          key={slot.id}
+                          className="text-xs px-2 py-1 rounded bg-surface text-foreground"
+                        >
+                          {idx + 1}. {getSubjectName(slot.subjectId)}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  {hasException && exception.reason && (
+                    <p className="text-xs text-amber-600 mt-1">
+                      {exception.reason}
+                    </p>
+                  )}
+                </div>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => onEditException(dayDate, day)}
+                className={hasException ? "text-amber-600" : ""}
+              >
+                {hasException ? (
+                  <>
+                    <svg
+                      className="w-4 h-4 mr-1"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <title>Exception</title>
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                      />
+                    </svg>
+                    Edit
+                  </>
+                ) : (
+                  <>
+                    <svg
+                      className="w-4 h-4 mr-1"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <title>Add exception</title>
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 4v16m8-8H4"
+                      />
+                    </svg>
+                    Exception
+                  </>
+                )}
+              </Button>
+            </div>
+          </motion.div>
+        );
+      })}
+    </div>
   );
 };
 
@@ -219,7 +532,7 @@ const PreviewPanel = ({
     <CardHeader>
       <h2 className="text-lg font-semibold font-display">Preview</h2>
     </CardHeader>
-    <CardContent className="flex items-center justify-center min-h-[500px]">
+    <CardContent className="flex items-center justify-center min-h-[400px]">
       <AnimatePresence mode="wait">
         {state === "generating" && (
           <motion.div
@@ -327,9 +640,7 @@ const PreviewPanel = ({
                 />
               </svg>
             </div>
-            <p className="text-muted">
-              Configure settings and generate your PDF
-            </p>
+            <p className="text-muted">Review schedule and generate your PDF</p>
           </motion.div>
         )}
 
@@ -375,18 +686,28 @@ const PreviewPanel = ({
 // Planner Screen
 // ============================================================================
 
-const defaultSubjects: Subject[] = [
-  { id: "1", name: "Mathematics", order: 1 },
-  { id: "2", name: "Physics", order: 2 },
-  { id: "3", name: "Chemistry", order: 3 },
-  { id: "4", name: "Literature", order: 4 },
-];
-
 export const PlannerScreen = (): React.ReactElement => {
-  const planner = usePlanner();
-  const [subjects, setSubjects] = useState<Subject[]>(defaultSubjects);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const { settings, isLoading: isSettingsLoading } = useSettings();
+  const [selectedWeekId, setSelectedWeekId] = useState<WeekId | null>(null);
+  const currentWeekId = selectedWeekId ?? getWeekId();
+  const planner = usePlanner(currentWeekId);
+
+  // Local exceptions state (per-week, not persisted in settings)
+  const [exceptions, setExceptions] = useState<ScheduleException[]>([]);
+
+  // Modal states
+  const [isWeekModalOpen, setIsWeekModalOpen] = useState(false);
+  const [exceptionEditingDate, setExceptionEditingDate] = useState<{
+    date: Date;
+    dayOfWeek: DayOfWeek;
+  } | null>(null);
+
   const { addToast } = useToast();
+
+  // Get week start date
+  const weekStartDate = useMemo(() => {
+    return getWeekStartDate(currentWeekId);
+  }, [currentWeekId]);
 
   // Format date range for display
   const formatDateRange = (start: Date, end: Date): string => {
@@ -421,16 +742,45 @@ export const PlannerScreen = (): React.ReactElement => {
     }
   };
 
-  const handleGenerate = async (): Promise<void> => {
-    // Use a default vault path for now (would come from settings in real app)
-    const vaultPath = "/home/user/Obsidian/Vault";
-    await planner.generate(subjects, vaultPath);
+  // Get subjects for the week (combine timetable + exceptions)
+  const getSubjectsForWeek = useCallback((): readonly Subject[] => {
+    const subjectIds = new Set<string>();
 
-    if (planner.state.status === "error") {
-      addToast("Failed to generate PDF", "error");
-    } else {
-      addToast("PDF generated successfully!", "success");
+    // Add subjects from timetable
+    for (const day of settings.timetable) {
+      for (const slot of day.slots) {
+        subjectIds.add(slot.subjectId);
+      }
     }
+
+    // Add subjects from exceptions
+    for (const exception of exceptions) {
+      for (const slot of exception.slots) {
+        subjectIds.add(slot.subjectId);
+      }
+    }
+
+    // If nothing configured, use all subjects
+    if (subjectIds.size === 0) {
+      return settings.subjects;
+    }
+
+    return settings.subjects.filter((s) => subjectIds.has(s.id));
+  }, [settings.timetable, settings.subjects, exceptions]);
+
+  const handleGenerate = async (): Promise<void> => {
+    const vaultPath = settings.vault.localPath || "/home/user/Obsidian/Vault";
+    const subjectsToUse = getSubjectsForWeek();
+
+    if (subjectsToUse.length === 0) {
+      addToast(
+        "Please configure subjects and timetable in Settings first",
+        "error",
+      );
+      return;
+    }
+
+    await planner.generate(subjectsToUse, vaultPath);
   };
 
   const handleDownload = (): void => {
@@ -438,38 +788,76 @@ export const PlannerScreen = (): React.ReactElement => {
     addToast("Download started", "info");
   };
 
-  const handleAddSubject = (name: string): void => {
-    const newSubject: Subject = {
-      id: `subj-${Date.now()}`,
-      name,
-      order: subjects.length + 1,
-    };
-    setSubjects((prev) => [...prev, newSubject]);
-    addToast(`Added "${name}"`, "success");
+  const handleWeekSelect = (weekId: WeekId): void => {
+    setSelectedWeekId(weekId);
+    setExceptions([]); // Clear exceptions when changing week
+    planner.reset();
+    addToast(`Selected ${weekId}`, "info");
   };
 
-  const handleRemoveSubject = (id: string): void => {
-    const subject = subjects.find((s) => s.id === id);
-    setSubjects((prev) => prev.filter((s) => s.id !== id));
-    if (subject) {
-      addToast(`Removed "${subject.name}"`, "info");
+  const handleEditException = (date: Date, dayOfWeek: DayOfWeek): void => {
+    setExceptionEditingDate({ date, dayOfWeek });
+  };
+
+  const handleSaveException = (
+    exceptionData: Omit<ScheduleException, "id">,
+  ): void => {
+    setExceptions((prev) => {
+      const existing = prev.find((e) => e.date === exceptionData.date);
+      if (existing) {
+        return prev.map((e) =>
+          e.date === exceptionData.date ? { ...exceptionData, id: e.id } : e,
+        );
+      }
+      return [...prev, { ...exceptionData, id: `exc-${Date.now()}` }];
+    });
+    addToast("Schedule exception saved", "success");
+  };
+
+  const handleRemoveException = (): void => {
+    if (exceptionEditingDate) {
+      const isoDate = exceptionEditingDate.date
+        .toISOString()
+        .split("T")[0] as ISODate;
+      setExceptions((prev) => prev.filter((e) => e.date !== isoDate));
+      addToast("Exception removed", "info");
     }
   };
 
-  const handleMoveSubject = (id: string, direction: "up" | "down"): void => {
-    const index = subjects.findIndex((s) => s.id === id);
-    if (index === -1) return;
-
-    const newIndex = direction === "up" ? index - 1 : index + 1;
-    if (newIndex < 0 || newIndex >= subjects.length) return;
-
-    const newSubjects = [...subjects];
-    [newSubjects[index], newSubjects[newIndex]] = [
-      newSubjects[newIndex],
-      newSubjects[index],
-    ];
-    setSubjects(newSubjects);
+  // Get default slots for the exception editor
+  const getDefaultSlotsForDay = (
+    dayOfWeek: DayOfWeek,
+  ): Array<{ id: string; subjectId: string }> => {
+    const daySchedule = settings.timetable.find((d) => d.day === dayOfWeek);
+    return daySchedule?.slots.map((s) => ({ ...s })) ?? [];
   };
+
+  // Get existing exception for the editing date
+  const getExceptionForEditingDate = (): ScheduleException | null => {
+    if (!exceptionEditingDate) return null;
+    const isoDate = exceptionEditingDate.date
+      .toISOString()
+      .split("T")[0] as ISODate;
+    return exceptions.find((e) => e.date === isoDate) ?? null;
+  };
+
+  // Count exceptions
+  const exceptionsCount = exceptions.length;
+
+  // Check if timetable is configured
+  const hasTimetableConfigured = settings.timetable.some(
+    (d) => d.slots.length > 0,
+  );
+
+  if (isSettingsLoading) {
+    return (
+      <PageTransition>
+        <div className="page-container flex items-center justify-center min-h-[400px]">
+          <Spinner size="lg" />
+        </div>
+      </PageTransition>
+    );
+  }
 
   return (
     <PageTransition>
@@ -520,6 +908,7 @@ export const PlannerScreen = (): React.ReactElement => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Configuration Panel */}
           <StaggerContainer className="space-y-6">
+            {/* Week Selection */}
             <StaggerItem>
               <Card>
                 <CardHeader>
@@ -551,11 +940,15 @@ export const PlannerScreen = (): React.ReactElement => {
                   <div className="flex items-center justify-between p-4 bg-background rounded-lg border border-border hover:border-accent/50 transition-colors">
                     <div>
                       <p className="font-semibold text-foreground">
-                        {planner.weekId}
+                        {currentWeekId}
                       </p>
                       <p className="text-sm text-muted">{dateRangeStr}</p>
                     </div>
-                    <Button variant="secondary" size="sm">
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => setIsWeekModalOpen(true)}
+                    >
                       Change
                     </Button>
                   </div>
@@ -563,6 +956,7 @@ export const PlannerScreen = (): React.ReactElement => {
               </Card>
             </StaggerItem>
 
+            {/* Week Schedule with Exceptions */}
             <StaggerItem>
               <Card>
                 <CardHeader>
@@ -575,69 +969,94 @@ export const PlannerScreen = (): React.ReactElement => {
                           viewBox="0 0 24 24"
                           stroke="currentColor"
                         >
-                          <title>Subjects</title>
+                          <title>Schedule</title>
                           <path
                             strokeLinecap="round"
                             strokeLinejoin="round"
                             strokeWidth={1.5}
-                            d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
+                            d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"
                           />
                         </svg>
                       </div>
                       <div>
                         <h2 className="text-lg font-semibold font-display">
-                          Subjects
+                          Week Schedule
                         </h2>
                         <p className="text-sm text-muted">
-                          {subjects.length} subject
-                          {subjects.length !== 1 ? "s" : ""} configured
+                          {exceptionsCount > 0
+                            ? `${exceptionsCount} exception${exceptionsCount !== 1 ? "s" : ""} for this week`
+                            : "Review and add exceptions if needed"}
                         </p>
                       </div>
                     </div>
+                    <Link href="/settings">
+                      <Button variant="ghost" size="sm">
+                        <svg
+                          className="w-4 h-4 mr-1"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <title>Settings</title>
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+                          />
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                          />
+                        </svg>
+                        Edit Timetable
+                      </Button>
+                    </Link>
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <ul className="space-y-2">
-                    <AnimatePresence>
-                      {subjects.map((subject, index) => (
-                        <SubjectItem
-                          key={subject.id}
-                          subject={subject}
-                          index={index}
-                          onRemove={handleRemoveSubject}
-                          onMove={handleMoveSubject}
-                          isFirst={index === 0}
-                          isLast={index === subjects.length - 1}
+                  {!hasTimetableConfigured ? (
+                    <div className="text-center py-8 text-muted border-2 border-dashed border-border rounded-lg">
+                      <svg
+                        className="w-12 h-12 mx-auto mb-3 text-muted-light"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <title>No timetable</title>
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={1.5}
+                          d="M12 6v6m0 0v6m0-6h6m-6 0H6"
                         />
-                      ))}
-                    </AnimatePresence>
-                  </ul>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="mt-4 w-full"
-                    onClick={() => setIsModalOpen(true)}
-                  >
-                    <svg
-                      className="w-4 h-4 mr-2"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <title>Add</title>
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M12 4v16m8-8H4"
-                      />
-                    </svg>
-                    Add Subject
-                  </Button>
+                      </svg>
+                      <p className="font-medium">No timetable configured</p>
+                      <p className="text-sm mt-1">
+                        Configure your weekly schedule in Settings first
+                      </p>
+                      <Link href="/settings">
+                        <Button variant="ghost" size="sm" className="mt-3">
+                          Go to Settings
+                        </Button>
+                      </Link>
+                    </div>
+                  ) : (
+                    <WeekScheduleOverview
+                      weekStartDate={weekStartDate}
+                      timetable={settings.timetable}
+                      exceptions={exceptions}
+                      subjects={settings.subjects}
+                      onEditException={handleEditException}
+                    />
+                  )}
                 </CardContent>
               </Card>
             </StaggerItem>
 
+            {/* Generate Button */}
             <StaggerItem>
               <motion.div
                 whileHover={{ scale: 1.01 }}
@@ -647,7 +1066,8 @@ export const PlannerScreen = (): React.ReactElement => {
                   onClick={handleGenerate}
                   disabled={
                     planner.state.status === "generating" ||
-                    subjects.length === 0
+                    settings.subjects.length === 0 ||
+                    !hasTimetableConfigured
                   }
                   className="w-full"
                   size="lg"
@@ -690,7 +1110,7 @@ export const PlannerScreen = (): React.ReactElement => {
             <PreviewPanel
               state={getPreviewState()}
               onDownload={handleDownload}
-              weekId={planner.weekId}
+              weekId={currentWeekId}
               errorMessage={
                 planner.state.status === "error"
                   ? planner.state.error
@@ -701,11 +1121,27 @@ export const PlannerScreen = (): React.ReactElement => {
         </div>
       </div>
 
-      <AddSubjectModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onAdd={handleAddSubject}
+      {/* Modals */}
+      <WeekSelectionModal
+        isOpen={isWeekModalOpen}
+        onClose={() => setIsWeekModalOpen(false)}
+        currentWeekId={currentWeekId}
+        onSelect={handleWeekSelect}
       />
+
+      {exceptionEditingDate && (
+        <ExceptionEditorModal
+          isOpen={true}
+          onClose={() => setExceptionEditingDate(null)}
+          date={exceptionEditingDate.date}
+          dayOfWeek={exceptionEditingDate.dayOfWeek}
+          subjects={settings.subjects}
+          defaultSlots={getDefaultSlotsForDay(exceptionEditingDate.dayOfWeek)}
+          exception={getExceptionForEditingDate()}
+          onSave={handleSaveException}
+          onRemove={handleRemoveException}
+        />
+      )}
     </PageTransition>
   );
 };

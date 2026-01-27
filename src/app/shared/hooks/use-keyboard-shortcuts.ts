@@ -16,8 +16,6 @@ type KeyboardShortcut = {
 
 type ShortcutHandler = () => void;
 
-type ShortcutMap = ReadonlyMap<string, ShortcutHandler>;
-
 // ============================================================================
 // Utility to create shortcut key
 // ============================================================================

@@ -3,8 +3,6 @@ import { describe, expect, it } from "vitest";
 import {
   AIProvider,
   AppConfig,
-  DayEntry,
-  DayRecord,
   ISODate,
   ISODateTime,
   OCRResponse,

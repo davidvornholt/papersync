@@ -19,6 +19,7 @@ const PAPERSYNC_ROOT = "PaperSync";
 const CONFIG_DIR = ".papersync";
 const CONFIG_FILE = "config.json";
 const SUBJECTS_FILE = "subjects.json";
+const TIMETABLE_FILE = "timetable.json";
 const WEEKLY_DIR = "Weekly";
 
 // ============================================================================
@@ -90,6 +91,50 @@ export const writeSubjects = (
   });
 
 // ============================================================================
+// Timetable Operations
+// ============================================================================
+
+/**
+ * Timetable day structure for vault storage
+ */
+export type TimetableDayConfig = {
+  readonly day: string;
+  readonly slots: ReadonlyArray<{ id: string; subjectId: string }>;
+};
+
+export type TimetableConfig = ReadonlyArray<TimetableDayConfig>;
+
+export const getTimetablePath = (): string =>
+  `${PAPERSYNC_ROOT}/${CONFIG_DIR}/${TIMETABLE_FILE}`;
+
+export const readTimetable = (): Effect.Effect<
+  TimetableConfig,
+  VaultFileNotFoundError | VaultError,
+  VaultService
+> =>
+  Effect.gen(function* () {
+    const vault = yield* VaultService;
+    const exists = yield* vault.fileExists(getTimetablePath());
+    if (!exists) {
+      return [];
+    }
+    const content = yield* vault.readFile(getTimetablePath());
+    return JSON.parse(content) as TimetableConfig;
+  });
+
+export const writeTimetable = (
+  timetable: TimetableConfig,
+): Effect.Effect<void, VaultError, VaultService> =>
+  Effect.gen(function* () {
+    const vault = yield* VaultService;
+    yield* vault.ensureDirectory(`${PAPERSYNC_ROOT}/${CONFIG_DIR}`);
+    yield* vault.writeFile(
+      getTimetablePath(),
+      JSON.stringify(timetable, null, 2),
+    );
+  });
+
+// ============================================================================
 // Weekly Note Operations
 // ============================================================================
 
@@ -125,7 +170,7 @@ export const writeWeeklyNote = (
 // Markdown Parsing & Serialization
 // ============================================================================
 
-const parseWeeklyNoteMarkdown = (
+export const parseWeeklyNoteMarkdown = (
   content: string,
   weekId: WeekId,
 ): WeeklyNote => {
@@ -156,7 +201,7 @@ const parseWeeklyNoteMarkdown = (
   };
 };
 
-const serializeWeeklyNoteToMarkdown = (note: WeeklyNote): string => {
+export const serializeWeeklyNoteToMarkdown = (note: WeeklyNote): string => {
   const lines: string[] = [
     "---",
     `week: ${note.week}`,
@@ -194,7 +239,7 @@ const serializeWeeklyNoteToMarkdown = (note: WeeklyNote): string => {
   return lines.join("\n");
 };
 
-const formatDate = (isoDate: string): string => {
+export const formatDate = (isoDate: string): string => {
   const date = new Date(isoDate);
   return date.toLocaleDateString("en-US", { month: "long", day: "numeric" });
 };

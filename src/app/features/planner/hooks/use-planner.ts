@@ -5,12 +5,9 @@ import { useCallback, useState } from "react";
 import type { Subject, WeekId } from "@/app/shared/types";
 import {
   downloadPlannerPdf,
-  generatePlannerPdf,
   getWeekDateRange,
   getWeekId,
-  type PlannerGenerationError,
 } from "../services/generator";
-import type { QREncodeError } from "../services/qr";
 
 // ============================================================================
 // Types
@@ -48,25 +45,36 @@ export const usePlanner = (initialWeekId?: WeekId): UsePlannerReturn => {
     async (subjects: readonly Subject[], vaultPath: string): Promise<void> => {
       setState({ status: "generating" });
 
-      const program = generatePlannerPdf({
-        weekId,
-        subjects,
-        vaultPath,
-      });
+      try {
+        // Call the API route for server-side PDF generation
+        const response = await fetch("/api/planner", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            weekId,
+            subjects,
+            vaultPath,
+          }),
+        });
 
-      const result = await Effect.runPromise(
-        program.pipe(
-          Effect.map((blob) => ({ success: true as const, blob })),
-          Effect.catchAll((error: PlannerGenerationError | QREncodeError) =>
-            Effect.succeed({ success: false as const, error: error.message }),
-          ),
-        ),
-      );
+        if (!response.ok) {
+          const errorData = (await response.json()) as { error?: string };
+          throw new Error(errorData.error ?? "Failed to generate PDF");
+        }
 
-      if (result.success) {
-        setState({ status: "generated", blob: result.blob });
-      } else {
-        setState({ status: "error", error: result.error });
+        const blob = await response.blob();
+        setState({ status: "generated", blob });
+      } catch (error) {
+        console.error("PDF generation error:", error);
+        setState({
+          status: "error",
+          error:
+            error instanceof Error
+              ? error.message
+              : "Failed to generate planner PDF",
+        });
       }
     },
     [weekId],

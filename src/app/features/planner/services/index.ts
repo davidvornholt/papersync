@@ -1,7 +1,5 @@
 export {
   downloadPlannerPdf,
-  type GeneratePlannerOptions,
-  generatePlannerPdf,
   getWeekDateRange,
   getWeekEndDate,
   getWeekId,

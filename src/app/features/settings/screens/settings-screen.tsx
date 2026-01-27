@@ -2,29 +2,54 @@
 
 import { AnimatePresence, motion } from "motion/react";
 import Link from "next/link";
-import { useState } from "react";
+import { useCallback, useState } from "react";
+import { syncSettingsToVault } from "@/app/features/vault/actions/sync-settings";
 import {
   Button,
   Card,
   CardContent,
   CardHeader,
+  Modal,
   PageTransition,
   Spinner,
   StaggerContainer,
   StaggerItem,
   useToast,
 } from "@/app/shared/components";
+import {
+  DAYS_OF_WEEK,
+  type DayOfWeek,
+  type Subject,
+  type TimetableDay,
+  useSettings,
+} from "@/app/shared/hooks/use-settings";
+import type { GitHubRepository } from "../actions/github-oauth";
+import { GitHubOAuthModal } from "../components/github-oauth-modal";
+import { RepositorySelectorModal } from "../components/repository-selector-modal";
+import { useGitHubOAuth } from "../hooks/use-github-oauth";
 
 // ============================================================================
-// Types
+// Constants
 // ============================================================================
 
-type VaultMethod = "local" | "github";
-type AIProvider = "google" | "ollama";
+const DAY_LABELS: Record<DayOfWeek, string> = {
+  monday: "Monday",
+  tuesday: "Tuesday",
+  wednesday: "Wednesday",
+  thursday: "Thursday",
+  friday: "Friday",
+  saturday: "Saturday",
+  sunday: "Sunday",
+};
 
-type Subject = {
-  readonly id: string;
-  readonly name: string;
+const DAY_SHORT_LABELS: Record<DayOfWeek, string> = {
+  monday: "Mon",
+  tuesday: "Tue",
+  wednesday: "Wed",
+  thursday: "Thu",
+  friday: "Fri",
+  saturday: "Sat",
+  sunday: "Sun",
 };
 
 // ============================================================================
@@ -128,12 +153,20 @@ type SubjectListItemProps = {
   readonly subject: Subject;
   readonly onEdit: (id: string) => void;
   readonly onDelete: (id: string) => void;
+  readonly onMoveUp: (id: string) => void;
+  readonly onMoveDown: (id: string) => void;
+  readonly isFirst: boolean;
+  readonly isLast: boolean;
 };
 
 const SubjectListItem = ({
   subject,
   onEdit,
   onDelete,
+  onMoveUp,
+  onMoveDown,
+  isFirst,
+  isLast,
 }: SubjectListItemProps): React.ReactElement => (
   <motion.li
     layout
@@ -142,7 +175,55 @@ const SubjectListItem = ({
     exit={{ opacity: 0, x: 10, height: 0 }}
     className="flex items-center justify-between p-3 bg-background rounded-lg border border-border group hover:border-accent/30 transition-colors"
   >
-    <span className="text-foreground">{subject.name}</span>
+    <div className="flex items-center gap-3">
+      <div className="flex flex-col gap-0.5">
+        <button
+          type="button"
+          onClick={() => onMoveUp(subject.id)}
+          disabled={isFirst}
+          className="p-0.5 text-muted hover:text-accent disabled:opacity-30 transition-colors"
+          title="Move up"
+        >
+          <svg
+            className="w-3 h-3"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <title>Move up</title>
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M5 15l7-7 7 7"
+            />
+          </svg>
+        </button>
+        <button
+          type="button"
+          onClick={() => onMoveDown(subject.id)}
+          disabled={isLast}
+          className="p-0.5 text-muted hover:text-accent disabled:opacity-30 transition-colors"
+          title="Move down"
+        >
+          <svg
+            className="w-3 h-3"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <title>Move down</title>
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M19 9l-7 7-7-7"
+            />
+          </svg>
+        </button>
+      </div>
+      <span className="text-foreground font-medium">{subject.name}</span>
+    </div>
     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
       <button
         type="button"
@@ -191,71 +272,431 @@ const SubjectListItem = ({
 );
 
 // ============================================================================
+// Add Subject Modal
+// ============================================================================
+
+type AddSubjectModalProps = {
+  readonly isOpen: boolean;
+  readonly onClose: () => void;
+  readonly onAdd: (name: string) => void;
+  readonly editingSubject?: Subject | null;
+  readonly onEdit?: (id: string, name: string) => void;
+};
+
+const AddSubjectModal = ({
+  isOpen,
+  onClose,
+  onAdd,
+  editingSubject,
+  onEdit,
+}: AddSubjectModalProps): React.ReactElement => {
+  const [name, setName] = useState(editingSubject?.name ?? "");
+
+  const handleSubmit = (e: React.FormEvent): void => {
+    e.preventDefault();
+    if (name.trim()) {
+      if (editingSubject && onEdit) {
+        onEdit(editingSubject.id, name.trim());
+      } else {
+        onAdd(name.trim());
+      }
+      setName("");
+      onClose();
+    }
+  };
+
+  // Reset name when modal opens with editing subject
+  const resetName = editingSubject?.name ?? "";
+  if (isOpen && name !== resetName && editingSubject) {
+    setName(resetName);
+  }
+
+  return (
+    <Modal
+      isOpen={isOpen}
+      onClose={() => {
+        setName("");
+        onClose();
+      }}
+      title={editingSubject ? "Edit Subject" : "Add Subject"}
+      size="sm"
+      footer={
+        <>
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => {
+              setName("");
+              onClose();
+            }}
+          >
+            Cancel
+          </Button>
+          <Button type="submit" disabled={!name.trim()} onClick={handleSubmit}>
+            {editingSubject ? "Save Changes" : "Add Subject"}
+          </Button>
+        </>
+      }
+    >
+      <form onSubmit={handleSubmit}>
+        <input
+          type="text"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="Subject name"
+          className="w-full px-4 py-3 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent"
+        />
+      </form>
+    </Modal>
+  );
+};
+
+// ============================================================================
+// Timetable Configuration Panel
+// ============================================================================
+
+type TimetableConfigPanelProps = {
+  readonly subjects: readonly Subject[];
+  readonly timetable: readonly TimetableDay[];
+  readonly onAddSlot: (day: DayOfWeek, subjectId: string) => void;
+  readonly onRemoveSlot: (day: DayOfWeek, slotId: string) => void;
+  readonly onUpdateSlot: (
+    day: DayOfWeek,
+    slotId: string,
+    subjectId: string,
+  ) => void;
+};
+
+const TimetableConfigPanel = ({
+  subjects,
+  timetable,
+  onAddSlot,
+  onRemoveSlot,
+  onUpdateSlot,
+}: TimetableConfigPanelProps): React.ReactElement => {
+  const [activeDay, setActiveDay] = useState<DayOfWeek>("monday");
+  const activeSchedule = timetable.find((d) => d.day === activeDay);
+
+  const handleAddSlot = (): void => {
+    if (subjects.length > 0) {
+      onAddSlot(activeDay, subjects[0].id);
+    }
+  };
+
+  return (
+    <div className="flex gap-4">
+      {/* Day Tabs */}
+      <div className="w-28 flex-shrink-0">
+        <div className="space-y-1">
+          {DAYS_OF_WEEK.map((day) => {
+            const daySchedule = timetable.find((d) => d.day === day);
+            const slotCount = daySchedule?.slots.length ?? 0;
+            return (
+              <button
+                key={day}
+                type="button"
+                onClick={() => setActiveDay(day)}
+                className={`w-full px-3 py-2 rounded-lg text-left transition-all flex items-center justify-between ${
+                  activeDay === day
+                    ? "bg-accent text-white"
+                    : "hover:bg-surface text-foreground"
+                }`}
+              >
+                <span className="font-medium text-sm">
+                  {DAY_SHORT_LABELS[day]}
+                </span>
+                {slotCount > 0 && (
+                  <span
+                    className={`text-xs px-1.5 py-0.5 rounded ${activeDay === day ? "bg-white/20" : "bg-surface"}`}
+                  >
+                    {slotCount}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Schedule Content */}
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center justify-between mb-3">
+          <h4 className="font-medium text-foreground">
+            {DAY_LABELS[activeDay]}
+          </h4>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleAddSlot}
+            disabled={subjects.length === 0}
+          >
+            <svg
+              className="w-4 h-4 mr-1"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <title>Add</title>
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 4v16m8-8H4"
+              />
+            </svg>
+            Add Class
+          </Button>
+        </div>
+
+        {subjects.length === 0 ? (
+          <div className="text-center py-6 text-muted border-2 border-dashed border-border rounded-lg">
+            <p className="text-sm">Add subjects above first</p>
+          </div>
+        ) : activeSchedule?.slots.length === 0 ? (
+          <div className="text-center py-6 text-muted border-2 border-dashed border-border rounded-lg">
+            <p className="text-sm">No classes on {DAY_LABELS[activeDay]}</p>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="mt-2"
+              onClick={handleAddSlot}
+            >
+              Add your first class
+            </Button>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            <AnimatePresence>
+              {activeSchedule?.slots.map((slot, index) => (
+                <motion.div
+                  key={slot.id}
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, x: -10 }}
+                  className="flex items-center gap-3 p-3 bg-background rounded-lg border border-border"
+                >
+                  <span className="text-xs text-muted bg-surface w-6 h-6 rounded flex items-center justify-center font-medium">
+                    {index + 1}
+                  </span>
+                  <select
+                    value={slot.subjectId}
+                    onChange={(e) =>
+                      onUpdateSlot(activeDay, slot.id, e.target.value)
+                    }
+                    className="flex-1 px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-accent text-sm"
+                  >
+                    {subjects.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.name}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={() => onRemoveSlot(activeDay, slot.id)}
+                    className="p-2 text-muted hover:text-red-500 transition-colors"
+                  >
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <title>Remove</title>
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                      />
+                    </svg>
+                  </button>
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// ============================================================================
 // Settings Screen
 // ============================================================================
 
-const initialSubjects: Subject[] = [
-  { id: "1", name: "Mathematics" },
-  { id: "2", name: "Physics" },
-  { id: "3", name: "Chemistry" },
-  { id: "4", name: "Literature" },
-];
-
 export const SettingsScreen = (): React.ReactElement => {
-  const [vaultMethod, setVaultMethod] = useState<VaultMethod>("local");
-  const [vaultPath, setVaultPath] = useState("/home/user/Obsidian/Vault");
-  const [aiProvider, setAIProvider] = useState<AIProvider>("google");
-  const [apiKey, setApiKey] = useState("");
-  const [ollamaEndpoint, setOllamaEndpoint] = useState(
-    "http://localhost:11434",
-  );
-  const [isConnecting, setIsConnecting] = useState(false);
-  const [isConnected, setIsConnected] = useState(false);
-  const [subjects, setSubjects] = useState<Subject[]>(initialSubjects);
+  const {
+    settings,
+    isLoading,
+    updateVault,
+    updateAI,
+    addSubject,
+    removeSubject,
+    updateSubject,
+    reorderSubjects,
+    addTimetableSlot,
+    removeTimetableSlot,
+    updateTimetableSlot,
+    save,
+  } = useSettings();
+
+  const [isOAuthModalOpen, setIsOAuthModalOpen] = useState(false);
+  const [isRepoSelectorOpen, setIsRepoSelectorOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isSubjectModalOpen, setIsSubjectModalOpen] = useState(false);
+  const [editingSubject, setEditingSubject] = useState<Subject | null>(null);
+  const [isSyncing, setIsSyncing] = useState(false);
+
   const { addToast } = useToast();
+  const {
+    oauthState,
+    startOAuth,
+    cancelOAuth,
+    reset: resetOAuth,
+    isConfigured,
+  } = useGitHubOAuth();
 
-  const handleConnect = async (): Promise<void> => {
-    setIsConnecting(true);
-    // TODO: Wire up actual GitHub OAuth
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    setIsConnecting(false);
-    setIsConnected(true);
-    addToast("Connected to GitHub successfully!", "success");
-  };
+  const handleConnect = useCallback((): void => {
+    resetOAuth();
+    setIsOAuthModalOpen(true);
+  }, [resetOAuth]);
 
-  const handleDisconnect = (): void => {
-    setIsConnected(false);
+  const handleOAuthSuccess = useCallback(
+    async (accessToken: string): Promise<void> => {
+      // Fetch GitHub user info
+      const { getGitHubUser } = await import("../actions/github-oauth");
+      const userResult = await getGitHubUser(accessToken);
+
+      if (userResult.success) {
+        // Store token and username persistently
+        updateVault({
+          githubConnected: true,
+          githubUsername: userResult.login,
+          githubToken: accessToken,
+        });
+        addToast(
+          `Connected to GitHub as ${userResult.name || userResult.login}!`,
+          "success",
+        );
+      } else {
+        // Still store the connection, but without username
+        updateVault({
+          githubConnected: true,
+          githubToken: accessToken,
+        });
+        addToast("Connected to GitHub successfully!", "success");
+      }
+
+      setIsOAuthModalOpen(false);
+
+      // Open repository selector
+      setIsRepoSelectorOpen(true);
+    },
+    [updateVault, addToast],
+  );
+
+  const handleOAuthModalClose = useCallback((): void => {
+    cancelOAuth();
+    setIsOAuthModalOpen(false);
+  }, [cancelOAuth]);
+
+  const handleRepoSelect = useCallback(
+    (repo: GitHubRepository): void => {
+      updateVault({ githubRepo: repo.fullName });
+      addToast(`Selected repository: ${repo.fullName}`, "success");
+      setIsRepoSelectorOpen(false);
+    },
+    [updateVault, addToast],
+  );
+
+  const handleDisconnect = useCallback((): void => {
+    updateVault({
+      githubConnected: false,
+      githubRepo: "",
+      githubUsername: "",
+      githubToken: "",
+    });
     addToast("Disconnected from GitHub", "info");
-  };
+  }, [updateVault, addToast]);
 
   const handleDeleteSubject = (id: string): void => {
-    const subject = subjects.find((s) => s.id === id);
-    setSubjects((prev) => prev.filter((s) => s.id !== id));
+    const subject = settings.subjects.find((s) => s.id === id);
+    removeSubject(id);
     if (subject) {
       addToast(`Deleted "${subject.name}"`, "info");
     }
   };
 
-  const handleAddSubject = (): void => {
-    const name = prompt("Enter subject name:");
-    if (name?.trim()) {
-      const newSubject: Subject = {
-        id: `subj-${Date.now()}`,
-        name: name.trim(),
-      };
-      setSubjects((prev) => [...prev, newSubject]);
-      addToast(`Added "${name.trim()}"`, "success");
-    }
+  const handleAddSubject = (name: string): void => {
+    addSubject(name);
+    addToast(`Added "${name}"`, "success");
+  };
+
+  const handleEditSubject = (id: string, name: string): void => {
+    updateSubject(id, name);
+    addToast(`Updated subject`, "success");
+    setEditingSubject(null);
+  };
+
+  const handleMoveSubject = (id: string, direction: "up" | "down"): void => {
+    const subjects = [...settings.subjects];
+    const index = subjects.findIndex((s) => s.id === id);
+    if (index === -1) return;
+
+    const newIndex = direction === "up" ? index - 1 : index + 1;
+    if (newIndex < 0 || newIndex >= subjects.length) return;
+
+    [subjects[index], subjects[newIndex]] = [
+      subjects[newIndex],
+      subjects[index],
+    ];
+    reorderSubjects(subjects);
   };
 
   const handleSave = async (): Promise<void> => {
     setIsSaving(true);
-    // TODO: Wire up actual settings persistence
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    await save();
     setIsSaving(false);
     addToast("Settings saved successfully!", "success");
   };
+
+  const handleSyncToVault = async (): Promise<void> => {
+    setIsSyncing(true);
+    try {
+      const result = await syncSettingsToVault(
+        {
+          subjects: settings.subjects,
+          timetable: settings.timetable,
+        },
+        settings.vault.method,
+        {
+          localPath: settings.vault.localPath,
+          githubToken: settings.vault.githubToken,
+          githubRepo: settings.vault.githubRepo,
+        },
+      );
+
+      if (result.success) {
+        addToast("Synced to vault successfully!", "success");
+      } else {
+        addToast(`Sync failed: ${result.error}`, "error");
+      }
+    } catch (error) {
+      addToast(
+        `Sync failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+        "error",
+      );
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  const isVaultConfigured =
+    (settings.vault.method === "local" && settings.vault.localPath) ||
+    (settings.vault.method === "github" &&
+      settings.vault.githubConnected &&
+      settings.vault.githubRepo);
 
   const vaultOptions: ToggleOption[] = [
     {
@@ -337,6 +778,21 @@ export const SettingsScreen = (): React.ReactElement => {
     },
   ];
 
+  // Count configured days
+  const configuredDaysCount = settings.timetable.filter(
+    (d) => d.slots.length > 0,
+  ).length;
+
+  if (isLoading) {
+    return (
+      <PageTransition>
+        <div className="page-container flex items-center justify-center min-h-[400px]">
+          <Spinner size="lg" />
+        </div>
+      </PageTransition>
+    );
+  }
+
   return (
     <PageTransition>
       <div className="page-container">
@@ -381,7 +837,7 @@ export const SettingsScreen = (): React.ReactElement => {
           </div>
         </header>
 
-        <StaggerContainer className="max-w-2xl space-y-8">
+        <StaggerContainer className="max-w-3xl space-y-8">
           {/* Vault Connection */}
           <StaggerItem>
             <Card>
@@ -416,12 +872,14 @@ export const SettingsScreen = (): React.ReactElement => {
               <CardContent className="space-y-4">
                 <ToggleButtons
                   options={vaultOptions}
-                  value={vaultMethod}
-                  onChange={(v) => setVaultMethod(v as VaultMethod)}
+                  value={settings.vault.method}
+                  onChange={(v) =>
+                    updateVault({ method: v as "local" | "github" })
+                  }
                 />
 
                 <AnimatePresence mode="wait">
-                  {vaultMethod === "local" ? (
+                  {settings.vault.method === "local" ? (
                     <motion.div
                       key="local"
                       initial={{ opacity: 0, height: 0 }}
@@ -431,8 +889,8 @@ export const SettingsScreen = (): React.ReactElement => {
                       <InputField
                         id="vault-path"
                         label="Vault Path"
-                        value={vaultPath}
-                        onChange={setVaultPath}
+                        value={settings.vault.localPath ?? ""}
+                        onChange={(v) => updateVault({ localPath: v })}
                         placeholder="/path/to/your/vault"
                       />
                     </motion.div>
@@ -444,7 +902,7 @@ export const SettingsScreen = (): React.ReactElement => {
                       exit={{ opacity: 0, height: 0 }}
                       className="space-y-3"
                     >
-                      {isConnected ? (
+                      {settings.vault.githubConnected ? (
                         <div className="flex items-center justify-between p-4 bg-accent/10 rounded-lg border border-accent/20">
                           <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-full bg-accent flex items-center justify-center text-white">
@@ -463,22 +921,38 @@ export const SettingsScreen = (): React.ReactElement => {
                                 />
                               </svg>
                             </div>
-                            <div>
+                            <div className="flex-1">
                               <p className="font-medium text-foreground">
                                 Connected to GitHub
                               </p>
                               <p className="text-sm text-muted">
-                                user/obsidian-vault
+                                @{settings.vault.githubUsername || "unknown"}
                               </p>
+                              {settings.vault.githubRepo && (
+                                <p className="text-xs text-accent mt-1">
+                                  📁 {settings.vault.githubRepo}
+                                </p>
+                              )}
                             </div>
                           </div>
-                          <Button
-                            variant="secondary"
-                            size="sm"
-                            onClick={handleDisconnect}
-                          >
-                            Disconnect
-                          </Button>
+                          <div className="flex gap-2">
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              onClick={() => setIsRepoSelectorOpen(true)}
+                            >
+                              {settings.vault.githubRepo
+                                ? "Change Repo"
+                                : "Select Repo"}
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={handleDisconnect}
+                            >
+                              Disconnect
+                            </Button>
+                          </div>
                         </div>
                       ) : (
                         <motion.div
@@ -487,28 +961,25 @@ export const SettingsScreen = (): React.ReactElement => {
                         >
                           <Button
                             onClick={handleConnect}
-                            disabled={isConnecting}
+                            disabled={!isConfigured}
                             className="w-full"
                           >
-                            {isConnecting ? (
-                              <>
-                                <Spinner size="sm" className="mr-2" />
-                                Connecting...
-                              </>
-                            ) : (
-                              <>
-                                <svg
-                                  className="w-5 h-5 mr-2"
-                                  fill="currentColor"
-                                  viewBox="0 0 24 24"
-                                >
-                                  <title>GitHub</title>
-                                  <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
-                                </svg>
-                                Connect with GitHub
-                              </>
-                            )}
+                            <svg
+                              className="w-5 h-5 mr-2"
+                              fill="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <title>GitHub</title>
+                              <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
+                            </svg>
+                            Connect with GitHub
                           </Button>
+                          {!isConfigured && (
+                            <p className="text-xs text-muted text-center mt-2">
+                              GitHub OAuth not configured. Set
+                              NEXT_PUBLIC_GITHUB_CLIENT_ID.
+                            </p>
+                          )}
                         </motion.div>
                       )}
                     </motion.div>
@@ -552,12 +1023,14 @@ export const SettingsScreen = (): React.ReactElement => {
               <CardContent className="space-y-4">
                 <ToggleButtons
                   options={aiOptions}
-                  value={aiProvider}
-                  onChange={(v) => setAIProvider(v as AIProvider)}
+                  value={settings.ai.provider}
+                  onChange={(v) =>
+                    updateAI({ provider: v as "google" | "ollama" })
+                  }
                 />
 
                 <AnimatePresence mode="wait">
-                  {aiProvider === "google" ? (
+                  {settings.ai.provider === "google" ? (
                     <motion.div
                       key="google"
                       initial={{ opacity: 0, height: 0 }}
@@ -568,8 +1041,8 @@ export const SettingsScreen = (): React.ReactElement => {
                         id="api-key"
                         label="API Key"
                         type="password"
-                        value={apiKey}
-                        onChange={setApiKey}
+                        value={settings.ai.googleApiKey ?? ""}
+                        onChange={(v) => updateAI({ googleApiKey: v })}
                         placeholder="Enter your Gemini API key"
                       />
                     </motion.div>
@@ -583,8 +1056,8 @@ export const SettingsScreen = (): React.ReactElement => {
                       <InputField
                         id="ollama-endpoint"
                         label="Ollama Endpoint"
-                        value={ollamaEndpoint}
-                        onChange={setOllamaEndpoint}
+                        value={settings.ai.ollamaEndpoint ?? ""}
+                        onChange={(v) => updateAI({ ollamaEndpoint: v })}
                         placeholder="http://localhost:11434"
                       />
                     </motion.div>
@@ -594,7 +1067,7 @@ export const SettingsScreen = (): React.ReactElement => {
             </Card>
           </StaggerItem>
 
-          {/* Subjects */}
+          {/* Subjects & Timetable - Combined */}
           <StaggerItem>
             <Card>
               <CardHeader>
@@ -606,7 +1079,7 @@ export const SettingsScreen = (): React.ReactElement => {
                       viewBox="0 0 24 24"
                       stroke="currentColor"
                     >
-                      <title>Subjects</title>
+                      <title>Subjects & Timetable</title>
                       <path
                         strokeLinecap="round"
                         strokeLinejoin="round"
@@ -617,48 +1090,104 @@ export const SettingsScreen = (): React.ReactElement => {
                   </div>
                   <div>
                     <h2 className="text-lg font-semibold font-display">
-                      Subjects
+                      Subjects & Timetable
                     </h2>
                     <p className="text-sm text-muted">
-                      Configure subjects for your planner
+                      {settings.subjects.length} subject
+                      {settings.subjects.length !== 1 ? "s" : ""} •{" "}
+                      {configuredDaysCount} day
+                      {configuredDaysCount !== 1 ? "s" : ""} configured
                     </p>
                   </div>
                 </div>
               </CardHeader>
-              <CardContent>
-                <ul className="space-y-2 mb-4">
-                  <AnimatePresence>
-                    {subjects.map((subject) => (
-                      <SubjectListItem
-                        key={subject.id}
-                        subject={subject}
-                        onEdit={() => {}}
-                        onDelete={handleDeleteSubject}
-                      />
-                    ))}
-                  </AnimatePresence>
-                </ul>
-                <Button
-                  variant="secondary"
-                  className="w-full"
-                  onClick={handleAddSubject}
-                >
-                  <svg
-                    className="w-4 h-4 mr-2"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <title>Add</title>
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 4v16m8-8H4"
-                    />
-                  </svg>
-                  Add Subject
-                </Button>
+              <CardContent className="space-y-6">
+                {/* Subjects Section */}
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="font-medium text-foreground">Subjects</h3>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setIsSubjectModalOpen(true)}
+                    >
+                      <svg
+                        className="w-4 h-4 mr-1"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <title>Add</title>
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 4v16m8-8H4"
+                        />
+                      </svg>
+                      Add Subject
+                    </Button>
+                  </div>
+                  <ul className="space-y-2">
+                    <AnimatePresence>
+                      {settings.subjects.map((subject, index) => (
+                        <SubjectListItem
+                          key={subject.id}
+                          subject={subject}
+                          onEdit={(id) => {
+                            const s = settings.subjects.find(
+                              (s) => s.id === id,
+                            );
+                            if (s) {
+                              setEditingSubject(s);
+                              setIsSubjectModalOpen(true);
+                            }
+                          }}
+                          onDelete={handleDeleteSubject}
+                          onMoveUp={(id) => handleMoveSubject(id, "up")}
+                          onMoveDown={(id) => handleMoveSubject(id, "down")}
+                          isFirst={index === 0}
+                          isLast={index === settings.subjects.length - 1}
+                        />
+                      ))}
+                    </AnimatePresence>
+                  </ul>
+                  {settings.subjects.length === 0 && (
+                    <div className="text-center py-6 text-muted border-2 border-dashed border-border rounded-lg">
+                      <p className="text-sm">No subjects yet</p>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="mt-2"
+                        onClick={() => setIsSubjectModalOpen(true)}
+                      >
+                        Add your first subject
+                      </Button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Divider */}
+                <div className="border-t border-border" />
+
+                {/* Timetable Section */}
+                <div>
+                  <div className="mb-3">
+                    <h3 className="font-medium text-foreground">
+                      Weekly Schedule
+                    </h3>
+                    <p className="text-sm text-muted">
+                      Configure your regular class schedule
+                    </p>
+                  </div>
+                  <TimetableConfigPanel
+                    subjects={settings.subjects}
+                    timetable={settings.timetable}
+                    onAddSlot={addTimetableSlot}
+                    onRemoveSlot={removeTimetableSlot}
+                    onUpdateSlot={updateTimetableSlot}
+                  />
+                </div>
               </CardContent>
             </Card>
           </StaggerItem>
@@ -699,8 +1228,79 @@ export const SettingsScreen = (): React.ReactElement => {
               </Button>
             </motion.div>
           </StaggerItem>
+
+          {/* Sync to Vault Button */}
+          <StaggerItem>
+            <motion.div whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}>
+              <Button
+                onClick={handleSyncToVault}
+                disabled={isSyncing || !isVaultConfigured}
+                variant="secondary"
+                size="lg"
+                className="w-full"
+              >
+                {isSyncing ? (
+                  <>
+                    <Spinner size="sm" className="mr-2" />
+                    Syncing...
+                  </>
+                ) : (
+                  <>
+                    <svg
+                      className="w-5 h-5 mr-2"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <title>Sync</title>
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                      />
+                    </svg>
+                    Sync to Vault
+                  </>
+                )}
+              </Button>
+              {!isVaultConfigured && (
+                <p className="text-xs text-muted text-center mt-2">
+                  Configure vault connection above to sync
+                </p>
+              )}
+            </motion.div>
+          </StaggerItem>
         </StaggerContainer>
       </div>
+
+      {/* Modals */}
+      <AddSubjectModal
+        isOpen={isSubjectModalOpen}
+        onClose={() => {
+          setIsSubjectModalOpen(false);
+          setEditingSubject(null);
+        }}
+        onAdd={handleAddSubject}
+        editingSubject={editingSubject}
+        onEdit={handleEditSubject}
+      />
+
+      <GitHubOAuthModal
+        isOpen={isOAuthModalOpen}
+        onClose={handleOAuthModalClose}
+        onSuccess={handleOAuthSuccess}
+        oauthState={oauthState}
+        onStartOAuth={startOAuth}
+        onCancel={cancelOAuth}
+      />
+
+      <RepositorySelectorModal
+        isOpen={isRepoSelectorOpen}
+        onClose={() => setIsRepoSelectorOpen(false)}
+        onSelect={handleRepoSelect}
+        accessToken={settings.vault.githubToken || ""}
+      />
     </PageTransition>
   );
 };

@@ -1,6 +1,7 @@
 export { Button } from "./button";
 export { Card, CardContent, CardFooter, CardHeader } from "./card";
 export { ErrorBoundary, PageErrorFallback } from "./error-boundary";
+export { Modal, type ModalProps, type ModalSize } from "./modal";
 export {
   FadeIn,
   HoverScale,
