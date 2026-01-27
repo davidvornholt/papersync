@@ -242,7 +242,6 @@ type ResultsPanelProps = {
   readonly state: ResultsPanelState;
   readonly entries: readonly ExtractedEntry[];
   readonly confidence: number;
-  readonly onSync: () => void;
   readonly _errorMessage?: string;
 };
 
@@ -250,7 +249,6 @@ const ResultsPanel = ({
   state,
   entries,
   confidence,
-  onSync,
   _errorMessage,
 }: ResultsPanelProps): React.ReactElement => (
   <Card elevated className="h-full">
@@ -322,32 +320,6 @@ const ResultsPanel = ({
                 />
               ))}
             </div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-              whileHover={{ scale: 1.01 }}
-              whileTap={{ scale: 0.99 }}
-            >
-              <Button onClick={onSync} className="w-full" size="lg">
-                <svg
-                  className="w-5 h-5 mr-2"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <title>Sync</title>
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                  />
-                </svg>
-                Sync to Vault
-              </Button>
-            </motion.div>
           </motion.div>
         )}
 
@@ -675,46 +647,44 @@ export const ScanScreen = (): React.ReactElement => {
   };
 
   const handleProcess = async (): Promise<void> => {
-    await scan.process();
-    if (scan.state.status === "complete") {
-      const count = scan.state.entries.length;
+    const scanResult = await scan.process();
+    if (scanResult.status === "complete") {
+      const count = scanResult.entries.length;
       addToast(`Extracted ${count} entries`, "success");
-    } else if (scan.state.status === "error") {
+
+      // Auto Sync
+      const vaultPath = settings.vault.localPath;
+      if (vaultPath) {
+        setIsSyncing(true);
+        try {
+          const result = await syncToVault(scanResult.entries, vaultPath);
+
+          if (result.success) {
+            addToast("Synced to vault successfully! 🎉", "success");
+          } else {
+            addToast(`Sync failed: ${result.error}`, "error");
+          }
+        } catch (error) {
+          addToast(
+            `Sync error: ${error instanceof Error ? error.message : "Unknown error"}`,
+            "error",
+          );
+        } finally {
+          setIsSyncing(false);
+        }
+      } else {
+        addToast(
+          "Configure vault path in Settings to enable auto-sync",
+          "info",
+        );
+      }
+    } else if (scanResult.status === "error") {
       addToast("Failed to process scan", "error");
     }
   };
 
   const handleClear = (): void => {
     scan.clear();
-  };
-
-  const handleSync = async (): Promise<void> => {
-    if (scan.state.status !== "complete") return;
-
-    const vaultPath = settings.vault.localPath;
-    if (!vaultPath) {
-      addToast("Please configure your vault path in Settings", "error");
-      return;
-    }
-
-    setIsSyncing(true);
-
-    try {
-      const result = await syncToVault(scan.state.entries, vaultPath);
-
-      if (result.success) {
-        addToast("Synced to vault successfully! 🎉", "success");
-      } else {
-        addToast(`Sync failed: ${result.error}`, "error");
-      }
-    } catch (error) {
-      addToast(
-        `Sync error: ${error instanceof Error ? error.message : "Unknown error"}`,
-        "error",
-      );
-    } finally {
-      setIsSyncing(false);
-    }
   };
 
   // Handle scan from network device - receives base64 image data
@@ -860,7 +830,6 @@ export const ScanScreen = (): React.ReactElement => {
               confidence={
                 scan.state.status === "complete" ? scan.state.confidence : 0
               }
-              onSync={handleSync}
               _errorMessage={
                 scan.state.status === "error" ? scan.state.error : undefined
               }

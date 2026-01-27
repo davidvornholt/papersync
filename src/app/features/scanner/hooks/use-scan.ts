@@ -44,7 +44,7 @@ export type UseScanReturn = {
   readonly state: ScanState;
   readonly imagePreview: string | null;
   readonly upload: (file: File) => Promise<void>;
-  readonly process: () => Promise<void>;
+  readonly process: () => Promise<ScanState>;
   readonly clear: () => void;
 };
 
@@ -103,10 +103,11 @@ export const useScan = (options: UseScanOptions): UseScanReturn => {
     });
   }, []);
 
-  const process = useCallback(async (): Promise<void> => {
+  const process = useCallback(async (): Promise<ScanState> => {
     if (!imageData) {
-      setState({ status: "error", error: "No image to process" });
-      return;
+      const newState: ScanState = { status: "error", error: "No image to process" };
+      setState(newState);
+      return newState;
     }
 
     setState({ status: "processing" });
@@ -135,22 +136,28 @@ export const useScan = (options: UseScanOptions): UseScanReturn => {
           }),
         );
 
-        setState({
+        const newState: ScanState = {
           status: "complete",
           entries,
           confidence: result.data.confidence,
-        });
-      } else {
-        setState({ status: "error", error: result.error });
+        };
+        setState(newState);
+        return newState;
       }
+
+      const newState: ScanState = { status: "error", error: result.error };
+      setState(newState);
+      return newState;
     } catch (error) {
-      setState({
+      const newState: ScanState = {
         status: "error",
         error:
           error instanceof Error
             ? error.message
             : "Unknown error during extraction",
-      });
+      };
+      setState(newState);
+      return newState;
     }
   }, [imageData, weekId, options.aiSettings]);
 

@@ -654,49 +654,54 @@ export const SettingsScreen = (): React.ReactElement => {
     reorderSubjects(subjects);
   };
 
-  const handleSave = async (): Promise<void> => {
-    setIsSaving(true);
-    await save();
-    setIsSaving(false);
-    addToast("Settings saved successfully!", "success");
-  };
-
-  const handleSyncToVault = async (): Promise<void> => {
-    setIsSyncing(true);
-    try {
-      const result = await syncSettingsToVault(
-        {
-          subjects: settings.subjects,
-          timetable: settings.timetable,
-        },
-        settings.vault.method,
-        {
-          localPath: settings.vault.localPath,
-          githubToken: settings.vault.githubToken,
-          githubRepo: settings.vault.githubRepo,
-        },
-      );
-
-      if (result.success) {
-        addToast("Synced to vault successfully!", "success");
-      } else {
-        addToast(`Sync failed: ${result.error}`, "error");
-      }
-    } catch (error) {
-      addToast(
-        `Sync failed: ${error instanceof Error ? error.message : "Unknown error"}`,
-        "error",
-      );
-    } finally {
-      setIsSyncing(false);
-    }
-  };
-
   const isVaultConfigured =
     (settings.vault.method === "local" && settings.vault.localPath) ||
     (settings.vault.method === "github" &&
       settings.vault.githubConnected &&
       settings.vault.githubRepo);
+
+  const handleSave = async (): Promise<void> => {
+    setIsSaving(true);
+    await save();
+
+    if (isVaultConfigured) {
+      setIsSyncing(true);
+      try {
+        const result = await syncSettingsToVault(
+          {
+            subjects: settings.subjects,
+            timetable: settings.timetable,
+          },
+          settings.vault.method,
+          {
+            localPath: settings.vault.localPath,
+            githubToken: settings.vault.githubToken,
+            githubRepo: settings.vault.githubRepo,
+          },
+        );
+
+        if (result.success) {
+          addToast("Settings saved and synced to vault!", "success");
+        } else {
+          addToast(
+            `Settings saved, but sync failed: ${result.error}`,
+            "warning",
+          );
+        }
+      } catch (error) {
+        addToast(
+          `Settings saved, but sync failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+          "warning",
+        );
+      } finally {
+        setIsSyncing(false);
+      }
+    } else {
+      addToast("Settings saved successfully!", "success");
+    }
+
+    setIsSaving(false);
+  };
 
   const vaultOptions: ToggleOption[] = [
     {
@@ -1204,7 +1209,7 @@ export const SettingsScreen = (): React.ReactElement => {
                 {isSaving ? (
                   <>
                     <Spinner size="sm" className="mr-2" />
-                    Saving...
+                    {isSyncing ? "Syncing..." : "Saving..."}
                   </>
                 ) : (
                   <>
@@ -1226,49 +1231,6 @@ export const SettingsScreen = (): React.ReactElement => {
                   </>
                 )}
               </Button>
-            </motion.div>
-          </StaggerItem>
-
-          {/* Sync to Vault Button */}
-          <StaggerItem>
-            <motion.div whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}>
-              <Button
-                onClick={handleSyncToVault}
-                disabled={isSyncing || !isVaultConfigured}
-                variant="secondary"
-                size="lg"
-                className="w-full"
-              >
-                {isSyncing ? (
-                  <>
-                    <Spinner size="sm" className="mr-2" />
-                    Syncing...
-                  </>
-                ) : (
-                  <>
-                    <svg
-                      className="w-5 h-5 mr-2"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <title>Sync</title>
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                      />
-                    </svg>
-                    Sync to Vault
-                  </>
-                )}
-              </Button>
-              {!isVaultConfigured && (
-                <p className="text-xs text-muted text-center mt-2">
-                  Configure vault connection above to sync
-                </p>
-              )}
             </motion.div>
           </StaggerItem>
         </StaggerContainer>
