@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { extractHandwriting } from "@/app/features/ocr/actions";
+import { extractHandwriting, type VaultSettings } from "@/app/features/ocr/actions";
 import type { WeekId } from "@/app/shared/types";
 
 // ============================================================================
@@ -26,6 +26,7 @@ export type ScanState =
       readonly status: "complete";
       readonly entries: readonly ExtractedEntry[];
       readonly confidence: number;
+      readonly modelUsed: string;
     }
   | { readonly status: "error"; readonly error: string };
 
@@ -38,6 +39,7 @@ export type AISettings = {
 export type UseScanOptions = {
   readonly aiSettings: AISettings;
   readonly weekId?: WeekId;
+  readonly vaultSettings?: VaultSettings;
 };
 
 export type UseScanReturn = {
@@ -105,7 +107,10 @@ export const useScan = (options: UseScanOptions): UseScanReturn => {
 
   const process = useCallback(async (): Promise<ScanState> => {
     if (!imageData) {
-      const newState: ScanState = { status: "error", error: "No image to process" };
+      const newState: ScanState = {
+        status: "error",
+        error: "No image to process",
+      };
       setState(newState);
       return newState;
     }
@@ -116,10 +121,10 @@ export const useScan = (options: UseScanOptions): UseScanReturn => {
       const result = await extractHandwriting({
         imageBase64: imageData,
         weekId,
-        existingContent: "", // TODO: Could fetch existing note content here
         provider: options.aiSettings.provider,
         googleApiKey: options.aiSettings.googleApiKey,
         ollamaEndpoint: options.aiSettings.ollamaEndpoint,
+        vaultSettings: options.vaultSettings,
       });
 
       if (result.success) {
@@ -140,6 +145,7 @@ export const useScan = (options: UseScanOptions): UseScanReturn => {
           status: "complete",
           entries,
           confidence: result.data.confidence,
+          modelUsed: result.modelUsed,
         };
         setState(newState);
         return newState;
@@ -159,7 +165,7 @@ export const useScan = (options: UseScanOptions): UseScanReturn => {
       setState(newState);
       return newState;
     }
-  }, [imageData, weekId, options.aiSettings]);
+  }, [imageData, weekId, options.aiSettings, options.vaultSettings]);
 
   const clear = useCallback((): void => {
     setState({ status: "idle" });
@@ -175,3 +181,4 @@ export const useScan = (options: UseScanOptions): UseScanReturn => {
     clear,
   };
 };
+

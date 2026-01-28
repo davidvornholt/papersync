@@ -1,6 +1,6 @@
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
-import { Schema } from "@effect/schema";
-import { generateText } from "ai";
+import { JSONSchema, Schema } from "@effect/schema";
+import { generateText, jsonSchema, Output } from "ai";
 import { Context, Data, Effect, Layer } from "effect";
 import type { OCRResponse, WeekId } from "@/app/shared/types";
 
@@ -21,7 +21,27 @@ export class VisionValidationError extends Data.TaggedError(
 }> {}
 
 // ============================================================================
-// OCR Response Schema
+// Model Configuration
+// ============================================================================
+
+/**
+ * Gemini models in priority order (try first model first, fallback to next)
+ */
+type GeminiModelConfig = {
+  readonly modelId: string;
+  readonly isGemini3: boolean; // Determines thinkingLevel vs thinkingBudget
+};
+
+const GEMINI_MODELS: readonly GeminiModelConfig[] = [
+  { modelId: "gemini-3-flash-preview", isGemini3: true },
+  { modelId: "gemini-flash-latest", isGemini3: false },
+  { modelId: "gemini-2.5-flash", isGemini3: false },
+  { modelId: "gemini-flash-lite-latest", isGemini3: false },
+  { modelId: "gemini-2.5-flash-lite", isGemini3: false },
+] as const;
+
+// ============================================================================
+// OCR Response Schema (Effect Schema)
 // ============================================================================
 
 const OCREntrySchema = Schema.Struct({
@@ -29,8 +49,6 @@ const OCREntrySchema = Schema.Struct({
   subject: Schema.String,
   content: Schema.String,
   is_task: Schema.Boolean,
-  is_completed: Schema.Boolean,
-  action: Schema.Literal("add", "modify", "complete"),
 });
 
 const OCRResponseSchema = Schema.Struct({
@@ -39,29 +57,43 @@ const OCRResponseSchema = Schema.Struct({
   notes: Schema.optional(Schema.String),
 });
 
+// Generate JSON Schema for AI SDK's generateObject
+const OCRResponseJsonSchema = JSONSchema.make(OCRResponseSchema);
+
 // ============================================================================
 // Vision Provider Interface
 // ============================================================================
+
+export type OCRResultWithModel = {
+  readonly data: OCRResponse;
+  readonly modelUsed: string;
+};
 
 export type VisionProvider = {
   readonly extractHandwriting: (
     imageBase64: string,
     weekId: WeekId,
     existingContent: string,
-  ) => Effect.Effect<OCRResponse, VisionError | VisionValidationError>;
+  ) => Effect.Effect<OCRResultWithModel, VisionError | VisionValidationError>;
 };
 
 export const VisionProvider =
   Context.GenericTag<VisionProvider>("VisionProvider");
 
 // ============================================================================
-// Prompt Template
+// System Prompt
 // ============================================================================
 
-const createExtractionPrompt = (
+/**
+ * System prompt for handwriting extraction.
+ * Note: No JSON format instructions needed since structured output handles that.
+ * Note: Completion status tracking removed - planner uses bullet points, not checkboxes.
+ */
+const createExtractionSystemPrompt = (
   weekId: WeekId,
   existingContent: string,
-): string => `You are a handwriting extraction specialist. Analyze the scanned weekly planner image.
+): string =>
+  `You are a handwriting extraction specialist analyzing a scanned weekly planner image.
 
 CONTEXT:
 - Week: ${weekId}
@@ -73,37 +105,19 @@ ${existingContent || "(No existing content)"}
 TASK:
 1. Identify all handwritten entries in the scan
 2. Compare against the existing digital record
-3. Extract ONLY entries that are NEW or MODIFIED (not already in the existing record)
-4. Preserve the exact wording, including abbreviations and shorthand
-5. Infer task completion status from checkmarks (✓), strikethroughs, or X marks
-6. Identify which day and subject each entry belongs to
-
-OUTPUT FORMAT (JSON only, no markdown):
-{
-  "entries": [
-    {
-      "day": "Monday",
-      "subject": "Mathematics",
-      "content": "Complete problem set 6",
-      "is_task": true,
-      "is_completed": false,
-      "action": "add"
-    }
-  ],
-  "confidence": 0.85,
-  "notes": "One entry was partially illegible"
-}
+3. Extract ONLY entries that are NEW (not already in the existing record)
+4. Preserve exact wording including abbreviations and shorthand
+5. Identify which day and subject each entry belongs to
 
 IMPORTANT:
-- "action" must be one of: "add" (new entry), "modify" (changed existing), "complete" (marked as done)
+- "is_task" should be true for homework/assignments, false for general notes
 - "subject" should be "General Tasks" for entries not bound to a specific subject
-- Return empty "entries" array if no new handwritten content is detected
-- "confidence" should reflect how certain you are about the extraction (0.0 to 1.0)
-
-Respond with ONLY the JSON object, no additional text or markdown formatting.`;
+- Return empty "entries" array if no new handwritten content detected
+- "confidence" reflects certainty about the extraction (0.0 to 1.0)
+- PRESERVE ALL SPECIAL CHARACTERS exactly as written: umlauts (ä, ö, ü, Ä, Ö, Ü), eszett (ß), accented characters (á, é, í, ó, ú, à, è, etc.), and any other non-ASCII characters. Do NOT replace them with $, substitute characters, or escape sequences.`;
 
 // ============================================================================
-// Google Gemini Implementation
+// Google Gemini Implementation with Model Fallback
 // ============================================================================
 
 const createGoogleVisionProvider = (apiKey: string): VisionProvider => ({
@@ -114,79 +128,85 @@ const createGoogleVisionProvider = (apiKey: string): VisionProvider => ({
   ) =>
     Effect.gen(function* () {
       const google = createGoogleGenerativeAI({ apiKey });
+      const systemPrompt = createExtractionSystemPrompt(weekId, existingContent);
 
-      const response = yield* Effect.tryPromise({
-        try: async () => {
-          const result = await generateText({
-            model: google("gemini-2.5-flash-preview-05-20"),
-            messages: [
-              {
-                role: "user",
-                content: [
-                  {
-                    type: "image",
-                    image: imageBase64,
-                  },
-                  {
-                    type: "text",
-                    text: createExtractionPrompt(weekId, existingContent),
-                  },
-                ],
+      // Try each model in order until one succeeds
+      let lastError: unknown = null;
+
+      for (const modelConfig of GEMINI_MODELS) {
+        const result = yield* Effect.tryPromise({
+          try: async () => {
+            const response = await generateText({
+              model: google(modelConfig.modelId),
+              output: Output.object({
+                schema: jsonSchema<typeof OCRResponseSchema.Type>(
+                  OCRResponseJsonSchema as Parameters<typeof jsonSchema>[0],
+                ),
+              }),
+              system: systemPrompt,
+              messages: [
+                {
+                  role: "user",
+                  content: [
+                    {
+                      type: "image",
+                      image: imageBase64,
+                    },
+                  ],
+                },
+              ],
+              providerOptions: {
+                google: {
+                  mediaResolution: "MEDIA_RESOLUTION_HIGH",
+                  thinkingConfig: modelConfig.isGemini3
+                    ? { thinkingLevel: "medium" as const }
+                    : { thinkingBudget: 4096 },
+                },
               },
-            ],
-          });
+            });
 
-          return result.text;
-        },
-        catch: (error) =>
-          new VisionError({
-            message: "Failed to call Google Vision API",
-            cause: error,
-          }),
-      });
+            return { object: response.output, modelId: modelConfig.modelId };
+          },
+          catch: (error) => error,
+        }).pipe(Effect.option);
 
-      // Parse and validate response
-      const parsed = yield* Effect.try({
-        try: () => {
-          // Remove potential markdown code blocks
-          const cleaned = response
-            .replace(/```json\n?/g, "")
-            .replace(/```\n?/g, "")
-            .trim();
-          return JSON.parse(cleaned);
-        },
-        catch: () =>
-          new VisionValidationError({
-            message: "Failed to parse OCR response as JSON",
-            raw: response,
-          }),
-      });
+        if (result._tag === "Some") {
+          const validated = result.value.object;
 
-      const validated = yield* Schema.decodeUnknown(OCRResponseSchema)(
-        parsed,
-      ).pipe(
-        Effect.mapError(
-          () =>
-            new VisionValidationError({
-              message: "OCR response failed schema validation",
-              raw: response,
-            }),
-        ),
+          // Transform to canonical format (add defaults for constant fields)
+          const ocrResponse: OCRResponse = {
+            entries: validated.entries.map((e) => ({
+              day: e.day,
+              subject: e.subject,
+              content: e.content,
+              isTask: e.is_task,
+              isCompleted: false, // Always false - completion tracked digitally
+              action: "add" as const, // Always add - planner only tracks new entries
+            })),
+            confidence: validated.confidence,
+            notes: validated.notes,
+          };
+
+          return {
+            data: ocrResponse,
+            modelUsed: result.value.modelId,
+          };
+        }
+
+        // Store error and try next model
+        lastError = result;
+        console.warn(
+          `[VisionProvider] Model ${modelConfig.modelId} failed, trying next...`,
+        );
+      }
+
+      // All models failed
+      return yield* Effect.fail(
+        new VisionError({
+          message: "All Gemini models failed to process the image",
+          cause: lastError,
+        }),
       );
-
-      // Transform to canonical format
-      return {
-        entries: validated.entries.map((e) => ({
-          day: e.day,
-          subject: e.subject,
-          content: e.content,
-          isTask: e.is_task,
-          isCompleted: e.is_completed,
-          action: e.action,
-        })),
-        confidence: validated.confidence,
-        notes: validated.notes,
-      } as OCRResponse;
     }),
 });
 
@@ -208,7 +228,7 @@ const createOllamaVisionProvider = (endpoint: string): VisionProvider => ({
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               model: "qwen3-vl-4b",
-              prompt: createExtractionPrompt(weekId, existingContent),
+              prompt: createExtractionSystemPrompt(weekId, existingContent),
               images: [imageBase64.replace(/^data:image\/\w+;base64,/, "")],
               stream: false,
             }),
@@ -257,17 +277,20 @@ const createOllamaVisionProvider = (endpoint: string): VisionProvider => ({
       );
 
       return {
-        entries: validated.entries.map((e) => ({
-          day: e.day,
-          subject: e.subject,
-          content: e.content,
-          isTask: e.is_task,
-          isCompleted: e.is_completed,
-          action: e.action,
-        })),
-        confidence: validated.confidence,
-        notes: validated.notes,
-      } as OCRResponse;
+        data: {
+          entries: validated.entries.map((e) => ({
+            day: e.day,
+            subject: e.subject,
+            content: e.content,
+            isTask: e.is_task,
+            isCompleted: false, // Always false - completion tracked digitally
+            action: "add" as const, // Always add - planner only tracks new entries
+          })),
+          confidence: validated.confidence,
+          notes: validated.notes,
+        } as OCRResponse,
+        modelUsed: "qwen3-vl-4b",
+      };
     }),
 });
 

@@ -535,6 +535,7 @@ export const SettingsScreen = (): React.ReactElement => {
     removeSubject,
     updateSubject,
     reorderSubjects,
+    updateTimetable,
     addTimetableSlot,
     removeTimetableSlot,
     updateTimetableSlot,
@@ -602,12 +603,44 @@ export const SettingsScreen = (): React.ReactElement => {
   }, [cancelOAuth]);
 
   const handleRepoSelect = useCallback(
-    (repo: GitHubRepository): void => {
+    async (repo: GitHubRepository): Promise<void> => {
       updateVault({ githubRepo: repo.fullName });
-      addToast(`Selected repository: ${repo.fullName}`, "success");
       setIsRepoSelectorOpen(false);
+
+      // Try to load existing settings from the vault
+      const { loadSettingsFromVault } = await import(
+        "@/app/features/vault/actions/sync-settings"
+      );
+
+      const result = await loadSettingsFromVault("github", {
+        githubToken: settings.vault.githubToken,
+        githubRepo: repo.fullName,
+      });
+
+      if (result.success) {
+        // Load subjects and timetable from vault if they exist
+        if (result.subjects.length > 0) {
+          reorderSubjects(result.subjects as Subject[]);
+        }
+        if (result.timetable.length > 0) {
+          updateTimetable(result.timetable as TimetableDay[]);
+        }
+        addToast(
+          `Connected to ${repo.fullName} and loaded settings from vault`,
+          "success",
+        );
+      } else {
+        // No existing settings in vault, that's okay
+        addToast(`Selected repository: ${repo.fullName}`, "success");
+      }
     },
-    [updateVault, addToast],
+    [
+      updateVault,
+      addToast,
+      settings.vault.githubToken,
+      reorderSubjects,
+      updateTimetable,
+    ],
   );
 
   const handleDisconnect = useCallback((): void => {

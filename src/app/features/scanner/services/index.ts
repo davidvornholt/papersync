@@ -4,6 +4,7 @@ export {
   ESCLClient,
   ESCLClientLayer,
   ESCLError,
+  type InputSource,
   type ScanJob,
   type ScannerCapabilities,
   type ScanSettings,

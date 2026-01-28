@@ -16,7 +16,6 @@ import {
   useToast,
 } from "@/app/shared/components";
 import {
-  DAYS_OF_WEEK,
   type TimetableDay,
   useSettings,
 } from "@/app/shared/hooks/use-settings";
@@ -39,6 +38,15 @@ type ScheduleException = {
 // ============================================================================
 // Constants
 // ============================================================================
+
+// Only weekdays (Mon-Fri) - no weekend support
+const WEEKDAYS: DayOfWeek[] = [
+  "monday",
+  "tuesday",
+  "wednesday",
+  "thursday",
+  "friday",
+];
 
 const DAY_SHORT_LABELS: Record<DayOfWeek, string> = {
   monday: "Mon",
@@ -399,7 +407,7 @@ const WeekScheduleOverview = ({
 
   return (
     <div className="space-y-2">
-      {DAYS_OF_WEEK.map((day, index) => {
+      {WEEKDAYS.map((day, index) => {
         const daySchedule = timetable.find((d) => d.day === day);
         const dayDate = getDayDate(index);
         const exception = getExceptionForDate(dayDate);
@@ -518,6 +526,7 @@ type PreviewPanelState = "configure" | "generating" | "generated" | "error";
 type PreviewPanelProps = {
   readonly state: PreviewPanelState;
   readonly onDownload: () => void;
+  readonly onOpen: () => void;
   readonly weekId: string;
   readonly errorMessage?: string;
 };
@@ -525,6 +534,7 @@ type PreviewPanelProps = {
 const PreviewPanel = ({
   state,
   onDownload,
+  onOpen,
   weekId,
   errorMessage,
 }: PreviewPanelProps): React.ReactElement => (
@@ -595,23 +605,42 @@ const PreviewPanel = ({
                 Your planner for {weekId} is ready
               </p>
             </div>
-            <Button onClick={onDownload} size="lg">
-              <svg
-                className="w-5 h-5 mr-2"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <title>Download</title>
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-                />
-              </svg>
-              Download PDF
-            </Button>
+            <div className="flex gap-3">
+              <Button onClick={onOpen} variant="secondary" size="lg">
+                <svg
+                  className="w-5 h-5 mr-2"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <title>Open</title>
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                  />
+                </svg>
+                Open
+              </Button>
+              <Button onClick={onDownload} size="lg">
+                <svg
+                  className="w-5 h-5 mr-2"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <title>Download</title>
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                  />
+                </svg>
+                Download
+              </Button>
+            </div>
           </motion.div>
         )}
 
@@ -769,18 +798,22 @@ export const PlannerScreen = (): React.ReactElement => {
   }, [settings.timetable, settings.subjects, exceptions]);
 
   const handleGenerate = async (): Promise<void> => {
-    const vaultPath = settings.vault.localPath || "/home/user/Obsidian/Vault";
     const subjectsToUse = getSubjectsForWeek();
 
-    if (subjectsToUse.length === 0) {
-      addToast(
-        "Please configure subjects and timetable in Settings first",
-        "error",
-      );
-      return;
-    }
+    // Filter timetable to only include weekdays (Mon-Fri)
+    const weekdayTimetable = settings.timetable.filter(
+      (day) =>
+        day.day === "monday" ||
+        day.day === "tuesday" ||
+        day.day === "wednesday" ||
+        day.day === "thursday" ||
+        day.day === "friday",
+    );
 
-    await planner.generate(subjectsToUse, vaultPath);
+    await planner.generate(
+      subjectsToUse,
+      weekdayTimetable as Parameters<typeof planner.generate>[1],
+    );
   };
 
   const handleDownload = (): void => {
@@ -1110,6 +1143,7 @@ export const PlannerScreen = (): React.ReactElement => {
             <PreviewPanel
               state={getPreviewState()}
               onDownload={handleDownload}
+              onOpen={planner.openInNewTab}
               weekId={currentWeekId}
               errorMessage={
                 planner.state.status === "error"

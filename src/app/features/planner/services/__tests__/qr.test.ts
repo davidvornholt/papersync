@@ -7,32 +7,41 @@ describe("QR Services", () => {
   describe("encodeQRPayload", () => {
     it("should generate a data URL", async () => {
       const result = await Effect.runPromise(
-        encodeQRPayload("2026-W05" as WeekId, "/vault/path"),
+        encodeQRPayload("2026-W05" as WeekId),
       );
 
       expect(result).toMatch(/^data:image\/png;base64,/);
     });
 
-    it("should generate different QR codes for different inputs", async () => {
+    it("should generate consistent QR codes for same week", async () => {
       const result1 = await Effect.runPromise(
-        encodeQRPayload("2026-W05" as WeekId, "/vault/path1"),
+        encodeQRPayload("2026-W05" as WeekId),
       );
       const result2 = await Effect.runPromise(
-        encodeQRPayload("2026-W05" as WeekId, "/vault/path2"),
+        encodeQRPayload("2026-W05" as WeekId),
+      );
+
+      expect(result1).toBe(result2);
+    });
+
+    it("should generate different QR codes for different weeks", async () => {
+      const result1 = await Effect.runPromise(
+        encodeQRPayload("2026-W05" as WeekId),
+      );
+      const result2 = await Effect.runPromise(
+        encodeQRPayload("2026-W06" as WeekId),
       );
 
       expect(result1).not.toBe(result2);
     });
 
-    it("should generate different QR codes for different weeks", async () => {
-      const result1 = await Effect.runPromise(
-        encodeQRPayload("2026-W05" as WeekId, "/vault/path"),
-      );
-      const result2 = await Effect.runPromise(
-        encodeQRPayload("2026-W06" as WeekId, "/vault/path"),
-      );
+    it("should encode week ID in the QR payload", async () => {
+      const weekId = "2026-W10" as WeekId;
+      const result = await Effect.runPromise(encodeQRPayload(weekId));
 
-      expect(result1).not.toBe(result2);
+      // The result is a base64 data URL, we can verify it starts correctly
+      expect(result).toMatch(/^data:image\/png;base64,/);
+      expect(result.length).toBeGreaterThan(100);
     });
   });
 

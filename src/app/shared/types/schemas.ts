@@ -156,7 +156,6 @@ export type WeeklyNote = typeof WeeklyNote.Type;
 
 export const QRPayload = Schema.Struct({
   week: WeekId,
-  vault: Schema.String,
   checksum: Schema.String,
   version: Schema.Literal(1),
 });

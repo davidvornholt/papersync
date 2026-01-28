@@ -1,4 +1,4 @@
-export { type ExtractedEntry, type SyncResult, syncToVault } from "./sync";
+export { type ExtractedEntry, type SyncResult, type SyncOptions, syncToVault, syncEntriesToVault } from "./sync";
 export {
   convertEntriesToWeeklyNote,
   getCurrentWeekId,

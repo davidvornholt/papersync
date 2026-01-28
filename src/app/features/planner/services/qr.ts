@@ -24,7 +24,6 @@ export class QRDecodeError extends Data.TaggedError("QRDecodeError")<{
 
 const QRPayloadSchema = Schema.Struct({
   week: Schema.String,
-  vault: Schema.String,
   checksum: Schema.String,
   version: Schema.Literal(1),
 });
@@ -49,14 +48,12 @@ const generateChecksum = (data: string): string => {
 
 export const encodeQRPayload = (
   weekId: WeekId,
-  vaultPath: string,
 ): Effect.Effect<string, QREncodeError> =>
   Effect.tryPromise({
     try: async () => {
       const payload: QRPayload = {
         week: weekId,
-        vault: vaultPath,
-        checksum: generateChecksum(`${weekId}:${vaultPath}`),
+        checksum: generateChecksum(weekId),
         version: 1,
       };
 
@@ -66,7 +63,7 @@ export const encodeQRPayload = (
         margin: 1,
         width: 120,
         color: {
-          dark: "#1C1917",
+          dark: "#000000",
           light: "#FFFFFF",
         },
       });
@@ -110,9 +107,7 @@ export const decodeQRFromImageData = (
     );
 
     // Verify checksum
-    const expectedChecksum = generateChecksum(
-      `${decoded.week}:${decoded.vault}`,
-    );
+    const expectedChecksum = generateChecksum(decoded.week);
     if (decoded.checksum !== expectedChecksum) {
       return yield* Effect.fail(
         new QRDecodeError({ message: "QR payload checksum mismatch" }),

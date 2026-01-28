@@ -11,242 +11,29 @@ import {
   PageTransition,
   StaggerContainer,
   StaggerItem,
-  useToast,
 } from "@/app/shared/components";
-
-// ============================================================================
-// Types
-// ============================================================================
-
-type TaskItem = {
-  readonly id: string;
-  readonly content: string;
-  readonly subject: string;
-  readonly day: string;
-  readonly isCompleted: boolean;
-  readonly priority?: "high" | "medium" | "low";
-};
-
-type TaskSectionProps = {
-  readonly title: string;
-  readonly description: string;
-  readonly tasks: readonly TaskItem[];
-  readonly emptyMessage: string;
-  readonly icon: React.ReactNode;
-};
 
 // ============================================================================
 // Icons
 // ============================================================================
 
-const CalendarIcon = (): React.ReactElement => (
+const CheckIcon = (): React.ReactElement => (
   <svg
-    className="w-5 h-5"
+    className="w-5 h-5 text-accent"
     fill="none"
     viewBox="0 0 24 24"
     stroke="currentColor"
     aria-hidden="true"
   >
-    <title>Calendar</title>
+    <title>Check</title>
     <path
       strokeLinecap="round"
       strokeLinejoin="round"
-      strokeWidth={1.5}
-      d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+      strokeWidth={2}
+      d="M5 13l4 4L19 7"
     />
   </svg>
 );
-
-const ClockIcon = (): React.ReactElement => (
-  <svg
-    className="w-5 h-5"
-    fill="none"
-    viewBox="0 0 24 24"
-    stroke="currentColor"
-    aria-hidden="true"
-  >
-    <title>Clock</title>
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth={1.5}
-      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-    />
-  </svg>
-);
-
-const ListIcon = (): React.ReactElement => (
-  <svg
-    className="w-5 h-5"
-    fill="none"
-    viewBox="0 0 24 24"
-    stroke="currentColor"
-    aria-hidden="true"
-  >
-    <title>List</title>
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth={1.5}
-      d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-    />
-  </svg>
-);
-
-// ============================================================================
-// Task Item Component
-// ============================================================================
-
-type TaskItemComponentProps = {
-  readonly task: TaskItem;
-  readonly onToggle: (id: string) => void;
-};
-
-const TaskItemComponent = ({
-  task,
-  onToggle,
-}: TaskItemComponentProps): React.ReactElement => (
-  <motion.li
-    layout
-    initial={{ opacity: 0, x: -10 }}
-    animate={{ opacity: 1, x: 0 }}
-    exit={{ opacity: 0, x: 10 }}
-    className="flex items-start gap-3 group py-2"
-  >
-    <motion.button
-      type="button"
-      onClick={() => onToggle(task.id)}
-      whileHover={{ scale: 1.1 }}
-      whileTap={{ scale: 0.9 }}
-      className={`mt-0.5 w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
-        task.isCompleted
-          ? "bg-accent border-accent text-white"
-          : "border-border hover:border-accent"
-      }`}
-      aria-label={`Mark "${task.content}" as ${task.isCompleted ? "incomplete" : "complete"}`}
-    >
-      {task.isCompleted && (
-        <motion.svg
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
-          className="w-3 h-3"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <title>Completed check mark</title>
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={3}
-            d="M5 13l4 4L19 7"
-          />
-        </motion.svg>
-      )}
-    </motion.button>
-    <div className="flex-1 min-w-0">
-      <p
-        className={`text-sm transition-all ${
-          task.isCompleted
-            ? "line-through text-muted"
-            : "text-foreground group-hover:text-accent"
-        }`}
-      >
-        {task.content}
-      </p>
-      <div className="flex items-center gap-2 mt-0.5">
-        <span
-          className={`inline-block w-2 h-2 rounded-full ${
-            task.priority === "high"
-              ? "bg-red-500"
-              : task.priority === "medium"
-                ? "bg-amber-500"
-                : "bg-border"
-          }`}
-        />
-        <span className="text-xs text-muted-light">
-          {task.subject} · {task.day}
-        </span>
-      </div>
-    </div>
-  </motion.li>
-);
-
-// ============================================================================
-// Task Section Component
-// ============================================================================
-
-const TaskSection = ({
-  title,
-  description,
-  tasks,
-  emptyMessage,
-  icon,
-}: TaskSectionProps): React.ReactElement => {
-  const { addToast } = useToast();
-
-  const handleToggle = (id: string): void => {
-    const task = tasks.find((t) => t.id === id);
-    if (task) {
-      addToast(
-        task.isCompleted
-          ? `"${task.content}" marked incomplete`
-          : `"${task.content}" completed! 🎉`,
-        task.isCompleted ? "info" : "success",
-      );
-    }
-  };
-
-  return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-accent/10 flex items-center justify-center text-accent">
-            {icon}
-          </div>
-          <div>
-            <h2 className="text-lg font-semibold font-display">{title}</h2>
-            <p className="text-sm text-muted">{description}</p>
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent>
-        {tasks.length === 0 ? (
-          <div className="py-8 text-center">
-            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-background flex items-center justify-center">
-              <svg
-                className="w-8 h-8 text-muted-light"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                aria-hidden="true"
-              >
-                <title>No tasks</title>
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={1.5}
-                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-            </div>
-            <p className="text-muted text-sm">{emptyMessage}</p>
-          </div>
-        ) : (
-          <ul className="divide-y divide-border">
-            {tasks.map((task) => (
-              <TaskItemComponent
-                key={task.id}
-                task={task}
-                onToggle={handleToggle}
-              />
-            ))}
-          </ul>
-        )}
-      </CardContent>
-    </Card>
-  );
-};
 
 // ============================================================================
 // Quick Action Card
@@ -394,52 +181,285 @@ const QuickActions = (): React.ReactElement => (
 );
 
 // ============================================================================
-// Dashboard Screen
+// Getting Started Card
 // ============================================================================
 
-// Sample data for demonstration
-const sampleTasks: TaskItem[] = [
+type GettingStartedStep = {
+  readonly number: number;
+  readonly title: string;
+  readonly description: string;
+  readonly href: string;
+  readonly linkText: string;
+};
+
+const GETTING_STARTED_STEPS: GettingStartedStep[] = [
   {
-    id: "1",
-    content: "Complete problem set 6 on differential equations",
-    subject: "Mathematics",
-    day: "Today",
-    isCompleted: false,
-    priority: "high",
+    number: 1,
+    title: "Configure Your Vault",
+    description:
+      "Connect PaperSync to your Obsidian vault for seamless sync. Choose between local filesystem or GitHub.",
+    href: "/settings",
+    linkText: "Open Settings",
   },
   {
-    id: "2",
-    content: "Review chapter 13 notes on wave mechanics",
-    subject: "Physics",
-    day: "Today",
-    isCompleted: false,
-    priority: "medium",
+    number: 2,
+    title: "Set Up Your Timetable",
+    description:
+      "Add your subjects and configure your weekly schedule. This will appear on your printed planner.",
+    href: "/settings",
+    linkText: "Configure Timetable",
   },
   {
-    id: "3",
-    content: "Email professor about project extension",
-    subject: "General",
-    day: "Today",
-    isCompleted: true,
-    priority: "low",
+    number: 3,
+    title: "Generate a Planner",
+    description:
+      "Create a printable weekly planner with QR codes. Write your tasks and notes by hand.",
+    href: "/planner",
+    linkText: "Create Planner",
   },
   {
-    id: "4",
-    content: "Prepare lab report introduction",
-    subject: "Chemistry",
-    day: "Tomorrow",
-    isCompleted: false,
-    priority: "medium",
-  },
-  {
-    id: "5",
-    content: "Read chapters 5-6 for literature review",
-    subject: "Literature",
-    day: "Wednesday",
-    isCompleted: false,
-    priority: "low",
+    number: 4,
+    title: "Scan & Sync",
+    description:
+      "Scan your completed planner to extract handwritten entries and sync them to your vault.",
+    href: "/scan",
+    linkText: "Start Scanning",
   },
 ];
+
+const GettingStartedCard = (): React.ReactElement => (
+  <Card>
+    <CardHeader>
+      <div className="flex items-center gap-3">
+        <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center text-accent">
+          <svg
+            className="w-5 h-5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <title>Getting Started</title>
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={1.5}
+              d="M13 10V3L4 14h7v7l9-11h-7z"
+            />
+          </svg>
+        </div>
+        <div>
+          <h2 className="text-lg font-semibold font-display">
+            Getting Started
+          </h2>
+          <p className="text-sm text-muted">
+            Follow these steps to set up PaperSync
+          </p>
+        </div>
+      </div>
+    </CardHeader>
+    <CardContent>
+      <div className="space-y-4">
+        {GETTING_STARTED_STEPS.map((step, index) => (
+          <motion.div
+            key={step.number}
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: index * 0.1 }}
+            className="flex gap-4 p-4 bg-background rounded-lg border border-border hover:border-accent/30 transition-colors group"
+          >
+            <div className="flex-shrink-0">
+              <div className="w-8 h-8 rounded-full bg-accent/10 flex items-center justify-center text-accent font-semibold text-sm group-hover:bg-accent group-hover:text-white transition-colors">
+                {step.number}
+              </div>
+            </div>
+            <div className="flex-1 min-w-0">
+              <h3 className="font-medium text-foreground">{step.title}</h3>
+              <p className="text-sm text-muted mt-1">{step.description}</p>
+              <Link
+                href={step.href}
+                className="inline-flex items-center gap-1 text-sm text-accent hover:underline mt-2"
+              >
+                {step.linkText}
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <title>Arrow</title>
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 5l7 7-7 7"
+                  />
+                </svg>
+              </Link>
+            </div>
+          </motion.div>
+        ))}
+      </div>
+    </CardContent>
+  </Card>
+);
+
+// ============================================================================
+// Workflow Overview Card
+// ============================================================================
+
+const WorkflowOverviewCard = (): React.ReactElement => (
+  <Card>
+    <CardHeader>
+      <div className="flex items-center gap-3">
+        <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center text-accent">
+          <svg
+            className="w-5 h-5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <title>Workflow</title>
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={1.5}
+              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+            />
+          </svg>
+        </div>
+        <div>
+          <h2 className="text-lg font-semibold font-display">How It Works</h2>
+          <p className="text-sm text-muted">
+            The PaperSync workflow in 3 simple steps
+          </p>
+        </div>
+      </div>
+    </CardHeader>
+    <CardContent>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Step 1: Print */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="text-center"
+        >
+          <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-accent/20 to-accent/5 flex items-center justify-center">
+            <svg
+              className="w-8 h-8 text-accent"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <title>Print</title>
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.5}
+                d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"
+              />
+            </svg>
+          </div>
+          <h3 className="font-semibold text-foreground mb-1">1. Print</h3>
+          <p className="text-sm text-muted">
+            Generate and print your weekly planner with embedded QR codes
+          </p>
+        </motion.div>
+
+        {/* Step 2: Write */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="text-center"
+        >
+          <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-blue-500/20 to-blue-500/5 flex items-center justify-center">
+            <svg
+              className="w-8 h-8 text-blue-500"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <title>Write</title>
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.5}
+                d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+              />
+            </svg>
+          </div>
+          <h3 className="font-semibold text-foreground mb-1">2. Write</h3>
+          <p className="text-sm text-muted">
+            Fill in your tasks and notes by hand throughout the week
+          </p>
+        </motion.div>
+
+        {/* Step 3: Scan */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="text-center"
+        >
+          <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-purple-500/20 to-purple-500/5 flex items-center justify-center">
+            <svg
+              className="w-8 h-8 text-purple-500"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <title>Scan</title>
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.5}
+                d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"
+              />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.5}
+                d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"
+              />
+            </svg>
+          </div>
+          <h3 className="font-semibold text-foreground mb-1">3. Scan & Sync</h3>
+          <p className="text-sm text-muted">
+            Scan your planner and watch AI extract your notes to Obsidian
+          </p>
+        </motion.div>
+      </div>
+
+      {/* Features list */}
+      <div className="mt-8 pt-6 border-t border-border">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {[
+            "AI-Powered OCR",
+            "Obsidian Sync",
+            "QR Tracking",
+            "Weekly Templates",
+          ].map((feature, index) => (
+            <motion.div
+              key={feature}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.4 + index * 0.1 }}
+              className="flex items-center gap-2"
+            >
+              <CheckIcon />
+              <span className="text-sm text-foreground">{feature}</span>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    </CardContent>
+  </Card>
+);
+
+// ============================================================================
+// Dashboard Screen
+// ============================================================================
 
 export const DashboardScreen = (): React.ReactElement => {
   const today = new Date();
@@ -455,15 +475,6 @@ export const DashboardScreen = (): React.ReactElement => {
       1) /
       7,
   );
-
-  const todayTasks = sampleTasks.filter(
-    (t) => t.day === "Today" && !t.isCompleted,
-  );
-  const tomorrowTasks = sampleTasks.filter((t) => t.day === "Tomorrow");
-  const upcomingTasks = sampleTasks.filter(
-    (t) => !["Today", "Tomorrow"].includes(t.day),
-  );
-  const completedTasks = sampleTasks.filter((t) => t.isCompleted);
 
   return (
     <PageTransition>
@@ -497,64 +508,15 @@ export const DashboardScreen = (): React.ReactElement => {
           <QuickActions />
         </section>
 
-        {/* Task Sections */}
+        {/* Main Content */}
         <StaggerContainer className="space-y-6" staggerDelay={0.1}>
           <StaggerItem>
-            <TaskSection
-              title="Due Today"
-              description={`${todayTasks.length} task${todayTasks.length !== 1 ? "s" : ""} remaining`}
-              tasks={todayTasks}
-              emptyMessage="All caught up! No tasks due today."
-              icon={<CalendarIcon />}
-            />
+            <WorkflowOverviewCard />
           </StaggerItem>
 
           <StaggerItem>
-            <TaskSection
-              title="Due Tomorrow"
-              description="Plan ahead for tomorrow"
-              tasks={tomorrowTasks}
-              emptyMessage="Nothing scheduled for tomorrow yet."
-              icon={<ClockIcon />}
-            />
+            <GettingStartedCard />
           </StaggerItem>
-
-          <StaggerItem>
-            <TaskSection
-              title="Upcoming"
-              description="Tasks due later this week"
-              tasks={upcomingTasks}
-              emptyMessage="No upcoming tasks. Time to plan ahead!"
-              icon={<ListIcon />}
-            />
-          </StaggerItem>
-
-          {completedTasks.length > 0 && (
-            <StaggerItem>
-              <TaskSection
-                title="Completed"
-                description="Great work!"
-                tasks={completedTasks}
-                emptyMessage=""
-                icon={
-                  <svg
-                    className="w-5 h-5"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <title>Completed</title>
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={1.5}
-                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                    />
-                  </svg>
-                }
-              />
-            </StaggerItem>
-          )}
         </StaggerContainer>
       </div>
     </PageTransition>

@@ -216,13 +216,11 @@ describe("QRPayload Schema", () => {
   it("should accept valid QR payload", () => {
     const payload = Schema.decodeUnknownSync(QRPayload)({
       week: "2026-W05",
-      vault: "my-vault-id",
       checksum: "abc123",
       version: 1,
     });
 
     expect(payload.week).toBe("2026-W05");
-    expect(payload.vault).toBe("my-vault-id");
     expect(payload.checksum).toBe("abc123");
     expect(payload.version).toBe(1);
   });
@@ -231,9 +229,18 @@ describe("QRPayload Schema", () => {
     expect(() =>
       Schema.decodeUnknownSync(QRPayload)({
         week: "2026-W05",
-        vault: "my-vault",
         checksum: "abc",
         version: 2,
+      }),
+    ).toThrow();
+  });
+
+  it("should require valid week ID format", () => {
+    expect(() =>
+      Schema.decodeUnknownSync(QRPayload)({
+        week: "invalid-week",
+        checksum: "abc123",
+        version: 1,
       }),
     ).toThrow();
   });

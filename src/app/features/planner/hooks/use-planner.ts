@@ -13,6 +13,16 @@ import {
 // Types
 // ============================================================================
 
+type TimetableSlot = {
+  readonly id: string;
+  readonly subjectId: string;
+};
+
+type TimetableDay = {
+  readonly day: "monday" | "tuesday" | "wednesday" | "thursday" | "friday";
+  readonly slots: readonly TimetableSlot[];
+};
+
 export type PlannerState =
   | { readonly status: "idle" }
   | { readonly status: "generating" }
@@ -25,9 +35,10 @@ export type UsePlannerReturn = {
   readonly dateRange: { start: Date; end: Date };
   readonly generate: (
     subjects: readonly Subject[],
-    vaultPath: string,
+    timetable: readonly TimetableDay[],
   ) => Promise<void>;
   readonly download: () => void;
+  readonly openInNewTab: () => void;
   readonly reset: () => void;
 };
 
@@ -42,7 +53,10 @@ export const usePlanner = (initialWeekId?: WeekId): UsePlannerReturn => {
   const [state, setState] = useState<PlannerState>({ status: "idle" });
 
   const generate = useCallback(
-    async (subjects: readonly Subject[], vaultPath: string): Promise<void> => {
+    async (
+      subjects: readonly Subject[],
+      timetable: readonly TimetableDay[],
+    ): Promise<void> => {
       setState({ status: "generating" });
 
       try {
@@ -55,7 +69,7 @@ export const usePlanner = (initialWeekId?: WeekId): UsePlannerReturn => {
           body: JSON.stringify({
             weekId,
             subjects,
-            vaultPath,
+            timetable,
           }),
         });
 
@@ -86,6 +100,13 @@ export const usePlanner = (initialWeekId?: WeekId): UsePlannerReturn => {
     Effect.runSync(downloadPlannerPdf(state.blob, weekId));
   }, [state, weekId]);
 
+  const openInNewTab = useCallback((): void => {
+    if (state.status !== "generated") return;
+
+    const url = URL.createObjectURL(state.blob);
+    window.open(url, "_blank");
+  }, [state]);
+
   const reset = useCallback((): void => {
     setState({ status: "idle" });
   }, []);
@@ -96,6 +117,7 @@ export const usePlanner = (initialWeekId?: WeekId): UsePlannerReturn => {
     dateRange,
     generate,
     download,
+    openInNewTab,
     reset,
   };
 };

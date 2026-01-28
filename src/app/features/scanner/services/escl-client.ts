@@ -1,5 +1,18 @@
+import { Agent } from "undici";
 import { Context, Data, Effect, Layer } from "effect";
 import type { DiscoveredScanner } from "./scanner-discovery";
+
+// ============================================================================
+// HTTPS Agent for Self-Signed Certificates
+// ============================================================================
+
+// Printers typically use self-signed HTTPS certificates.
+// Create a custom undici Agent that accepts them for local network communication.
+const insecureAgent = new Agent({
+  connect: {
+    rejectUnauthorized: false,
+  },
+});
 
 // ============================================================================
 // Types
@@ -7,15 +20,23 @@ import type { DiscoveredScanner } from "./scanner-discovery";
 
 export type ColorMode = "color" | "grayscale" | "blackwhite";
 
+export type InputSource = "Platen" | "Adf";
+
 export type ScanSettings = {
   readonly colorMode: ColorMode;
   readonly resolution: number;
   readonly format: "pdf" | "jpeg" | "png";
+  readonly inputSource: InputSource;
+};
+
+export type SourceCapabilities = {
+  readonly resolutions: readonly number[];
+  readonly colorModes: readonly ColorMode[];
 };
 
 export type ScannerCapabilities = {
-  readonly resolutions: readonly number[];
-  readonly colorModes: readonly ColorMode[];
+  readonly inputSources: readonly InputSource[];
+  readonly sourceCapabilities: Readonly<Record<InputSource, SourceCapabilities>>;
   readonly formats: readonly string[];
   readonly maxWidth: number;
   readonly maxHeight: number;
@@ -86,35 +107,68 @@ const parseXmlValues = (xml: string, tag: string): string[] => {
 };
 
 const parseCapabilitiesXml = (xml: string): ScannerCapabilities => {
-  // Parse resolutions from DiscreteResolution elements
-  const resolutions: number[] = [];
-  const resMatches =
-    xml.match(/<scan:XResolution>(\d+)<\/scan:XResolution>/gi) || [];
-  for (const match of resMatches) {
-    const value = parseInt(match.replace(/<\/?[^>]+>/g, ""), 10);
-    if (!Number.isNaN(value) && !resolutions.includes(value)) {
-      resolutions.push(value);
+  // Helper to extract a section from XML
+  const extractSection = (sectionName: string): string | null => {
+    const regex = new RegExp(`<scan:${sectionName}[^>]*>([\\s\\S]*?)</scan:${sectionName}>`, "i");
+    const match = xml.match(regex);
+    return match ? match[0] : null;
+  };
+
+  // Helper to parse resolutions from a section
+  const parseResolutions = (section: string): number[] => {
+    const resolutions: number[] = [];
+    const resMatches = section.match(/<scan:XResolution>(\d+)<\/scan:XResolution>/gi) || [];
+    for (const match of resMatches) {
+      const value = parseInt(match.replace(/<\/?[^>]+>/g, ""), 10);
+      if (!Number.isNaN(value) && !resolutions.includes(value)) {
+        resolutions.push(value);
+      }
     }
+    return resolutions.length > 0 ? resolutions.sort((a, b) => a - b) : [75, 150, 300, 600];
+  };
+
+  // Helper to parse color modes from a section
+  const parseColorModes = (section: string): ColorMode[] => {
+    const colorModes: ColorMode[] = [];
+    if (section.includes("RGB24") || section.includes("Color")) colorModes.push("color");
+    if (section.includes("Grayscale8") || section.includes("Grayscale")) colorModes.push("grayscale");
+    if (section.includes("BlackAndWhite1") || section.includes("Binary")) colorModes.push("blackwhite");
+    return colorModes.length > 0 ? colorModes : ["color", "grayscale"];
+  };
+
+  // Parse input sources and their capabilities
+  const inputSources: InputSource[] = [];
+  const sourceCapabilities: Record<InputSource, SourceCapabilities> = {
+    Platen: { resolutions: [300], colorModes: ["color", "grayscale"] },
+    Adf: { resolutions: [300], colorModes: ["color", "grayscale"] },
+  };
+
+  // Check for Platen (flatbed glass) support
+  const platenSection = extractSection("Platen");
+  if (platenSection) {
+    inputSources.push("Platen");
+    sourceCapabilities.Platen = {
+      resolutions: parseResolutions(platenSection),
+      colorModes: parseColorModes(platenSection),
+    };
   }
 
-  // Default resolutions if none found
-  if (resolutions.length === 0) {
-    resolutions.push(75, 150, 300, 600);
+  // Check for ADF support
+  const adfSection = extractSection("Adf");
+  if (adfSection) {
+    inputSources.push("Adf");
+    sourceCapabilities.Adf = {
+      resolutions: parseResolutions(adfSection),
+      colorModes: parseColorModes(adfSection),
+    };
   }
 
-  // Parse color modes
-  const colorModes: ColorMode[] = [];
-  if (xml.includes("RGB24") || xml.includes("Color")) colorModes.push("color");
-  if (xml.includes("Grayscale8") || xml.includes("Grayscale"))
-    colorModes.push("grayscale");
-  if (xml.includes("BlackAndWhite1") || xml.includes("Binary"))
-    colorModes.push("blackwhite");
-
-  if (colorModes.length === 0) {
-    colorModes.push("color", "grayscale");
+  // Default to Platen if no sources found
+  if (inputSources.length === 0) {
+    inputSources.push("Platen");
   }
 
-  // Parse formats from DocumentFormat elements
+  // Parse formats from DocumentFormat elements (global)
   const formats = parseXmlValues(xml, "pwg:DocumentFormat");
   if (formats.length === 0) {
     formats.push("application/pdf", "image/jpeg");
@@ -122,16 +176,13 @@ const parseCapabilitiesXml = (xml: string): ScannerCapabilities => {
 
   // Parse dimensions (in 1/300 inch units typically)
   const maxWidth = parseInt(parseXmlValue(xml, "scan:MaxWidth") || "2550", 10);
-  const maxHeight = parseInt(
-    parseXmlValue(xml, "scan:MaxHeight") || "3300",
-    10,
-  );
+  const maxHeight = parseInt(parseXmlValue(xml, "scan:MaxHeight") || "3300", 10);
   const minWidth = parseInt(parseXmlValue(xml, "scan:MinWidth") || "16", 10);
   const minHeight = parseInt(parseXmlValue(xml, "scan:MinHeight") || "16", 10);
 
   return {
-    resolutions: resolutions.sort((a, b) => a - b),
-    colorModes,
+    inputSources,
+    sourceCapabilities,
     formats,
     maxWidth,
     maxHeight,
@@ -157,6 +208,16 @@ const createScanRequestXml = (settings: ScanSettings): string => {
     png: "image/png",
   };
 
+  // eSCL uses "Feeder" for ADF, "Platen" for flatbed glass
+  const inputSourceMap: Record<InputSource, string> = {
+    Platen: "Platen",
+    Adf: "Feeder",
+  };
+
+  // A4 dimensions: 210mm x 297mm = 2480 x 3507 at 300dpi (ThreeHundredthsOfInches)
+  const a4Width = 2480;
+  const a4Height = 3507;
+
   return `<?xml version="1.0" encoding="UTF-8"?>
 <scan:ScanSettings xmlns:scan="http://schemas.hp.com/imaging/escl/2011/05/03"
                    xmlns:pwg="http://www.pwg.org/schemas/2010/12/sm">
@@ -167,11 +228,11 @@ const createScanRequestXml = (settings: ScanSettings): string => {
       <pwg:ContentRegionUnits>escl:ThreeHundredthsOfInches</pwg:ContentRegionUnits>
       <pwg:XOffset>0</pwg:XOffset>
       <pwg:YOffset>0</pwg:YOffset>
-      <pwg:Width>2550</pwg:Width>
-      <pwg:Height>3300</pwg:Height>
+      <pwg:Width>${a4Width}</pwg:Width>
+      <pwg:Height>${a4Height}</pwg:Height>
     </pwg:ScanRegion>
   </pwg:ScanRegions>
-  <pwg:InputSource>Platen</pwg:InputSource>
+  <pwg:InputSource>${inputSourceMap[settings.inputSource]}</pwg:InputSource>
   <scan:ColorMode>${colorModeMap[settings.colorMode]}</scan:ColorMode>
   <scan:XResolution>${settings.resolution}</scan:XResolution>
   <scan:YResolution>${settings.resolution}</scan:YResolution>
@@ -184,10 +245,18 @@ const createESCLClient = (): ESCLClient => ({
     Effect.tryPromise({
       try: async () => {
         const baseUrl = `${scanner.protocol}://${scanner.host}:${scanner.port}`;
-        const response = await fetch(`${baseUrl}/eSCL/ScannerCapabilities`, {
+        // Use undici dispatcher option for self-signed certs in Node.js fetch
+        const fetchOptions: RequestInit & { dispatcher?: unknown } = {
           method: "GET",
           headers: { Accept: "text/xml, application/xml" },
-        });
+        };
+        
+        // For HTTPS, we need to bypass certificate validation for self-signed certs
+        if (scanner.protocol === "https") {
+          fetchOptions.dispatcher = insecureAgent;
+        }
+        
+        const response = await fetch(`${baseUrl}/eSCL/ScannerCapabilities`, fetchOptions);
 
         if (!response.ok) {
           throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -209,13 +278,20 @@ const createESCLClient = (): ESCLClient => ({
         const baseUrl = `${scanner.protocol}://${scanner.host}:${scanner.port}`;
         const requestXml = createScanRequestXml(settings);
 
-        const response = await fetch(`${baseUrl}/eSCL/ScanJobs`, {
+        const fetchOptions: RequestInit & { dispatcher?: unknown } = {
           method: "POST",
           headers: {
             "Content-Type": "text/xml; charset=utf-8",
           },
           body: requestXml,
-        });
+        };
+        
+        // For HTTPS, bypass certificate validation for self-signed certs
+        if (scanner.protocol === "https") {
+          fetchOptions.dispatcher = insecureAgent;
+        }
+
+        const response = await fetch(`${baseUrl}/eSCL/ScanJobs`, fetchOptions);
 
         if (response.status !== 201) {
           throw new Error(`Failed to create scan job: HTTP ${response.status}`);
@@ -248,9 +324,16 @@ const createESCLClient = (): ESCLClient => ({
         // Wait a moment for scan to complete
         await new Promise((resolve) => setTimeout(resolve, 2000));
 
-        const response = await fetch(nextDocUrl, {
+        // Use insecure agent for HTTPS URLs with self-signed certs
+        const fetchOptions: RequestInit & { dispatcher?: unknown } = {
           method: "GET",
-        });
+        };
+        
+        if (jobUrl.startsWith("https://")) {
+          fetchOptions.dispatcher = insecureAgent;
+        }
+
+        const response = await fetch(nextDocUrl, fetchOptions);
 
         if (!response.ok) {
           throw new Error(`Failed to get scan result: HTTP ${response.status}`);

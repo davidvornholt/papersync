@@ -13,10 +13,20 @@ import type { Subject, WeekId } from "@/app/shared/types";
 // Types
 // ============================================================================
 
+type TimetableSlot = {
+  id: string;
+  subjectId: string;
+};
+
+type TimetableDay = {
+  day: "monday" | "tuesday" | "wednesday" | "thursday" | "friday";
+  slots: TimetableSlot[];
+};
+
 type GeneratePdfRequest = {
   weekId?: WeekId;
   subjects: Subject[];
-  vaultPath: string;
+  timetable: TimetableDay[];
 };
 
 // ============================================================================
@@ -26,18 +36,18 @@ type GeneratePdfRequest = {
 export async function POST(request: Request): Promise<Response> {
   try {
     const body = (await request.json()) as GeneratePdfRequest;
-    const { subjects, vaultPath, weekId: providedWeekId } = body;
+    const { subjects, timetable, weekId: providedWeekId } = body;
 
-    if (!subjects || !Array.isArray(subjects) || subjects.length === 0) {
+    if (!subjects || !Array.isArray(subjects)) {
       return NextResponse.json(
-        { error: "Subjects are required and must be a non-empty array" },
+        { error: "Subjects must be an array" },
         { status: 400 },
       );
     }
 
-    if (!vaultPath || typeof vaultPath !== "string") {
+    if (!timetable || !Array.isArray(timetable)) {
       return NextResponse.json(
-        { error: "Vault path is required" },
+        { error: "Timetable must be an array" },
         { status: 400 },
       );
     }
@@ -45,9 +55,9 @@ export async function POST(request: Request): Promise<Response> {
     const weekId = providedWeekId ?? getWeekId();
     const dateRange = getWeekDateRange(weekId);
 
-    // Generate QR code
+    // Generate QR code (only contains week info now)
     const qrResult = await Effect.runPromise(
-      encodeQRPayload(weekId, vaultPath).pipe(
+      encodeQRPayload(weekId).pipe(
         Effect.map((qrDataUrl) => ({ success: true as const, qrDataUrl })),
         Effect.catchAll((error) =>
           Effect.succeed({ success: false as const, error: error.message }),
@@ -67,6 +77,7 @@ export async function POST(request: Request): Promise<Response> {
       weekId,
       dateRange,
       subjects,
+      timetable,
       qrDataUrl: qrResult.qrDataUrl,
     });
 

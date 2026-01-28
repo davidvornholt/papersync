@@ -139,34 +139,78 @@ const serviceToScanner = (
 };
 
 const createMdnsDiscoveryService = (): ScannerDiscoveryService => ({
-  discover: (timeoutMs = 5000) =>
+  discover: (timeoutMs = 10000) =>
     Effect.tryPromise({
       try: async () => {
+        // Use a map keyed by UUID (or host as fallback) to deduplicate scanners
+        // found via both HTTP (_uscan._tcp) and HTTPS (_uscans._tcp) services
         const scanners = new Map<string, DiscoveredScanner>();
         const bonjour = new Bonjour();
 
+        const addScanner = (scanner: DiscoveredScanner) => {
+          // Deduplicate by UUID, falling back to host if UUID not available
+          const dedupeKey = scanner.uuid || scanner.host;
+          const existing = scanners.get(dedupeKey);
+
+          // Prefer HTTPS over HTTP when same scanner is found via both
+          if (!existing || scanner.protocol === "https") {
+            scanners.set(dedupeKey, scanner);
+          }
+        };
+
         return new Promise<readonly DiscoveredScanner[]>((resolve) => {
+          let resolved = false;
+          let earlyFinishTimer: NodeJS.Timeout | null = null;
+          const EARLY_FINISH_DELAY = 1500; // Wait 1.5s after first scanner for more
+
+          const finishDiscovery = () => {
+            if (resolved) return;
+            resolved = true;
+            if (earlyFinishTimer) clearTimeout(earlyFinishTimer);
+            clearInterval(refreshInterval);
+            httpBrowser.stop();
+            httpsBrowser.stop();
+            bonjour.destroy();
+            resolve(Array.from(scanners.values()));
+          };
+
+          const scheduleEarlyFinish = () => {
+            // Once we find a scanner, wait a short time for more then return
+            if (!earlyFinishTimer && scanners.size > 0) {
+              earlyFinishTimer = setTimeout(finishDiscovery, EARLY_FINISH_DELAY);
+            }
+          };
+
           // Browse for HTTP scanners (_uscan._tcp)
           const httpBrowser = bonjour.find({ type: "uscan" });
           httpBrowser.on("up", (service: Service) => {
             const scanner = serviceToScanner(service, "http");
-            scanners.set(scanner.id, scanner);
+            addScanner(scanner);
+            scheduleEarlyFinish();
           });
 
           // Browse for HTTPS scanners (_uscans._tcp)
           const httpsBrowser = bonjour.find({ type: "uscans" });
           httpsBrowser.on("up", (service: Service) => {
             const scanner = serviceToScanner(service, "https");
-            scanners.set(scanner.id, scanner);
+            addScanner(scanner);
+            scheduleEarlyFinish();
           });
 
-          // Stop after timeout and return results
-          setTimeout(() => {
-            httpBrowser.stop();
-            httpsBrowser.stop();
-            bonjour.destroy();
-            resolve(Array.from(scanners.values()));
-          }, timeoutMs);
+          // Periodically refresh the mDNS query to improve reliability
+          // on wireless networks where packets may be lost
+          const refreshInterval = setInterval(() => {
+            try {
+              // The update() method sends a new mDNS query
+              httpBrowser.update();
+              httpsBrowser.update();
+            } catch {
+              // Ignore errors during refresh - browser might be stopped
+            }
+          }, 500); // Faster refresh for quicker discovery
+
+          // Maximum timeout - stop even if no scanners found
+          setTimeout(finishDiscovery, timeoutMs);
         });
       },
       catch: (error) =>

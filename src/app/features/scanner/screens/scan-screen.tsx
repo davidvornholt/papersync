@@ -4,7 +4,7 @@ import { AnimatePresence, motion } from "motion/react";
 import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useRef, useState } from "react";
-import { syncToVault } from "@/app/features/vault/actions";
+import { syncEntriesToVault } from "@/app/features/vault/actions";
 import {
   Button,
   Card,
@@ -17,9 +17,9 @@ import {
   useToast,
 } from "@/app/shared/components";
 import { useSettings } from "@/app/shared/hooks";
-import { discoverScanners, scanFromDevice } from "../actions";
+import { discoverScanners, getScannerCapabilities, scanFromDevice } from "../actions";
 import { type ExtractedEntry, useScan } from "../hooks";
-import type { ColorMode, DiscoveredScanner } from "../services";
+import type { ColorMode, DiscoveredScanner, InputSource, ScannerCapabilities } from "../services";
 
 // ============================================================================
 // Drag Drop Zone
@@ -190,42 +190,133 @@ const ImagePreview = ({
 );
 
 // ============================================================================
-// Extracted Entry Component
+// Extracted Entry Component (Editable)
 // ============================================================================
 
-type ExtractedEntryItemProps = {
+const DAYS_OF_WEEK = [
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+  "Sunday",
+] as const;
+
+type EditableEntryItemProps = {
   readonly entry: ExtractedEntry;
   readonly index: number;
+  readonly onUpdate: (id: string, updates: Partial<ExtractedEntry>) => void;
+  readonly onDelete: (id: string) => void;
 };
 
-const ExtractedEntryItem = ({
+const EditableEntryItem = ({
   entry,
   index,
-}: ExtractedEntryItemProps): React.ReactElement => (
-  <motion.div
-    initial={{ opacity: 0, x: -10 }}
-    animate={{ opacity: 1, x: 0 }}
-    transition={{ delay: index * 0.1 }}
-    className="p-4 bg-background rounded-lg border border-border hover:border-accent/30 transition-colors"
-  >
-    <div className="flex items-start justify-between gap-2">
-      <div className="flex-1">
-        <div className="flex items-center gap-2 mb-1">
-          <span className="text-xs font-medium px-2 py-0.5 rounded bg-accent/10 text-accent">
-            {entry.subject}
-          </span>
-          <span className="text-xs text-muted">{entry.day}</span>
-          {entry.isNew && (
-            <span className="text-xs font-medium px-2 py-0.5 rounded bg-green-500/10 text-green-600">
-              NEW
-            </span>
+  onUpdate,
+  onDelete,
+}: EditableEntryItemProps): React.ReactElement => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editContent, setEditContent] = useState(entry.content);
+
+  const handleSave = () => {
+    onUpdate(entry.id, { content: editContent });
+    setIsEditing(false);
+  };
+
+  const handleCancel = () => {
+    setEditContent(entry.content);
+    setIsEditing(false);
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: -10 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: -10 }}
+      transition={{ delay: index * 0.05 }}
+      className="p-4 bg-background rounded-lg border border-border hover:border-accent/30 transition-colors group"
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-2 flex-wrap">
+            <select
+              value={entry.day}
+              onChange={(e) => onUpdate(entry.id, { day: e.target.value })}
+              className="text-xs font-medium px-2 py-1 rounded bg-surface border border-border text-muted"
+            >
+              {DAYS_OF_WEEK.map((day) => (
+                <option key={day} value={day}>
+                  {day}
+                </option>
+              ))}
+            </select>
+            <input
+              type="text"
+              value={entry.subject}
+              onChange={(e) => onUpdate(entry.id, { subject: e.target.value })}
+              className="text-xs font-medium px-2 py-1 rounded bg-accent/10 text-accent border-0 min-w-0 w-24"
+              placeholder="Subject"
+            />
+            {entry.isNew && (
+              <span className="text-xs font-medium px-2 py-0.5 rounded bg-green-500/10 text-green-600">
+                NEW
+              </span>
+            )}
+          </div>
+          {isEditing ? (
+            <div className="space-y-2">
+              <textarea
+                value={editContent}
+                onChange={(e) => setEditContent(e.target.value)}
+                className="w-full text-sm text-foreground bg-surface border border-border rounded-lg p-2 resize-none"
+                rows={2}
+              />
+              <div className="flex gap-2">
+                <Button size="sm" onClick={handleSave}>
+                  Save
+                </Button>
+                <Button size="sm" variant="secondary" onClick={handleCancel}>
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <button
+              type="button"
+              className="text-sm text-foreground cursor-pointer hover:text-accent transition-colors text-left w-full"
+              onClick={() => setIsEditing(true)}
+              title="Click to edit"
+            >
+              {entry.content}
+            </button>
           )}
         </div>
-        <p className="text-sm text-foreground">{entry.content}</p>
+        <button
+          type="button"
+          onClick={() => onDelete(entry.id)}
+          className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg hover:bg-red-500/10 text-muted hover:text-red-500 transition-all"
+          title="Delete entry"
+        >
+          <svg
+            className="w-4 h-4"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <title>Delete</title>
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+            />
+          </svg>
+        </button>
       </div>
-    </div>
-  </motion.div>
-);
+    </motion.div>
+  );
+};
 
 // ============================================================================
 // Results Panel
@@ -240,18 +331,31 @@ type ResultsPanelState =
 
 type ResultsPanelProps = {
   readonly state: ResultsPanelState;
-  readonly entries: readonly ExtractedEntry[];
+  readonly entries: ExtractedEntry[];
   readonly confidence: number;
+  readonly modelUsed?: string;
   readonly _errorMessage?: string;
+  readonly onUpdateEntry: (
+    id: string,
+    updates: Partial<ExtractedEntry>,
+  ) => void;
+  readonly onDeleteEntry: (id: string) => void;
+  readonly onSync: () => void;
+  readonly isSyncing: boolean;
 };
 
 const ResultsPanel = ({
   state,
   entries,
   confidence,
+  modelUsed,
   _errorMessage,
+  onUpdateEntry,
+  onDeleteEntry,
+  onSync,
+  isSyncing,
 }: ResultsPanelProps): React.ReactElement => (
-  <Card elevated className="h-full">
+  <Card elevated className="h-full flex flex-col">
     <CardHeader>
       <div className="flex items-center gap-3">
         <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center text-accent">
@@ -274,11 +378,11 @@ const ResultsPanel = ({
           <h2 className="text-lg font-semibold font-display">
             Extraction Results
           </h2>
-          <p className="text-sm text-muted">Detected handwritten entries</p>
+          <p className="text-sm text-muted">Review and edit before syncing</p>
         </div>
       </div>
     </CardHeader>
-    <CardContent className="min-h-[400px]">
+    <CardContent className="flex-1 flex flex-col min-h-0">
       <AnimatePresence mode="wait">
         {state === "complete" && entries.length > 0 && (
           <motion.div
@@ -286,12 +390,12 @@ const ResultsPanel = ({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="space-y-4"
+            className="flex-1 flex flex-col min-h-0"
           >
             <motion.div
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="p-4 bg-accent/10 rounded-lg border border-accent/20"
+              className="p-4 bg-accent/10 rounded-lg border border-accent/20 mb-4"
             >
               <div className="flex items-center justify-between">
                 <div>
@@ -301,6 +405,7 @@ const ResultsPanel = ({
                   </p>
                   <p className="text-xs text-muted mt-0.5">
                     Confidence: {Math.round(confidence * 100)}%
+                    {modelUsed && ` · ${modelUsed}`}
                   </p>
                 </div>
                 <div className="w-12 h-12 rounded-full bg-accent/20 flex items-center justify-center">
@@ -311,15 +416,93 @@ const ResultsPanel = ({
               </div>
             </motion.div>
 
-            <div className="space-y-3 max-h-[300px] overflow-y-auto">
-              {entries.map((entry, index) => (
-                <ExtractedEntryItem
-                  key={entry.id}
-                  entry={entry}
-                  index={index}
-                />
-              ))}
+            <div className="flex-1 overflow-y-auto space-y-3 min-h-0 pr-1">
+              <AnimatePresence>
+                {entries.map((entry, index) => (
+                  <EditableEntryItem
+                    key={entry.id}
+                    entry={entry}
+                    index={index}
+                    onUpdate={onUpdateEntry}
+                    onDelete={onDeleteEntry}
+                  />
+                ))}
+              </AnimatePresence>
             </div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="pt-4 mt-4 border-t border-border"
+            >
+              <Button
+                onClick={onSync}
+                disabled={entries.length === 0 || isSyncing}
+                className="w-full"
+              >
+                {isSyncing ? (
+                  <>
+                    <Spinner size="sm" className="mr-2" />
+                    Syncing to Vault...
+                  </>
+                ) : (
+                  <>
+                    <svg
+                      className="w-4 h-4 mr-2"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <title>Sync</title>
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+                      />
+                    </svg>
+                    Sync to Vault
+                  </>
+                )}
+              </Button>
+              <p className="text-xs text-muted text-center mt-2">
+                Click to save entries to your Obsidian vault
+              </p>
+            </motion.div>
+          </motion.div>
+        )}
+
+        {state === "complete" && entries.length === 0 && (
+          <motion.div
+            key="empty"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="flex flex-col items-center justify-center flex-1 py-16 text-center"
+          >
+            <div className="w-16 h-16 rounded-full bg-yellow-500/10 flex items-center justify-center mb-4">
+              <svg
+                className="w-8 h-8 text-yellow-500"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <title>No entries</title>
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1.5}
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                />
+              </svg>
+            </div>
+            <p className="text-foreground font-medium">
+              No new entries detected
+            </p>
+            <p className="text-sm text-muted mt-1">
+              The scan may not contain handwritten content
+            </p>
           </motion.div>
         )}
 
@@ -329,7 +512,7 @@ const ResultsPanel = ({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="flex flex-col items-center justify-center h-full py-16"
+            className="flex flex-col items-center justify-center flex-1 py-16"
           >
             <div className="relative">
               <Spinner size="lg" />
@@ -352,7 +535,7 @@ const ResultsPanel = ({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="flex flex-col items-center justify-center h-full py-16 text-center"
+            className="flex flex-col items-center justify-center flex-1 py-16 text-center"
           >
             <div className="w-16 h-16 rounded-full bg-background flex items-center justify-center mb-4">
               <svg
@@ -399,13 +582,16 @@ const NetworkScannersPanel = ({
   const [selectedScanner, setSelectedScanner] =
     useState<DiscoveredScanner | null>(null);
   const [isScanning, setIsScanning] = useState(false);
+  const [isLoadingCapabilities, setIsLoadingCapabilities] = useState(false);
+  const [capabilities, setCapabilities] = useState<ScannerCapabilities | null>(null);
   const [resolution, setResolution] = useState<number>(300);
   const [colorMode, setColorMode] = useState<ColorMode>("color");
+  const [inputSource, setInputSource] = useState<InputSource>("Platen");
   const { addToast } = useToast();
 
   const handleDiscover = useCallback(async () => {
     setIsDiscovering(true);
-    const result = await discoverScanners(5000);
+    const result = await discoverScanners(10000);
     setIsDiscovering(false);
 
     if (result.success) {
@@ -420,6 +606,56 @@ const NetworkScannersPanel = ({
     }
   }, [addToast]);
 
+  const handleSelectScanner = useCallback(async (scanner: DiscoveredScanner) => {
+    setSelectedScanner(scanner);
+    setCapabilities(null);
+    setIsLoadingCapabilities(true);
+
+    const result = await getScannerCapabilities(scanner);
+    setIsLoadingCapabilities(false);
+
+    if (result.success) {
+      setCapabilities(result.capabilities);
+      // Set defaults from first available input source
+      const firstSource = result.capabilities.inputSources[0] || "Platen";
+      setInputSource(firstSource);
+      
+      // Set resolution from the first source's capabilities
+      const sourceCaps = result.capabilities.sourceCapabilities[firstSource];
+      if (sourceCaps.resolutions.length > 0) {
+        // Prefer 300 DPI if available, otherwise use first available
+        const preferredRes = sourceCaps.resolutions.includes(300)
+          ? 300
+          : sourceCaps.resolutions[0];
+        setResolution(preferredRes);
+      }
+      if (sourceCaps.colorModes.length > 0) {
+        setColorMode(sourceCaps.colorModes[0]);
+      }
+    } else {
+      addToast(`Failed to fetch capabilities: ${result.error}`, "error");
+    }
+  }, [addToast]);
+
+  // When input source changes, update resolution and color mode to valid values for the new source
+  const handleSourceChange = useCallback((newSource: InputSource) => {
+    setInputSource(newSource);
+    if (capabilities) {
+      const sourceCaps = capabilities.sourceCapabilities[newSource];
+      // Reset resolution to 300 if available, otherwise first option
+      if (sourceCaps.resolutions.length > 0) {
+        const newRes = sourceCaps.resolutions.includes(300)
+          ? 300
+          : sourceCaps.resolutions[0];
+        setResolution(newRes);
+      }
+      // Reset color mode to first available
+      if (sourceCaps.colorModes.length > 0) {
+        setColorMode(sourceCaps.colorModes[0]);
+      }
+    }
+  }, [capabilities]);
+
   const handleScan = useCallback(async () => {
     if (!selectedScanner) return;
 
@@ -428,6 +664,7 @@ const NetworkScannersPanel = ({
       colorMode,
       resolution,
       format: "jpeg",
+      inputSource,
     });
     setIsScanning(false);
 
@@ -437,7 +674,7 @@ const NetworkScannersPanel = ({
     } else {
       addToast(result.error, "error");
     }
-  }, [selectedScanner, colorMode, resolution, onScanComplete, addToast]);
+  }, [selectedScanner, colorMode, resolution, inputSource, onScanComplete, addToast]);
 
   return (
     <Card>
@@ -514,7 +751,7 @@ const NetworkScannersPanel = ({
                 <motion.button
                   key={scanner.id}
                   type="button"
-                  onClick={() => setSelectedScanner(scanner)}
+                  onClick={() => handleSelectScanner(scanner)}
                   whileHover={{ scale: 1.01 }}
                   whileTap={{ scale: 0.99 }}
                   className={`w-full p-3 rounded-lg border text-left transition-all ${
@@ -545,60 +782,105 @@ const NetworkScannersPanel = ({
                 animate={{ opacity: 1, height: "auto" }}
                 className="pt-4 border-t border-border space-y-3"
               >
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label
-                      htmlFor="resolution"
-                      className="text-sm text-muted block mb-1"
-                    >
-                      Resolution
-                    </label>
-                    <select
-                      id="resolution"
-                      value={resolution}
-                      onChange={(e) => setResolution(Number(e.target.value))}
-                      className="w-full px-3 py-2 rounded-lg border border-border bg-surface text-sm"
-                    >
-                      <option value={150}>150 DPI</option>
-                      <option value={300}>300 DPI</option>
-                      <option value={600}>600 DPI</option>
-                    </select>
+                {isLoadingCapabilities ? (
+                  <div className="flex items-center justify-center py-4">
+                    <Spinner size="sm" className="mr-2" />
+                    <span className="text-sm text-muted">Loading capabilities...</span>
                   </div>
-                  <div>
-                    <label
-                      htmlFor="colorMode"
-                      className="text-sm text-muted block mb-1"
+                ) : capabilities ? (
+                  <>
+                    <div className="grid grid-cols-2 gap-3">
+                      {/* Source selector (ADF/Glass) */}
+                      {capabilities.inputSources.length > 1 && (
+                        <div className="col-span-2">
+                          <label
+                            htmlFor="inputSource"
+                            className="text-sm text-muted block mb-1"
+                          >
+                            Scanner Source
+                          </label>
+                          <select
+                            id="inputSource"
+                            value={inputSource}
+                            onChange={(e) => handleSourceChange(e.target.value as InputSource)}
+                            className="w-full px-3 py-2 rounded-lg border border-border bg-surface text-sm"
+                          >
+                            {capabilities.inputSources.map((source) => (
+                              <option key={source} value={source}>
+                                {source === "Platen" ? "Flatbed Glass" : "Document Feeder (ADF)"}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
+                      {capabilities.inputSources.length === 1 && (
+                        <div className="col-span-2 text-sm text-muted">
+                          Source: {capabilities.inputSources[0] === "Platen" ? "Flatbed Glass" : "Document Feeder (ADF)"}
+                        </div>
+                      )}
+                      <div>
+                        <label
+                          htmlFor="resolution"
+                          className="text-sm text-muted block mb-1"
+                        >
+                          Resolution
+                        </label>
+                        <select
+                          id="resolution"
+                          value={resolution}
+                          onChange={(e) => setResolution(Number(e.target.value))}
+                          className="w-full px-3 py-2 rounded-lg border border-border bg-surface text-sm"
+                        >
+                          {capabilities.sourceCapabilities[inputSource].resolutions.map((res: number) => (
+                            <option key={res} value={res}>
+                              {res} DPI
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label
+                          htmlFor="colorMode"
+                          className="text-sm text-muted block mb-1"
+                        >
+                          Color Mode
+                        </label>
+                        <select
+                          id="colorMode"
+                          value={colorMode}
+                          onChange={(e) =>
+                            setColorMode(e.target.value as ColorMode)
+                          }
+                          className="w-full px-3 py-2 rounded-lg border border-border bg-surface text-sm"
+                        >
+                          {capabilities.sourceCapabilities[inputSource].colorModes.map((mode: ColorMode) => (
+                            <option key={mode} value={mode}>
+                              {mode === "color" ? "Color" : mode === "grayscale" ? "Grayscale" : "Black & White"}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                    <Button
+                      variant="primary"
+                      onClick={handleScan}
+                      disabled={isScanning || isDisabled}
+                      className="w-full"
                     >
-                      Color Mode
-                    </label>
-                    <select
-                      id="colorMode"
-                      value={colorMode}
-                      onChange={(e) =>
-                        setColorMode(e.target.value as ColorMode)
-                      }
-                      className="w-full px-3 py-2 rounded-lg border border-border bg-surface text-sm"
-                    >
-                      <option value="color">Color</option>
-                      <option value="grayscale">Grayscale</option>
-                      <option value="blackwhite">Black & White</option>
-                    </select>
-                  </div>
-                </div>
-                <Button
-                  variant="primary"
-                  onClick={handleScan}
-                  disabled={isScanning || isDisabled}
-                  className="w-full"
-                >
-                  {isScanning ? (
-                    <>
-                      <Spinner size="sm" className="mr-2" /> Scanning...
-                    </>
-                  ) : (
-                    "Scan Document"
-                  )}
-                </Button>
+                      {isScanning ? (
+                        <>
+                          <Spinner size="sm" className="mr-2" /> Scanning...
+                        </>
+                      ) : (
+                        "Scan Document"
+                      )}
+                    </Button>
+                  </>
+                ) : (
+                  <p className="text-sm text-muted text-center py-2">
+                    Failed to load scanner capabilities
+                  </p>
+                )}
               </motion.div>
             )}
           </div>
@@ -620,9 +902,16 @@ export const ScanScreen = (): React.ReactElement => {
       googleApiKey: settings.ai.googleApiKey,
       ollamaEndpoint: settings.ai.ollamaEndpoint,
     },
+    vaultSettings: {
+      method: settings.vault.method,
+      localPath: settings.vault.localPath,
+      githubToken: settings.vault.githubToken,
+      githubRepo: settings.vault.githubRepo,
+    },
   });
   const [isDragging, setIsDragging] = useState(false);
-  const [, setIsSyncing] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [editedEntries, setEditedEntries] = useState<ExtractedEntry[]>([]);
   const { addToast } = useToast();
 
   // Map scan state to panel state
@@ -642,6 +931,7 @@ export const ScanScreen = (): React.ReactElement => {
   };
 
   const handleFileSelect = async (file: File): Promise<void> => {
+    // Don't clear entries - allow accumulating from multiple scans
     await scan.upload(file);
     addToast("Image uploaded successfully", "success");
   };
@@ -650,40 +940,99 @@ export const ScanScreen = (): React.ReactElement => {
     const scanResult = await scan.process();
     if (scanResult.status === "complete") {
       const count = scanResult.entries.length;
-      addToast(`Extracted ${count} entries`, "success");
-
-      // Auto Sync
-      const vaultPath = settings.vault.localPath;
-      if (vaultPath) {
-        setIsSyncing(true);
-        try {
-          const result = await syncToVault(scanResult.entries, vaultPath);
-
-          if (result.success) {
-            addToast("Synced to vault successfully! 🎉", "success");
-          } else {
-            addToast(`Sync failed: ${result.error}`, "error");
-          }
-        } catch (error) {
-          addToast(
-            `Sync error: ${error instanceof Error ? error.message : "Unknown error"}`,
-            "error",
+      if (count > 0) {
+        // Append new entries to existing ones (accumulate across multiple scans)
+        setEditedEntries((prev) => {
+          // Deduplicate by content to avoid adding the same entry twice
+          const newEntries = scanResult.entries.filter(
+            (newEntry) => !prev.some((existing) => existing.content === newEntry.content),
           );
-        } finally {
-          setIsSyncing(false);
-        }
-      } else {
+          return [...prev, ...newEntries];
+        });
         addToast(
-          "Configure vault path in Settings to enable auto-sync",
-          "info",
+          `Extracted ${count} new entries - scan more pages or sync to vault`,
+          "success",
         );
+      } else {
+        addToast("No new entries found in scan", "info");
       }
     } else if (scanResult.status === "error") {
       addToast("Failed to process scan", "error");
     }
   };
 
+  const handleUpdateEntry = useCallback(
+    (id: string, updates: Partial<ExtractedEntry>) => {
+      setEditedEntries((prev) =>
+        prev.map((entry) =>
+          entry.id === id ? { ...entry, ...updates } : entry,
+        ),
+      );
+    },
+    [],
+  );
+
+  const handleDeleteEntry = useCallback(
+    (id: string) => {
+      setEditedEntries((prev) => prev.filter((entry) => entry.id !== id));
+      addToast("Entry removed", "info");
+    },
+    [addToast],
+  );
+
+  const handleSync = async (): Promise<void> => {
+    // Check vault configuration based on method
+    const { method, localPath, githubConnected, githubToken, githubRepo } =
+      settings.vault;
+
+    if (method === "local") {
+      if (!localPath) {
+        addToast("Configure vault path in Settings first", "error");
+        return;
+      }
+    } else if (method === "github") {
+      if (!githubConnected || !githubToken || !githubRepo) {
+        addToast(
+          "Connect GitHub and select a repository in Settings first",
+          "error",
+        );
+        return;
+      }
+    }
+
+    if (editedEntries.length === 0) {
+      addToast("No entries to sync", "info");
+      return;
+    }
+
+    setIsSyncing(true);
+    try {
+      const result = await syncEntriesToVault(editedEntries, {
+        method,
+        localPath,
+        githubToken,
+        githubRepo,
+      });
+
+      if (result.success) {
+        addToast("Synced to vault successfully! 🎉", "success");
+        setEditedEntries([]); // Clear after successful sync
+        scan.clear();
+      } else {
+        addToast(`Sync failed: ${result.error}`, "error");
+      }
+    } catch (error) {
+      addToast(
+        `Sync error: ${error instanceof Error ? error.message : "Unknown error"}`,
+        "error",
+      );
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
   const handleClear = (): void => {
+    setEditedEntries([]);
     scan.clear();
   };
 
@@ -821,18 +1170,26 @@ export const ScanScreen = (): React.ReactElement => {
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.2 }}
+            className="h-full"
           >
             <ResultsPanel
               state={getPanelState()}
-              entries={
-                scan.state.status === "complete" ? scan.state.entries : []
-              }
+              entries={editedEntries}
               confidence={
                 scan.state.status === "complete" ? scan.state.confidence : 0
+              }
+              modelUsed={
+                scan.state.status === "complete"
+                  ? scan.state.modelUsed
+                  : undefined
               }
               _errorMessage={
                 scan.state.status === "error" ? scan.state.error : undefined
               }
+              onUpdateEntry={handleUpdateEntry}
+              onDeleteEntry={handleDeleteEntry}
+              onSync={handleSync}
+              isSyncing={isSyncing}
             />
           </motion.div>
         </div>
