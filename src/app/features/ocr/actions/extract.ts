@@ -1,14 +1,12 @@
 "use server";
 
 import { Effect } from "effect";
-import type { OCRResponse, WeekId } from "@/app/shared/types";
-import {
-  getWeeklyNotePath,
-} from "@/app/features/vault/services/config";
+import { getWeeklyNotePath } from "@/app/features/vault/services/config";
 import {
   makeLocalVaultLayer,
   VaultService,
 } from "@/app/features/vault/services/filesystem";
+import type { OCRResponse, WeekId } from "@/app/shared/types";
 import {
   makeGoogleVisionLayer,
   makeOllamaVisionLayer,

@@ -1,5 +1,5 @@
-import { Agent } from "undici";
 import { Context, Data, Effect, Layer } from "effect";
+import { Agent } from "undici";
 import type { DiscoveredScanner } from "./scanner-discovery";
 
 // ============================================================================
@@ -36,7 +36,9 @@ export type SourceCapabilities = {
 
 export type ScannerCapabilities = {
   readonly inputSources: readonly InputSource[];
-  readonly sourceCapabilities: Readonly<Record<InputSource, SourceCapabilities>>;
+  readonly sourceCapabilities: Readonly<
+    Record<InputSource, SourceCapabilities>
+  >;
   readonly formats: readonly string[];
   readonly maxWidth: number;
   readonly maxHeight: number;
@@ -109,7 +111,10 @@ const parseXmlValues = (xml: string, tag: string): string[] => {
 const parseCapabilitiesXml = (xml: string): ScannerCapabilities => {
   // Helper to extract a section from XML
   const extractSection = (sectionName: string): string | null => {
-    const regex = new RegExp(`<scan:${sectionName}[^>]*>([\\s\\S]*?)</scan:${sectionName}>`, "i");
+    const regex = new RegExp(
+      `<scan:${sectionName}[^>]*>([\\s\\S]*?)</scan:${sectionName}>`,
+      "i",
+    );
     const match = xml.match(regex);
     return match ? match[0] : null;
   };
@@ -117,22 +122,28 @@ const parseCapabilitiesXml = (xml: string): ScannerCapabilities => {
   // Helper to parse resolutions from a section
   const parseResolutions = (section: string): number[] => {
     const resolutions: number[] = [];
-    const resMatches = section.match(/<scan:XResolution>(\d+)<\/scan:XResolution>/gi) || [];
+    const resMatches =
+      section.match(/<scan:XResolution>(\d+)<\/scan:XResolution>/gi) || [];
     for (const match of resMatches) {
       const value = parseInt(match.replace(/<\/?[^>]+>/g, ""), 10);
       if (!Number.isNaN(value) && !resolutions.includes(value)) {
         resolutions.push(value);
       }
     }
-    return resolutions.length > 0 ? resolutions.sort((a, b) => a - b) : [75, 150, 300, 600];
+    return resolutions.length > 0
+      ? resolutions.sort((a, b) => a - b)
+      : [75, 150, 300, 600];
   };
 
   // Helper to parse color modes from a section
   const parseColorModes = (section: string): ColorMode[] => {
     const colorModes: ColorMode[] = [];
-    if (section.includes("RGB24") || section.includes("Color")) colorModes.push("color");
-    if (section.includes("Grayscale8") || section.includes("Grayscale")) colorModes.push("grayscale");
-    if (section.includes("BlackAndWhite1") || section.includes("Binary")) colorModes.push("blackwhite");
+    if (section.includes("RGB24") || section.includes("Color"))
+      colorModes.push("color");
+    if (section.includes("Grayscale8") || section.includes("Grayscale"))
+      colorModes.push("grayscale");
+    if (section.includes("BlackAndWhite1") || section.includes("Binary"))
+      colorModes.push("blackwhite");
     return colorModes.length > 0 ? colorModes : ["color", "grayscale"];
   };
 
@@ -176,7 +187,10 @@ const parseCapabilitiesXml = (xml: string): ScannerCapabilities => {
 
   // Parse dimensions (in 1/300 inch units typically)
   const maxWidth = parseInt(parseXmlValue(xml, "scan:MaxWidth") || "2550", 10);
-  const maxHeight = parseInt(parseXmlValue(xml, "scan:MaxHeight") || "3300", 10);
+  const maxHeight = parseInt(
+    parseXmlValue(xml, "scan:MaxHeight") || "3300",
+    10,
+  );
   const minWidth = parseInt(parseXmlValue(xml, "scan:MinWidth") || "16", 10);
   const minHeight = parseInt(parseXmlValue(xml, "scan:MinHeight") || "16", 10);
 
@@ -250,13 +264,16 @@ const createESCLClient = (): ESCLClient => ({
           method: "GET",
           headers: { Accept: "text/xml, application/xml" },
         };
-        
+
         // For HTTPS, we need to bypass certificate validation for self-signed certs
         if (scanner.protocol === "https") {
           fetchOptions.dispatcher = insecureAgent;
         }
-        
-        const response = await fetch(`${baseUrl}/eSCL/ScannerCapabilities`, fetchOptions);
+
+        const response = await fetch(
+          `${baseUrl}/eSCL/ScannerCapabilities`,
+          fetchOptions,
+        );
 
         if (!response.ok) {
           throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -285,7 +302,7 @@ const createESCLClient = (): ESCLClient => ({
           },
           body: requestXml,
         };
-        
+
         // For HTTPS, bypass certificate validation for self-signed certs
         if (scanner.protocol === "https") {
           fetchOptions.dispatcher = insecureAgent;
@@ -328,7 +345,7 @@ const createESCLClient = (): ESCLClient => ({
         const fetchOptions: RequestInit & { dispatcher?: unknown } = {
           method: "GET",
         };
-        
+
         if (jobUrl.startsWith("https://")) {
           fetchOptions.dispatcher = insecureAgent;
         }

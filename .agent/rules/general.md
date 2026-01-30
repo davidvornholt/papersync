@@ -1,5 +1,5 @@
 ---
-applyTo: '**'
+trigger: always_on
 ---
 
 # General Programming Instructions
@@ -10,6 +10,7 @@ applyTo: '**'
 - Adhere to Clean Code principles where possible.
 - Follow common coding conventions.
 - Prefer declarative over imperative code.
+- Think deeply and always analyze the codebase thoroughly before answering.
 
 ## Function and Module Design
 

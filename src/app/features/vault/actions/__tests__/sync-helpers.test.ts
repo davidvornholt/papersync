@@ -187,7 +187,7 @@ describe("Sync Helper Functions", () => {
       expect(mathEntry?.tasks).toHaveLength(2);
     });
 
-    it("should handle general tasks (no subject)", () => {
+    it("should handle general tasks at week level (no subject)", () => {
       const entries: ExtractedEntry[] = [
         {
           id: "1",
@@ -206,9 +206,32 @@ describe("Sync Helper Functions", () => {
         null,
       );
 
-      const mondayDay = result.days.find((d) => d.dayName === "Monday");
-      expect(mondayDay?.generalTasks).toHaveLength(1);
-      expect(mondayDay?.generalTasks[0].content).toBe("General task");
+      // General tasks are now at week level, not day level
+      expect(result.generalTasks).toHaveLength(1);
+      expect(result.generalTasks[0].content).toBe("General task");
+    });
+
+    it("should handle general tasks with 'General Tasks' subject", () => {
+      const entries: ExtractedEntry[] = [
+        {
+          id: "1",
+          day: "Tuesday",
+          subject: "General Tasks",
+          content: "Buy supplies",
+          isTask: true,
+          isCompleted: false,
+          isNew: true,
+        },
+      ];
+
+      const result = convertEntriesToWeeklyNote(
+        entries,
+        "2026-W05" as WeekId,
+        null,
+      );
+
+      expect(result.generalTasks).toHaveLength(1);
+      expect(result.generalTasks[0].content).toBe("Buy supplies");
     });
 
     it("should merge with existing note and deduplicate tasks", () => {
@@ -250,9 +273,9 @@ describe("Sync Helper Functions", () => {
                 tasks: [{ content: "Existing task", isCompleted: true }],
               },
             ],
-            generalTasks: [],
           },
         ],
+        generalTasks: [],
       };
 
       const result = convertEntriesToWeeklyNote(
@@ -269,5 +292,120 @@ describe("Sync Helper Functions", () => {
       expect(mathEntry?.tasks[0].content).toBe("Existing task");
       expect(mathEntry?.tasks[1].content).toBe("New task");
     });
+
+    it("should merge week-level general tasks", () => {
+      const entries: ExtractedEntry[] = [
+        {
+          id: "1",
+          day: "Monday",
+          subject: "",
+          content: "Existing general task", // Duplicate
+          isTask: true,
+          isCompleted: false,
+          isNew: true,
+        },
+        {
+          id: "2",
+          day: "Monday",
+          subject: "",
+          content: "New general task",
+          isTask: true,
+          isCompleted: false,
+          isNew: true,
+        },
+      ];
+
+      const existingNote: WeeklyNote = {
+        week: "2026-W05" as WeekId,
+        dateRange: {
+          start: "2026-01-26" as ISODate,
+          end: "2026-02-01" as ISODate,
+        },
+        syncedAt: "2026-01-27T10:00:00Z" as WeeklyNote["syncedAt"],
+        days: [],
+        generalTasks: [{ content: "Existing general task", isCompleted: true }],
+      };
+
+      const result = convertEntriesToWeeklyNote(
+        entries,
+        "2026-W05" as WeekId,
+        existingNote,
+      );
+
+      // Should have 2 general tasks: existing + new (duplicate not added again)
+      expect(result.generalTasks).toHaveLength(2);
+      expect(result.generalTasks[0].content).toBe("Existing general task");
+      expect(result.generalTasks[0].isCompleted).toBe(true); // Preserves existing state
+      expect(result.generalTasks[1].content).toBe("New general task");
+    });
   });
 });
+
+  describe("BUG: preserving days not in new entries", () => {
+    it("should preserve Monday when new entries only contain Tuesday", () => {
+      // Scenario: 
+      // 1. First sync creates Monday homework
+      // 2. Second sync has only Tuesday entries (AI filtered out Monday as duplicates)
+      // 3. Monday should still be preserved
+      
+      const tuesdayOnlyEntries: ExtractedEntry[] = [
+        {
+          id: "1",
+          day: "Tuesday",
+          subject: "Physics",
+          content: "Do physics homework",
+          isTask: true,
+          isCompleted: false,
+          isNew: true,
+        },
+      ];
+
+      const existingNoteWithMonday: WeeklyNote = {
+        week: "2026-W05" as WeekId,
+        dateRange: {
+          start: "2026-01-26" as ISODate,
+          end: "2026-02-01" as ISODate,
+        },
+        syncedAt: "2026-01-27T10:00:00Z" as WeeklyNote["syncedAt"],
+        days: [
+          {
+            date: "2026-01-26" as ISODate,
+            dayName: "Monday",
+            entries: [
+              {
+                subject: "Math",
+                tasks: [{ content: "Math homework page 42", isCompleted: false }],
+              },
+            ],
+          },
+        ],
+        generalTasks: [],
+      };
+
+      const result = convertEntriesToWeeklyNote(
+        tuesdayOnlyEntries,
+        "2026-W05" as WeekId,
+        existingNoteWithMonday,
+      );
+
+      // Both days should exist
+      console.log("Result days:", JSON.stringify(result.days, null, 2));
+      
+      expect(result.days).toHaveLength(2);
+      
+      const mondayDay = result.days.find((d) => d.dayName === "Monday");
+      const tuesdayDay = result.days.find((d) => d.dayName === "Tuesday");
+      
+      expect(mondayDay).toBeDefined();
+      expect(tuesdayDay).toBeDefined();
+      
+      // Monday homework should be preserved
+      expect(mondayDay?.entries).toHaveLength(1);
+      expect(mondayDay?.entries[0].subject).toBe("Math");
+      expect(mondayDay?.entries[0].tasks[0].content).toBe("Math homework page 42");
+      
+      // Tuesday homework should be added
+      expect(tuesdayDay?.entries).toHaveLength(1);
+      expect(tuesdayDay?.entries[0].subject).toBe("Physics");
+    });
+  });

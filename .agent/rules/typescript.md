@@ -1,5 +1,5 @@
 ---
-applyTo: "**/*.ts,**/*.tsx"
+trigger: always_on
 ---
 
 # TypeScript Instructions
@@ -8,7 +8,9 @@ applyTo: "**/*.ts,**/*.tsx"
 
 - Explicitly annotate the return type of all functions.
 - Use kebab-case for file and folder names.
-- Use ESLint/Prettier conventions for formatting.
+- Use Biome conventions for formatting.
+- Always use Bun.
+- Always use Effect TS to ensure robustness.
 
 ## Functional Style
 

@@ -17,9 +17,18 @@ import {
   useToast,
 } from "@/app/shared/components";
 import { useSettings } from "@/app/shared/hooks";
-import { discoverScanners, getScannerCapabilities, scanFromDevice } from "../actions";
+import {
+  discoverScanners,
+  getScannerCapabilities,
+  scanFromDevice,
+} from "../actions";
 import { type ExtractedEntry, useScan } from "../hooks";
-import type { ColorMode, DiscoveredScanner, InputSource, ScannerCapabilities } from "../services";
+import type {
+  ColorMode,
+  DiscoveredScanner,
+  InputSource,
+  ScannerCapabilities,
+} from "../services";
 
 // ============================================================================
 // Drag Drop Zone
@@ -240,17 +249,19 @@ const EditableEntryItem = ({
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-2 flex-wrap">
-            <select
-              value={entry.day}
-              onChange={(e) => onUpdate(entry.id, { day: e.target.value })}
-              className="text-xs font-medium px-2 py-1 rounded bg-surface border border-border text-muted"
-            >
-              {DAYS_OF_WEEK.map((day) => (
-                <option key={day} value={day}>
-                  {day}
-                </option>
-              ))}
-            </select>
+            {entry.subject !== "General Tasks" && (
+              <select
+                value={entry.day}
+                onChange={(e) => onUpdate(entry.id, { day: e.target.value })}
+                className="text-xs font-medium px-2 py-1 rounded bg-surface border border-border text-muted"
+              >
+                {DAYS_OF_WEEK.map((day) => (
+                  <option key={day} value={day}>
+                    {day}
+                  </option>
+                ))}
+              </select>
+            )}
             <input
               type="text"
               value={entry.subject}
@@ -583,7 +594,9 @@ const NetworkScannersPanel = ({
     useState<DiscoveredScanner | null>(null);
   const [isScanning, setIsScanning] = useState(false);
   const [isLoadingCapabilities, setIsLoadingCapabilities] = useState(false);
-  const [capabilities, setCapabilities] = useState<ScannerCapabilities | null>(null);
+  const [capabilities, setCapabilities] = useState<ScannerCapabilities | null>(
+    null,
+  );
   const [resolution, setResolution] = useState<number>(300);
   const [colorMode, setColorMode] = useState<ColorMode>("color");
   const [inputSource, setInputSource] = useState<InputSource>("Platen");
@@ -606,55 +619,61 @@ const NetworkScannersPanel = ({
     }
   }, [addToast]);
 
-  const handleSelectScanner = useCallback(async (scanner: DiscoveredScanner) => {
-    setSelectedScanner(scanner);
-    setCapabilities(null);
-    setIsLoadingCapabilities(true);
+  const handleSelectScanner = useCallback(
+    async (scanner: DiscoveredScanner) => {
+      setSelectedScanner(scanner);
+      setCapabilities(null);
+      setIsLoadingCapabilities(true);
 
-    const result = await getScannerCapabilities(scanner);
-    setIsLoadingCapabilities(false);
+      const result = await getScannerCapabilities(scanner);
+      setIsLoadingCapabilities(false);
 
-    if (result.success) {
-      setCapabilities(result.capabilities);
-      // Set defaults from first available input source
-      const firstSource = result.capabilities.inputSources[0] || "Platen";
-      setInputSource(firstSource);
-      
-      // Set resolution from the first source's capabilities
-      const sourceCaps = result.capabilities.sourceCapabilities[firstSource];
-      if (sourceCaps.resolutions.length > 0) {
-        // Prefer 300 DPI if available, otherwise use first available
-        const preferredRes = sourceCaps.resolutions.includes(300)
-          ? 300
-          : sourceCaps.resolutions[0];
-        setResolution(preferredRes);
+      if (result.success) {
+        setCapabilities(result.capabilities);
+        // Set defaults from first available input source
+        const firstSource = result.capabilities.inputSources[0] || "Platen";
+        setInputSource(firstSource);
+
+        // Set resolution from the first source's capabilities
+        const sourceCaps = result.capabilities.sourceCapabilities[firstSource];
+        if (sourceCaps.resolutions.length > 0) {
+          // Prefer 300 DPI if available, otherwise use first available
+          const preferredRes = sourceCaps.resolutions.includes(300)
+            ? 300
+            : sourceCaps.resolutions[0];
+          setResolution(preferredRes);
+        }
+        if (sourceCaps.colorModes.length > 0) {
+          setColorMode(sourceCaps.colorModes[0]);
+        }
+      } else {
+        addToast(`Failed to fetch capabilities: ${result.error}`, "error");
       }
-      if (sourceCaps.colorModes.length > 0) {
-        setColorMode(sourceCaps.colorModes[0]);
-      }
-    } else {
-      addToast(`Failed to fetch capabilities: ${result.error}`, "error");
-    }
-  }, [addToast]);
+    },
+    [addToast],
+  );
 
   // When input source changes, update resolution and color mode to valid values for the new source
-  const handleSourceChange = useCallback((newSource: InputSource) => {
-    setInputSource(newSource);
-    if (capabilities) {
-      const sourceCaps = capabilities.sourceCapabilities[newSource];
-      // Reset resolution to 300 if available, otherwise first option
-      if (sourceCaps.resolutions.length > 0) {
-        const newRes = sourceCaps.resolutions.includes(300)
-          ? 300
-          : sourceCaps.resolutions[0];
-        setResolution(newRes);
+  const handleSourceChange = useCallback(
+    (newSource: InputSource) => {
+      setInputSource(newSource);
+      if (capabilities) {
+        const sourceCaps = capabilities.sourceCapabilities[newSource];
+        // Reset resolution to 300 if available, otherwise first option
+        if (sourceCaps.resolutions.length > 0) {
+          const newRes = sourceCaps.resolutions.includes(300)
+            ? 300
+            : sourceCaps.resolutions[0];
+          setResolution(newRes);
+        }
+        // Reset color mode to first available
+        if (sourceCaps.colorModes.length > 0) {
+          setColorMode(sourceCaps.colorModes[0]);
+        }
       }
-      // Reset color mode to first available
-      if (sourceCaps.colorModes.length > 0) {
-        setColorMode(sourceCaps.colorModes[0]);
-      }
-    }
-  }, [capabilities]);
+    },
+    [capabilities],
+  );
 
   const handleScan = useCallback(async () => {
     if (!selectedScanner) return;
@@ -674,7 +693,14 @@ const NetworkScannersPanel = ({
     } else {
       addToast(result.error, "error");
     }
-  }, [selectedScanner, colorMode, resolution, inputSource, onScanComplete, addToast]);
+  }, [
+    selectedScanner,
+    colorMode,
+    resolution,
+    inputSource,
+    onScanComplete,
+    addToast,
+  ]);
 
   return (
     <Card>
@@ -785,7 +811,9 @@ const NetworkScannersPanel = ({
                 {isLoadingCapabilities ? (
                   <div className="flex items-center justify-center py-4">
                     <Spinner size="sm" className="mr-2" />
-                    <span className="text-sm text-muted">Loading capabilities...</span>
+                    <span className="text-sm text-muted">
+                      Loading capabilities...
+                    </span>
                   </div>
                 ) : capabilities ? (
                   <>
@@ -802,12 +830,16 @@ const NetworkScannersPanel = ({
                           <select
                             id="inputSource"
                             value={inputSource}
-                            onChange={(e) => handleSourceChange(e.target.value as InputSource)}
+                            onChange={(e) =>
+                              handleSourceChange(e.target.value as InputSource)
+                            }
                             className="w-full px-3 py-2 rounded-lg border border-border bg-surface text-sm"
                           >
                             {capabilities.inputSources.map((source) => (
                               <option key={source} value={source}>
-                                {source === "Platen" ? "Flatbed Glass" : "Document Feeder (ADF)"}
+                                {source === "Platen"
+                                  ? "Flatbed Glass"
+                                  : "Document Feeder (ADF)"}
                               </option>
                             ))}
                           </select>
@@ -815,7 +847,10 @@ const NetworkScannersPanel = ({
                       )}
                       {capabilities.inputSources.length === 1 && (
                         <div className="col-span-2 text-sm text-muted">
-                          Source: {capabilities.inputSources[0] === "Platen" ? "Flatbed Glass" : "Document Feeder (ADF)"}
+                          Source:{" "}
+                          {capabilities.inputSources[0] === "Platen"
+                            ? "Flatbed Glass"
+                            : "Document Feeder (ADF)"}
                         </div>
                       )}
                       <div>
@@ -828,10 +863,14 @@ const NetworkScannersPanel = ({
                         <select
                           id="resolution"
                           value={resolution}
-                          onChange={(e) => setResolution(Number(e.target.value))}
+                          onChange={(e) =>
+                            setResolution(Number(e.target.value))
+                          }
                           className="w-full px-3 py-2 rounded-lg border border-border bg-surface text-sm"
                         >
-                          {capabilities.sourceCapabilities[inputSource].resolutions.map((res: number) => (
+                          {capabilities.sourceCapabilities[
+                            inputSource
+                          ].resolutions.map((res: number) => (
                             <option key={res} value={res}>
                               {res} DPI
                             </option>
@@ -853,9 +892,15 @@ const NetworkScannersPanel = ({
                           }
                           className="w-full px-3 py-2 rounded-lg border border-border bg-surface text-sm"
                         >
-                          {capabilities.sourceCapabilities[inputSource].colorModes.map((mode: ColorMode) => (
+                          {capabilities.sourceCapabilities[
+                            inputSource
+                          ].colorModes.map((mode: ColorMode) => (
                             <option key={mode} value={mode}>
-                              {mode === "color" ? "Color" : mode === "grayscale" ? "Grayscale" : "Black & White"}
+                              {mode === "color"
+                                ? "Color"
+                                : mode === "grayscale"
+                                  ? "Grayscale"
+                                  : "Black & White"}
                             </option>
                           ))}
                         </select>
@@ -945,7 +990,8 @@ export const ScanScreen = (): React.ReactElement => {
         setEditedEntries((prev) => {
           // Deduplicate by content to avoid adding the same entry twice
           const newEntries = scanResult.entries.filter(
-            (newEntry) => !prev.some((existing) => existing.content === newEntry.content),
+            (newEntry) =>
+              !prev.some((existing) => existing.content === newEntry.content),
           );
           return [...prev, ...newEntries];
         });
@@ -957,7 +1003,7 @@ export const ScanScreen = (): React.ReactElement => {
         addToast("No new entries found in scan", "info");
       }
     } else if (scanResult.status === "error") {
-      addToast("Failed to process scan", "error");
+      addToast(`Failed to process scan: ${scanResult.error}`, "error");
     }
   };
 

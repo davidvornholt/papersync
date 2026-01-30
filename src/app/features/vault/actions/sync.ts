@@ -3,12 +3,14 @@
 import { Effect } from "effect";
 import type { WeekId } from "@/app/shared/types";
 import {
+  generateOverviewContent,
+  getOverviewPath,
   getWeeklyNotePath,
   readWeeklyNote,
   serializeWeeklyNoteToMarkdown,
   writeWeeklyNote,
 } from "../services/config";
-import { makeLocalVaultLayer } from "../services/filesystem";
+import { makeLocalVaultLayer, VaultService } from "../services/filesystem";
 import { GitHubService, GitHubServiceLive } from "../services/github";
 import {
   convertEntriesToWeeklyNote,
@@ -72,6 +74,14 @@ export async function syncToVault(
     // Write the updated note
     yield* writeWeeklyNote(weeklyNote);
 
+    // Create Overview.md if it doesn't exist
+    const vault = yield* VaultService;
+    const overviewPath = getOverviewPath();
+    const overviewExists = yield* vault.fileExists(overviewPath);
+    if (!overviewExists) {
+      yield* vault.writeFile(overviewPath, generateOverviewContent());
+    }
+
     return getWeeklyNotePath(effectiveWeekId);
   }).pipe(
     Effect.provide(makeLocalVaultLayer(vaultPath)),
@@ -88,57 +98,70 @@ export async function syncToVault(
 // GitHub Sync
 // ============================================================================
 
-async function getFileSha(
-  token: string,
-  owner: string,
-  repo: string,
-  filePath: string,
-): Promise<string | undefined> {
-  try {
-    const response = await fetch(
-      `https://api.github.com/repos/${owner}/${repo}/contents/${filePath}`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: "application/vnd.github.v3+json",
-        },
-      },
-    );
-    if (response.ok) {
-      const data = await response.json();
-      return data.sha;
-    }
-    return undefined;
-  } catch {
-    return undefined;
-  }
-}
 
-async function getFileContent(
+
+type GitHubFileResult =
+  | { readonly status: "found"; readonly content: string; readonly sha: string }
+  | { readonly status: "not_found" }
+  | { readonly status: "error"; readonly message: string };
+
+/**
+ * Safely fetch a file from GitHub, distinguishing between:
+ * - File exists → returns content and SHA
+ * - File doesn't exist (404) → returns not_found (OK for new files)
+ * - Error occurred → returns error message (should fail sync to prevent data loss)
+ */
+async function fetchGitHubFile(
   token: string,
   owner: string,
   repo: string,
   filePath: string,
-): Promise<string | null> {
+): Promise<GitHubFileResult> {
+  const url = `https://api.github.com/repos/${owner}/${repo}/contents/${filePath}`;
+  console.log(`[fetchGitHubFile] Fetching: ${url}`);
+
   try {
-    const response = await fetch(
-      `https://api.github.com/repos/${owner}/${repo}/contents/${filePath}`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: "application/vnd.github.v3+json",
-        },
+    const response = await fetch(url, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: "application/vnd.github.v3+json",
       },
-    );
-    if (response.ok) {
-      const data = await response.json();
-      if (data.content) {
-        return Buffer.from(data.content, "base64").toString("utf-8");
-      }
+    });
+
+    console.log(`[fetchGitHubFile] Response status: ${response.status} ${response.statusText}`);
+
+    if (response.status === 404) {
+      console.log("[fetchGitHubFile] File not found (404) - this is OK for new vaults");
+      return { status: "not_found" };
     }
-    return null;
-  } catch {
-    return null;
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`[fetchGitHubFile] API error: ${response.status} - ${errorText}`);
+      return {
+        status: "error",
+        message: `GitHub API error: ${response.status} ${response.statusText}`,
+      };
+    }
+
+    const data = await response.json();
+    if (data.content && data.sha) {
+      console.log(`[fetchGitHubFile] File found, content length: ${data.content.length}, SHA: ${data.sha}`);
+      return {
+        status: "found",
+        content: Buffer.from(data.content, "base64").toString("utf-8"),
+        sha: data.sha,
+      };
+    }
+
+    console.error("[fetchGitHubFile] Invalid response - missing content or sha");
+    return { status: "error", message: "Invalid response from GitHub API" };
+  } catch (error) {
+    console.error("[fetchGitHubFile] Network/fetch error:", error);
+    return {
+      status: "error",
+      message: error instanceof Error ? error.message : "Network error",
+    };
   }
 }
 
@@ -150,25 +173,37 @@ async function syncToGitHub(
 ): Promise<SyncResult> {
   const effectiveWeekId = weekId ?? getCurrentWeekId();
   const [owner, repo] = repoFullName.split("/");
-  
+
   if (!owner || !repo) {
     return { success: false, error: "Invalid repository name" };
   }
 
   const notePath = getWeeklyNotePath(effectiveWeekId);
+  console.log(`[syncToGitHub] Syncing ${entries.length} entries to ${owner}/${repo}/${notePath}`);
 
-  // Get existing file content and SHA
-  const existingContent = await getFileContent(token, owner, repo, notePath);
-  const fileSha = await getFileSha(token, owner, repo, notePath);
+  // Safely fetch existing file - fail on errors to prevent data loss
+  const fileResult = await fetchGitHubFile(token, owner, repo, notePath);
+  console.log(`[syncToGitHub] File result status: ${fileResult.status}`);
 
-  // Parse existing note if any
+  if (fileResult.status === "error") {
+    return {
+      success: false,
+      error: `Cannot safely sync: ${fileResult.message}. Aborting to prevent data loss.`,
+    };
+  }
+
+  // Parse existing note if file exists
   let existingNote = null;
-  if (existingContent) {
+  let fileSha: string | undefined;
+
+  if (fileResult.status === "found") {
+    fileSha = fileResult.sha;
     try {
       const { parseWeeklyNoteMarkdown } = await import("../services/config");
-      existingNote = parseWeeklyNoteMarkdown(existingContent, effectiveWeekId);
+      existingNote = parseWeeklyNoteMarkdown(fileResult.content, effectiveWeekId);
     } catch {
-      // If parsing fails, start fresh
+      // If parsing fails, start fresh but log warning
+      console.warn("[syncToGitHub] Failed to parse existing note, starting fresh");
     }
   }
 
@@ -194,6 +229,23 @@ async function syncToGitHub(
       `Update weekly note: ${effectiveWeekId}`,
       fileSha,
     );
+
+    // Create Overview.md if it doesn't exist
+    const overviewPath = getOverviewPath();
+    const overviewResult = yield* Effect.promise(() =>
+      fetchGitHubFile(token, owner, repo, overviewPath),
+    );
+    if (overviewResult.status !== "found") {
+      yield* github.createOrUpdateFile(
+        token,
+        owner,
+        repo,
+        overviewPath,
+        generateOverviewContent(),
+        "Create homework overview",
+        undefined,
+      );
+    }
 
     return notePath;
   }).pipe(
@@ -233,7 +285,12 @@ export async function syncEntriesToVault(
     if (!options.githubRepo) {
       return { success: false, error: "GitHub repository not selected" };
     }
-    return syncToGitHub(entries, options.githubToken, options.githubRepo, options.weekId);
+    return syncToGitHub(
+      entries,
+      options.githubToken,
+      options.githubRepo,
+      options.weekId,
+    );
   }
 
   return { success: false, error: "Invalid vault method" };

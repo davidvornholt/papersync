@@ -23,6 +23,7 @@ export type ExtractedEntry = {
   readonly isTask: boolean;
   readonly isCompleted: boolean;
   readonly isNew: boolean;
+  readonly dueDate?: string;
 };
 
 // ============================================================================
@@ -73,19 +74,21 @@ export const getWeekDateRange = (
 
 /**
  * Get the ISO date for a day name within the current week
+ * Uses case-insensitive matching for day names.
  */
 export const getDayDate = (dayName: string, weekId: WeekId): ISODate => {
+  // Case-insensitive day mapping
   const dayMap: Record<string, number> = {
-    Monday: 0,
-    Tuesday: 1,
-    Wednesday: 2,
-    Thursday: 3,
-    Friday: 4,
-    Saturday: 5,
-    Sunday: 6,
+    monday: 0,
+    tuesday: 1,
+    wednesday: 2,
+    thursday: 3,
+    friday: 4,
+    saturday: 5,
+    sunday: 6,
   };
 
-  const dayOffset = dayMap[dayName] ?? 0;
+  const dayOffset = dayMap[dayName.toLowerCase()] ?? 0;
   const { start } = getWeekDateRange(weekId);
   const startDate = new Date(start);
   startDate.setDate(startDate.getDate() + dayOffset);
@@ -104,12 +107,39 @@ export const convertEntriesToWeeklyNote = (
   const dateRange = getWeekDateRange(weekId);
   const syncedAt = new Date().toISOString() as ISODateTime;
 
-  // Group entries by day
-  const entriesByDay = new Map<string, ExtractedEntry[]>();
+  // Separate general tasks from subject-specific entries
+  const subjectEntries: ExtractedEntry[] = [];
+  const newGeneralTasks: ExtractedEntry[] = [];
+
   for (const entry of entries) {
-    const dayEntries = entriesByDay.get(entry.day) || [];
+    if (entry.subject === "General Tasks" || !entry.subject) {
+      newGeneralTasks.push(entry);
+    } else {
+      subjectEntries.push(entry);
+    }
+  }
+
+  // Helper to normalize day names to proper case
+  const normalizeDayName = (day: string): string => {
+    const normalizedDays: Record<string, string> = {
+      monday: "Monday",
+      tuesday: "Tuesday",
+      wednesday: "Wednesday",
+      thursday: "Thursday",
+      friday: "Friday",
+      saturday: "Saturday",
+      sunday: "Sunday",
+    };
+    return normalizedDays[day.toLowerCase()] ?? day;
+  };
+
+  // Group subject entries by day (normalized to proper case)
+  const entriesByDay = new Map<string, ExtractedEntry[]>();
+  for (const entry of subjectEntries) {
+    const normalizedDay = normalizeDayName(entry.day);
+    const dayEntries = entriesByDay.get(normalizedDay) || [];
     dayEntries.push(entry);
-    entriesByDay.set(entry.day, dayEntries);
+    entriesByDay.set(normalizedDay, dayEntries);
   }
 
   // Create or update day records
@@ -132,25 +162,24 @@ export const convertEntriesToWeeklyNote = (
 
     // Group by subject
     const entriesBySubject = new Map<string, ExtractedEntry[]>();
-    const generalTasks: ExtractedEntry[] = [];
 
     for (const entry of dayEntries) {
-      if (entry.subject === "General Tasks" || !entry.subject) {
-        generalTasks.push(entry);
-      } else {
-        const subjectEntries = entriesBySubject.get(entry.subject) || [];
-        subjectEntries.push(entry);
-        entriesBySubject.set(entry.subject, subjectEntries);
-      }
+      const subjectEntriesArr = entriesBySubject.get(entry.subject) || [];
+      subjectEntriesArr.push(entry);
+      entriesBySubject.set(entry.subject, subjectEntriesArr);
     }
 
     // Find existing day record
     const existingDay = existingNote?.days.find((d) => d.dayName === dayName);
 
     // Merge with existing entries
-    const subjectEntries: Array<{
+    const mergedSubjectEntries: Array<{
       subject: string;
-      tasks: Array<{ content: string; isCompleted: boolean }>;
+      tasks: Array<{
+        content: string;
+        isCompleted: boolean;
+        dueDate?: ISODate;
+      }>;
     }> = [];
 
     for (const [subject, subjectItems] of entriesBySubject.entries()) {
@@ -162,19 +191,22 @@ export const convertEntriesToWeeklyNote = (
       const newTasks = subjectItems.map((item) => ({
         content: item.content,
         isCompleted: item.isCompleted,
+        dueDate: item.dueDate as ISODate | undefined,
       }));
 
       // Merge: keep existing tasks, add new ones (deduplicate by content)
-      const mergedTasks: Array<{ content: string; isCompleted: boolean }> = [
-        ...existingTasks,
-      ];
+      const mergedTasks: Array<{
+        content: string;
+        isCompleted: boolean;
+        dueDate?: ISODate;
+      }> = [...existingTasks];
       for (const newTask of newTasks) {
         if (!mergedTasks.some((t) => t.content === newTask.content)) {
           mergedTasks.push(newTask);
         }
       }
 
-      subjectEntries.push({
+      mergedSubjectEntries.push({
         subject,
         tasks: mergedTasks,
       });
@@ -184,7 +216,7 @@ export const convertEntriesToWeeklyNote = (
     if (existingDay) {
       for (const existingEntry of existingDay.entries) {
         if (!entriesBySubject.has(existingEntry.subject)) {
-          subjectEntries.push({
+          mergedSubjectEntries.push({
             subject: existingEntry.subject,
             tasks: [...existingEntry.tasks],
           });
@@ -192,26 +224,25 @@ export const convertEntriesToWeeklyNote = (
       }
     }
 
-    // Merge general tasks
-    const existingGeneralTasks = existingDay?.generalTasks || [];
-    const newGeneralTasks = generalTasks.map((t) => ({
-      content: t.content,
-      isCompleted: t.isCompleted,
-    }));
-
-    const mergedGeneralTasks = [...existingGeneralTasks];
-    for (const newTask of newGeneralTasks) {
-      if (!mergedGeneralTasks.some((t) => t.content === newTask.content)) {
-        mergedGeneralTasks.push(newTask);
-      }
-    }
-
-    if (subjectEntries.length > 0 || mergedGeneralTasks.length > 0) {
+    if (mergedSubjectEntries.length > 0) {
       days.push({
         date,
         dayName,
-        entries: subjectEntries,
-        generalTasks: mergedGeneralTasks,
+        entries: mergedSubjectEntries,
+      });
+    }
+  }
+
+  // Merge general tasks at week level
+  const existingGeneralTasks = existingNote?.generalTasks || [];
+  const mergedGeneralTasks = [...existingGeneralTasks];
+
+  for (const newTask of newGeneralTasks) {
+    if (!mergedGeneralTasks.some((t) => t.content === newTask.content)) {
+      mergedGeneralTasks.push({
+        content: newTask.content,
+        isCompleted: newTask.isCompleted,
+        dueDate: newTask.dueDate as ISODate | undefined,
       });
     }
   }
@@ -221,5 +252,6 @@ export const convertEntriesToWeeklyNote = (
     dateRange,
     syncedAt,
     days,
+    generalTasks: mergedGeneralTasks,
   };
 };

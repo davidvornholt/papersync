@@ -98,6 +98,7 @@ export const TaskEntry = Schema.Struct({
   isTask: Schema.Boolean,
   isCompleted: Schema.Boolean,
   action: TaskAction,
+  dueDate: Schema.optional(ISODate),
 });
 export type TaskEntry = typeof TaskEntry.Type;
 
@@ -121,6 +122,7 @@ export const DayEntry = Schema.Struct({
     Schema.Struct({
       content: Schema.String,
       isCompleted: Schema.Boolean,
+      dueDate: Schema.optional(ISODate),
     }),
   ),
 });
@@ -130,14 +132,18 @@ export const DayRecord = Schema.Struct({
   date: ISODate,
   dayName: Schema.String,
   entries: Schema.Array(DayEntry),
-  generalTasks: Schema.Array(
-    Schema.Struct({
-      content: Schema.String,
-      isCompleted: Schema.Boolean,
-    }),
-  ),
 });
 export type DayRecord = typeof DayRecord.Type;
+
+/**
+ * Task item for general tasks (not bound to a subject)
+ */
+export const GeneralTask = Schema.Struct({
+  content: Schema.String,
+  isCompleted: Schema.Boolean,
+  dueDate: Schema.optional(ISODate),
+});
+export type GeneralTask = typeof GeneralTask.Type;
 
 export const WeeklyNote = Schema.Struct({
   week: WeekId,
@@ -147,6 +153,8 @@ export const WeeklyNote = Schema.Struct({
   }),
   syncedAt: Schema.optional(ISODateTime),
   days: Schema.Array(DayRecord),
+  /** General tasks for the entire week (displayed at the end of the file) */
+  generalTasks: Schema.Array(GeneralTask),
 });
 export type WeeklyNote = typeof WeeklyNote.Type;
 

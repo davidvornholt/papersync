@@ -177,7 +177,10 @@ const createMdnsDiscoveryService = (): ScannerDiscoveryService => ({
           const scheduleEarlyFinish = () => {
             // Once we find a scanner, wait a short time for more then return
             if (!earlyFinishTimer && scanners.size > 0) {
-              earlyFinishTimer = setTimeout(finishDiscovery, EARLY_FINISH_DELAY);
+              earlyFinishTimer = setTimeout(
+                finishDiscovery,
+                EARLY_FINISH_DELAY,
+              );
             }
           };
 

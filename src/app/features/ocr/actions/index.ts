@@ -1,7 +1,6 @@
 export {
   type ExtractionOptions,
   type ExtractionResult,
-  type VaultSettings,
   extractHandwriting,
+  type VaultSettings,
 } from "./extract";
-

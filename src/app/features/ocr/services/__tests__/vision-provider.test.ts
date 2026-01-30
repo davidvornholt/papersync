@@ -1,22 +1,23 @@
 import { Schema } from "@effect/schema";
 import { Context, Effect, Layer } from "effect";
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { WeekId } from "@/app/shared/types";
 import {
+  makeGoogleVisionLayer,
+  makeOllamaVisionLayer,
   type OCRResultWithModel,
   VisionError,
   VisionProvider,
   VisionValidationError,
-  makeGoogleVisionLayer,
-  makeOllamaVisionLayer,
 } from "../vision-provider";
-import type { WeekId } from "@/app/shared/types";
 
 // ============================================================================
 // Test Constants
 // ============================================================================
 
 const TEST_WEEK_ID = "2026-W05" as WeekId;
-const TEST_IMAGE_BASE64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
+const TEST_IMAGE_BASE64 =
+  "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
 const TEST_EXISTING_CONTENT = "## Monday\n- [ ] Existing task";
 
 // ============================================================================
@@ -67,14 +68,16 @@ describe("OCR Response Schema", () => {
   });
 
   it("should validate a complete OCR response with entries", () => {
-    const result = Schema.decodeUnknownSync(OCRResponseSchema)(VALID_OCR_RESPONSE);
+    const result =
+      Schema.decodeUnknownSync(OCRResponseSchema)(VALID_OCR_RESPONSE);
     expect(result.entries).toHaveLength(2);
     expect(result.confidence).toBe(0.92);
     expect(result.notes).toBe("All entries extracted successfully");
   });
 
   it("should validate an empty OCR response", () => {
-    const result = Schema.decodeUnknownSync(OCRResponseSchema)(EMPTY_OCR_RESPONSE);
+    const result =
+      Schema.decodeUnknownSync(OCRResponseSchema)(EMPTY_OCR_RESPONSE);
     expect(result.entries).toHaveLength(0);
     expect(result.confidence).toBe(1.0);
     expect(result.notes).toBeUndefined();
@@ -94,7 +97,7 @@ describe("OCR Response Schema", () => {
     };
 
     expect(() =>
-      Schema.decodeUnknownSync(OCRResponseSchema)(missingContent)
+      Schema.decodeUnknownSync(OCRResponseSchema)(missingContent),
     ).toThrow();
   });
 
@@ -162,7 +165,9 @@ describe("Gemini Model Configuration", () => {
 
   it("should have correct model priority order", () => {
     expect(EXPECTED_MODELS[0]).toBe("gemini-3-flash-preview");
-    expect(EXPECTED_MODELS[EXPECTED_MODELS.length - 1]).toBe("gemini-2.5-flash-lite");
+    expect(EXPECTED_MODELS[EXPECTED_MODELS.length - 1]).toBe(
+      "gemini-2.5-flash-lite",
+    );
   });
 
   it("should identify Gemini 3 models correctly", () => {
@@ -184,7 +189,10 @@ describe("Gemini Model Configuration", () => {
 // ============================================================================
 
 describe("Extraction System Prompt", () => {
-  const createExpectedPromptParts = (weekId: WeekId, existingContent: string) => [
+  const createExpectedPromptParts = (
+    weekId: WeekId,
+    existingContent: string,
+  ) => [
     "handwriting extraction specialist",
     `Week: ${weekId}`,
     existingContent || "(No existing content)",
@@ -206,7 +214,10 @@ describe("Extraction System Prompt", () => {
   });
 
   it("should include key instruction keywords", () => {
-    const expectedParts = createExpectedPromptParts(TEST_WEEK_ID, TEST_EXISTING_CONTENT);
+    const expectedParts = createExpectedPromptParts(
+      TEST_WEEK_ID,
+      TEST_EXISTING_CONTENT,
+    );
     expect(expectedParts).toContain("NEW");
     expect(expectedParts).toContain("is_task");
   });
@@ -372,7 +383,7 @@ describe("Effect-based Extraction Pipeline", () => {
   it("should handle VisionError correctly", async () => {
     const error = new VisionError({ message: "API timeout" });
     const program = Effect.fail(error).pipe(
-      Effect.catchAll((e) => Effect.succeed({ error: e.message }))
+      Effect.catchAll((e) => Effect.succeed({ error: e.message })),
     );
 
     const result = await Effect.runPromise(program);
@@ -385,7 +396,7 @@ describe("Effect-based Extraction Pipeline", () => {
       raw: "not json",
     });
     const program = Effect.fail(error).pipe(
-      Effect.catchAll((e) => Effect.succeed({ error: e.message, raw: e.raw }))
+      Effect.catchAll((e) => Effect.succeed({ error: e.message, raw: e.raw })),
     );
 
     const result = await Effect.runPromise(program);
@@ -407,7 +418,9 @@ describe("Provider Options Configuration", () => {
       },
     };
 
-    expect(providerOptions.google.mediaResolution).toBe("MEDIA_RESOLUTION_HIGH");
+    expect(providerOptions.google.mediaResolution).toBe(
+      "MEDIA_RESOLUTION_HIGH",
+    );
   });
 
   it("should configure thinkingLevel for Gemini 3 models", () => {

@@ -1,7 +1,10 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { extractHandwriting, type VaultSettings } from "@/app/features/ocr/actions";
+import {
+  extractHandwriting,
+  type VaultSettings,
+} from "@/app/features/ocr/actions";
 import type { WeekId } from "@/app/shared/types";
 
 // ============================================================================
@@ -16,6 +19,7 @@ export type ExtractedEntry = {
   readonly isTask: boolean;
   readonly isCompleted: boolean;
   readonly isNew: boolean;
+  readonly dueDate?: string;
 };
 
 export type ScanState =
@@ -138,6 +142,7 @@ export const useScan = (options: UseScanOptions): UseScanReturn => {
             isTask: entry.isTask,
             isCompleted: entry.isCompleted,
             isNew: entry.action === "add",
+            dueDate: entry.dueDate,
           }),
         );
 
@@ -181,4 +186,3 @@ export const useScan = (options: UseScanOptions): UseScanReturn => {
     clear,
   };
 };
-

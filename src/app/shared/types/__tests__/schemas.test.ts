@@ -178,11 +178,13 @@ describe("WeeklyNote Schema", () => {
         end: "2026-02-02",
       },
       days: [],
+      generalTasks: [],
     });
 
     expect(note.week).toBe("2026-W05");
     expect(note.dateRange.start).toBe("2026-01-27");
     expect(note.days).toEqual([]);
+    expect(note.generalTasks).toEqual([]);
   });
 
   it("should accept weekly note with day entries", () => {
@@ -202,13 +204,14 @@ describe("WeeklyNote Schema", () => {
               tasks: [{ content: "Problem set 7", isCompleted: false }],
             },
           ],
-          generalTasks: [],
         },
       ],
+      generalTasks: [{ content: "Buy supplies", isCompleted: false }],
     });
 
     expect(note.days).toHaveLength(1);
     expect(note.days[0].entries[0].subject).toBe("Mathematics");
+    expect(note.generalTasks).toHaveLength(1);
   });
 });
 

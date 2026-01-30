@@ -2,6 +2,7 @@ import { Effect } from "effect";
 import type {
   DayEntry,
   DayRecord,
+  GeneralTask,
   OCRResponse,
   WeeklyNote,
 } from "@/app/shared/types";
@@ -15,8 +16,17 @@ export const mergeOCRIntoWeeklyNote = (
   ocrResponse: OCRResponse,
 ): Effect.Effect<WeeklyNote, never> =>
   Effect.sync(() => {
+    // Separate general tasks from subject entries
+    const generalTaskEntries = ocrResponse.entries.filter(
+      (e) => e.subject === "General Tasks",
+    );
+    const subjectEntries = ocrResponse.entries.filter(
+      (e) => e.subject !== "General Tasks",
+    );
+
+    // Process day-specific subject entries
     const updatedDays = existingNote.days.map((day) => {
-      const entriesForDay = ocrResponse.entries.filter(
+      const entriesForDay = subjectEntries.filter(
         (e) => e.day.toLowerCase() === day.dayName.toLowerCase(),
       );
 
@@ -27,10 +37,17 @@ export const mergeOCRIntoWeeklyNote = (
       return processDayEntries(day, entriesForDay);
     });
 
+    // Process week-level general tasks
+    const updatedGeneralTasks = [...existingNote.generalTasks];
+    for (const entry of generalTaskEntries) {
+      processGeneralTask(updatedGeneralTasks, entry);
+    }
+
     return {
       ...existingNote,
       syncedAt: new Date().toISOString() as WeeklyNote["syncedAt"],
       days: updatedDays,
+      generalTasks: updatedGeneralTasks,
     };
   });
 
@@ -39,20 +56,14 @@ const processDayEntries = (
   ocrEntries: readonly OCRResponse["entries"][number][],
 ): DayRecord => {
   const updatedEntries: DayEntry[] = [...day.entries];
-  const updatedGeneralTasks = [...day.generalTasks];
 
   for (const ocrEntry of ocrEntries) {
-    if (ocrEntry.subject === "General Tasks") {
-      processGeneralTask(updatedGeneralTasks, ocrEntry);
-    } else {
-      processSubjectEntry(updatedEntries, ocrEntry);
-    }
+    processSubjectEntry(updatedEntries, ocrEntry);
   }
 
   return {
     ...day,
     entries: updatedEntries,
-    generalTasks: updatedGeneralTasks,
   };
 };
 
@@ -137,7 +148,7 @@ const processSubjectEntry = (
 };
 
 const processGeneralTask = (
-  generalTasks: Array<{ content: string; isCompleted: boolean }>,
+  generalTasks: GeneralTask[],
   ocrEntry: OCRResponse["entries"][number],
 ): void => {
   switch (ocrEntry.action) {
