@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
-import { IBM_Plex_Mono, IBM_Plex_Sans, Newsreader } from "next/font/google";
+import { IBM_Plex_Mono, IBM_Plex_Sans, Source_Serif_4 } from "next/font/google";
 import "./globals.css";
 import { ToastProvider } from "@/app/shared/components";
 
-const newsreader = Newsreader({
+const newsreader = Source_Serif_4({
   subsets: ["latin"],
   display: "swap",
   variable: "--font-display",

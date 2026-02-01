@@ -14,7 +14,6 @@ trigger: always_on
 
 ## Functional Style
 
-- Suggest using the TypeScript Library Effect when applicable.
 - Prefer functional utilities (e.g. map, filter, reduce) over loops where possible.
 - Suggest pattern matching with Effect instead of nested conditionals.
 
