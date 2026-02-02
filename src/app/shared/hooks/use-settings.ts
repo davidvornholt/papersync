@@ -255,17 +255,27 @@ export const useSettings = (): UseSettingsReturn => {
 
   const addTimetableSlot = useCallback(
     (day: DayOfWeek, subjectId: string): void => {
-      setSettings((prev) => ({
-        ...prev,
-        timetable: prev.timetable.map((d) =>
-          d.day === day
-            ? {
-                ...d,
-                slots: [...d.slots, { id: `slot-${Date.now()}`, subjectId }],
-              }
-            : d,
-        ),
-      }));
+      setSettings((prev) => {
+        const dayExists = prev.timetable.some((d) => d.day === day);
+        const newSlot = { id: `slot-${Date.now()}`, subjectId };
+        
+        if (dayExists) {
+          // Day exists, add slot to it
+          return {
+            ...prev,
+            timetable: prev.timetable.map((d) =>
+              d.day === day
+                ? { ...d, slots: [...d.slots, newSlot] }
+                : d,
+            ),
+          };
+        }
+        // Day doesn't exist, add it with the new slot
+        return {
+          ...prev,
+          timetable: [...prev.timetable, { day, slots: [newSlot] }],
+        };
+      });
     },
     [],
   );

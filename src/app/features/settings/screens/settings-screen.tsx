@@ -225,6 +225,7 @@ type AddSubjectModalProps = {
   readonly onAdd: (name: string) => void;
   readonly editingSubject?: Subject | null;
   readonly onEdit?: (id: string, name: string) => void;
+  readonly existingSubjects: readonly Subject[];
 };
 
 const AddSubjectModal = ({
@@ -233,20 +234,35 @@ const AddSubjectModal = ({
   onAdd,
   editingSubject,
   onEdit,
+  existingSubjects,
 }: AddSubjectModalProps): React.ReactElement => {
   const [name, setName] = useState(editingSubject?.name ?? "");
 
+  const isDuplicate = useCallback(
+    (newName: string): boolean => {
+      const normalizedName = newName.trim().toLowerCase();
+      return existingSubjects.some(
+        (subject) =>
+          subject.name.toLowerCase() === normalizedName &&
+          subject.id !== editingSubject?.id
+      );
+    },
+    [existingSubjects, editingSubject?.id]
+  );
+
   const handleSubmit = (e: React.FormEvent): void => {
     e.preventDefault();
-    if (name.trim()) {
-      if (editingSubject && onEdit) {
-        onEdit(editingSubject.id, name.trim());
-      } else {
-        onAdd(name.trim());
-      }
-      setName("");
-      onClose();
+    const trimmedName = name.trim();
+    
+    if (!trimmedName || isDuplicate(trimmedName)) return;
+    
+    if (editingSubject && onEdit) {
+      onEdit(editingSubject.id, trimmedName);
+    } else {
+      onAdd(trimmedName);
     }
+    setName("");
+    onClose();
   };
 
   // Reset name when modal opens or when editing subject changes
@@ -255,6 +271,14 @@ const AddSubjectModal = ({
       setName(editingSubject?.name ?? "");
     }
   }, [isOpen, editingSubject]);
+
+  // Check for duplicate in real-time
+  const hasDuplicate = name.trim() !== "" && isDuplicate(name);
+  
+  // Show error when there's a duplicate (and it's not the same as the original name)
+  const showError = hasDuplicate && name.trim().toLowerCase() !== (editingSubject?.name ?? "").toLowerCase();
+
+  const isValid = name.trim() && !hasDuplicate;
 
   return (
     <Modal
@@ -277,7 +301,7 @@ const AddSubjectModal = ({
           >
             Cancel
           </Button>
-          <Button type="submit" disabled={!name.trim()} onClick={handleSubmit}>
+          <Button type="submit" disabled={!isValid} onClick={handleSubmit}>
             {editingSubject ? "Save Changes" : "Add Subject"}
           </Button>
         </>
@@ -289,8 +313,17 @@ const AddSubjectModal = ({
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="Subject name"
-          className="w-full px-4 py-3 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent"
+          className={`w-full px-4 py-3 border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:border-transparent transition-colors ${
+            showError
+              ? "border-red-500 focus:ring-red-500"
+              : "border-border focus:ring-accent"
+          }`}
         />
+        {showError && (
+          <p className="mt-2 text-sm text-red-500">
+            A subject named "{name.trim()}" already exists
+          </p>
+        )}
       </form>
     </Modal>
   );
@@ -397,7 +430,7 @@ const TimetableConfigPanel = ({
           <div className="text-center py-6 text-muted border-2 border-dashed border-border rounded-lg">
             <p className="text-sm">Add subjects above first</p>
           </div>
-        ) : activeSchedule?.slots.length === 0 ? (
+        ) : !activeSchedule || activeSchedule.slots.length === 0 ? (
           <div className="text-center py-6 text-muted border-2 border-dashed border-border rounded-lg">
             <p className="text-sm">No classes on {DAY_LABELS[activeDay]}</p>
             <Button
@@ -1315,6 +1348,7 @@ export const SettingsScreen = (): React.ReactElement => {
         onAdd={handleAddSubject}
         editingSubject={editingSubject}
         onEdit={handleEditSubject}
+        existingSubjects={settings.subjects}
       />
 
       <GitHubOAuthModal
