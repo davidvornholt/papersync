@@ -648,10 +648,10 @@ export const initializeVault = (): Effect.Effect<
     const subjectsExist = yield* vault.fileExists(getSubjectsPath());
     if (!subjectsExist) {
       const defaultSubjects: SubjectsConfig = [
-        { id: "1", name: "Mathematics", order: 1 },
-        { id: "2", name: "Physics", order: 2 },
-        { id: "3", name: "Chemistry", order: 3 },
-        { id: "4", name: "Literature", order: 4 },
+        { id: "1", name: "Chemistry" },
+        { id: "2", name: "Literature" },
+        { id: "3", name: "Mathematics" },
+        { id: "4", name: "Physics" },
       ];
       yield* writeSubjects(defaultSubjects);
     }

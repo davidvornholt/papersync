@@ -30,7 +30,6 @@ export const Subject = Schema.Struct({
   id: Schema.String,
   name: Schema.String,
   color: Schema.optional(Schema.String),
-  order: Schema.Number,
 });
 export type Subject = typeof Subject.Type;
 

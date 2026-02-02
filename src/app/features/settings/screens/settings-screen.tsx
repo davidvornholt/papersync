@@ -2,7 +2,7 @@
 
 import { AnimatePresence, motion } from "motion/react";
 import Link from "next/link";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { syncSettingsToVault } from "@/app/features/vault/actions/sync-settings";
 import {
   Button,
@@ -153,20 +153,12 @@ type SubjectListItemProps = {
   readonly subject: Subject;
   readonly onEdit: (id: string) => void;
   readonly onDelete: (id: string) => void;
-  readonly onMoveUp: (id: string) => void;
-  readonly onMoveDown: (id: string) => void;
-  readonly isFirst: boolean;
-  readonly isLast: boolean;
 };
 
 const SubjectListItem = ({
   subject,
   onEdit,
   onDelete,
-  onMoveUp,
-  onMoveDown,
-  isFirst,
-  isLast,
 }: SubjectListItemProps): React.ReactElement => (
   <motion.li
     layout
@@ -175,55 +167,7 @@ const SubjectListItem = ({
     exit={{ opacity: 0, x: 10, height: 0 }}
     className="flex items-center justify-between p-3 bg-background rounded-lg border border-border group hover:border-accent/30 transition-colors"
   >
-    <div className="flex items-center gap-3">
-      <div className="flex flex-col gap-0.5">
-        <button
-          type="button"
-          onClick={() => onMoveUp(subject.id)}
-          disabled={isFirst}
-          className="p-0.5 text-muted hover:text-accent disabled:opacity-30 transition-colors"
-          title="Move up"
-        >
-          <svg
-            className="w-3 h-3"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <title>Move up</title>
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M5 15l7-7 7 7"
-            />
-          </svg>
-        </button>
-        <button
-          type="button"
-          onClick={() => onMoveDown(subject.id)}
-          disabled={isLast}
-          className="p-0.5 text-muted hover:text-accent disabled:opacity-30 transition-colors"
-          title="Move down"
-        >
-          <svg
-            className="w-3 h-3"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <title>Move down</title>
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M19 9l-7 7-7-7"
-            />
-          </svg>
-        </button>
-      </div>
-      <span className="text-foreground font-medium">{subject.name}</span>
-    </div>
+    <span className="text-foreground font-medium">{subject.name}</span>
     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
       <button
         type="button"
@@ -305,11 +249,12 @@ const AddSubjectModal = ({
     }
   };
 
-  // Reset name when modal opens with editing subject
-  const resetName = editingSubject?.name ?? "";
-  if (isOpen && name !== resetName && editingSubject) {
-    setName(resetName);
-  }
+  // Reset name when modal opens or when editing subject changes
+  useEffect(() => {
+    if (isOpen) {
+      setName(editingSubject?.name ?? "");
+    }
+  }, [isOpen, editingSubject]);
 
   return (
     <Modal
@@ -534,7 +479,7 @@ export const SettingsScreen = (): React.ReactElement => {
     addSubject,
     removeSubject,
     updateSubject,
-    reorderSubjects,
+    setSubjects,
     updateTimetable,
     addTimetableSlot,
     removeTimetableSlot,
@@ -548,6 +493,8 @@ export const SettingsScreen = (): React.ReactElement => {
   const [isSubjectModalOpen, setIsSubjectModalOpen] = useState(false);
   const [editingSubject, setEditingSubject] = useState<Subject | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [isLoadingVaultSettings, setIsLoadingVaultSettings] = useState(false);
+  const [lastLoadedLocalPath, setLastLoadedLocalPath] = useState<string>("");
 
   const { addToast } = useToast();
   const {
@@ -620,7 +567,7 @@ export const SettingsScreen = (): React.ReactElement => {
       if (result.success) {
         // Load subjects and timetable from vault if they exist
         if (result.subjects.length > 0) {
-          reorderSubjects(result.subjects as Subject[]);
+          setSubjects([...result.subjects] as Subject[]);
         }
         if (result.timetable.length > 0) {
           updateTimetable(result.timetable as TimetableDay[]);
@@ -638,7 +585,7 @@ export const SettingsScreen = (): React.ReactElement => {
       updateVault,
       addToast,
       settings.vault.githubToken,
-      reorderSubjects,
+      setSubjects,
       updateTimetable,
     ],
   );
@@ -652,6 +599,63 @@ export const SettingsScreen = (): React.ReactElement => {
     });
     addToast("Disconnected from GitHub", "info");
   }, [updateVault, addToast]);
+
+  // Load settings from local vault when path is set
+  const handleLoadFromLocalVault = useCallback(
+    async (localPath: string): Promise<void> => {
+      if (!localPath || localPath === lastLoadedLocalPath) return;
+
+      setIsLoadingVaultSettings(true);
+      setLastLoadedLocalPath(localPath);
+
+      try {
+        const { loadSettingsFromVault } = await import(
+          "@/app/features/vault/actions/sync-settings"
+        );
+
+        const result = await loadSettingsFromVault("local", { localPath });
+
+        if (result.success) {
+          // Load subjects and timetable from vault if they exist
+          if (result.subjects.length > 0) {
+            setSubjects([...result.subjects] as Subject[]);
+          }
+          if (result.timetable.length > 0) {
+            updateTimetable(result.timetable as TimetableDay[]);
+          }
+          if (result.subjects.length > 0 || result.timetable.length > 0) {
+            addToast("Loaded settings from vault", "success");
+          }
+        }
+      } catch {
+        // Vault might not exist yet, that's okay
+      } finally {
+        setIsLoadingVaultSettings(false);
+      }
+    },
+    [
+      lastLoadedLocalPath,
+      addToast,
+      setSubjects,
+      updateTimetable,
+    ],
+  );
+
+  // Automatically load settings when local vault path changes
+  useEffect(() => {
+    if (
+      settings.vault.method === "local" &&
+      settings.vault.localPath &&
+      settings.vault.localPath !== lastLoadedLocalPath
+    ) {
+      handleLoadFromLocalVault(settings.vault.localPath);
+    }
+  }, [
+    settings.vault.method,
+    settings.vault.localPath,
+    lastLoadedLocalPath,
+    handleLoadFromLocalVault,
+  ]);
 
   const handleDeleteSubject = (id: string): void => {
     const subject = settings.subjects.find((s) => s.id === id);
@@ -670,21 +674,6 @@ export const SettingsScreen = (): React.ReactElement => {
     updateSubject(id, name);
     addToast(`Updated subject`, "success");
     setEditingSubject(null);
-  };
-
-  const handleMoveSubject = (id: string, direction: "up" | "down"): void => {
-    const subjects = [...settings.subjects];
-    const index = subjects.findIndex((s) => s.id === id);
-    if (index === -1) return;
-
-    const newIndex = direction === "up" ? index - 1 : index + 1;
-    if (newIndex < 0 || newIndex >= subjects.length) return;
-
-    [subjects[index], subjects[newIndex]] = [
-      subjects[newIndex],
-      subjects[index],
-    ];
-    reorderSubjects(subjects);
   };
 
   const isVaultConfigured =
@@ -923,6 +912,7 @@ export const SettingsScreen = (): React.ReactElement => {
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: "auto" }}
                       exit={{ opacity: 0, height: 0 }}
+                      className="space-y-3"
                     >
                       <InputField
                         id="vault-path"
@@ -931,6 +921,12 @@ export const SettingsScreen = (): React.ReactElement => {
                         onChange={(v) => updateVault({ localPath: v })}
                         placeholder="/path/to/your/vault"
                       />
+                      {isLoadingVaultSettings && (
+                        <div className="flex items-center gap-2 text-sm text-muted">
+                          <Spinner size="sm" />
+                          <span>Loading settings from vault...</span>
+                        </div>
+                      )}
                     </motion.div>
                   ) : (
                     <motion.div
@@ -1131,101 +1127,136 @@ export const SettingsScreen = (): React.ReactElement => {
                       Subjects & Timetable
                     </h2>
                     <p className="text-sm text-muted">
-                      {settings.subjects.length} subject
-                      {settings.subjects.length !== 1 ? "s" : ""} •{" "}
-                      {configuredDaysCount} day
-                      {configuredDaysCount !== 1 ? "s" : ""} configured
+                      {isVaultConfigured ? (
+                        <>
+                          {settings.subjects.length} subject
+                          {settings.subjects.length !== 1 ? "s" : ""} •{" "}
+                          {configuredDaysCount} day
+                          {configuredDaysCount !== 1 ? "s" : ""} configured
+                        </>
+                      ) : (
+                        "Configure vault connection first"
+                      )}
                     </p>
                   </div>
                 </div>
               </CardHeader>
               <CardContent className="space-y-6">
-                {/* Subjects Section */}
-                <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="font-medium text-foreground">Subjects</h3>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setIsSubjectModalOpen(true)}
+                {!isVaultConfigured ? (
+                  /* Vault not configured - show disabled state */
+                  <div className="text-center py-8 text-muted border-2 border-dashed border-border rounded-lg bg-surface/50">
+                    <svg
+                      className="w-12 h-12 mx-auto mb-3 text-muted-light"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
                     >
-                      <svg
-                        className="w-4 h-4 mr-1"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <title>Add</title>
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M12 4v16m8-8H4"
-                        />
-                      </svg>
-                      Add Subject
-                    </Button>
-                  </div>
-                  <ul className="space-y-2">
-                    <AnimatePresence>
-                      {settings.subjects.map((subject, index) => (
-                        <SubjectListItem
-                          key={subject.id}
-                          subject={subject}
-                          onEdit={(id) => {
-                            const s = settings.subjects.find(
-                              (s) => s.id === id,
-                            );
-                            if (s) {
-                              setEditingSubject(s);
-                              setIsSubjectModalOpen(true);
-                            }
-                          }}
-                          onDelete={handleDeleteSubject}
-                          onMoveUp={(id) => handleMoveSubject(id, "up")}
-                          onMoveDown={(id) => handleMoveSubject(id, "down")}
-                          isFirst={index === 0}
-                          isLast={index === settings.subjects.length - 1}
-                        />
-                      ))}
-                    </AnimatePresence>
-                  </ul>
-                  {settings.subjects.length === 0 && (
-                    <div className="text-center py-6 text-muted border-2 border-dashed border-border rounded-lg">
-                      <p className="text-sm">No subjects yet</p>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="mt-2"
-                        onClick={() => setIsSubjectModalOpen(true)}
-                      >
-                        Add your first subject
-                      </Button>
-                    </div>
-                  )}
-                </div>
-
-                {/* Divider */}
-                <div className="border-t border-border" />
-
-                {/* Timetable Section */}
-                <div>
-                  <div className="mb-3">
-                    <h3 className="font-medium text-foreground">
-                      Weekly Schedule
-                    </h3>
-                    <p className="text-sm text-muted">
-                      Configure your regular class schedule
+                      <title>Vault Required</title>
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={1.5}
+                        d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                      />
+                    </svg>
+                    <p className="font-medium text-foreground mb-1">
+                      Vault Connection Required
+                    </p>
+                    <p className="text-sm max-w-sm mx-auto">
+                      To configure subjects and timetables, first set up a local
+                      vault path or connect to a GitHub repository above.
                     </p>
                   </div>
-                  <TimetableConfigPanel
-                    subjects={settings.subjects}
-                    timetable={settings.timetable}
-                    onAddSlot={addTimetableSlot}
-                    onRemoveSlot={removeTimetableSlot}
-                    onUpdateSlot={updateTimetableSlot}
-                  />
-                </div>
+                ) : (
+                  <>
+                    {/* Subjects Section */}
+                    <div>
+                      <div className="flex items-center justify-between mb-3">
+                        <h3 className="font-medium text-foreground">
+                          Subjects
+                        </h3>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setIsSubjectModalOpen(true)}
+                        >
+                          <svg
+                            className="w-4 h-4 mr-1"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <title>Add</title>
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M12 4v16m8-8H4"
+                            />
+                          </svg>
+                          Add Subject
+                        </Button>
+                      </div>
+                      <ul className="space-y-2">
+                        <AnimatePresence>
+                          {[...settings.subjects]
+                            .sort((a, b) => a.name.localeCompare(b.name))
+                            .map((subject) => (
+                            <SubjectListItem
+                              key={subject.id}
+                              subject={subject}
+                              onEdit={(id) => {
+                                const s = settings.subjects.find(
+                                  (s) => s.id === id,
+                                );
+                                if (s) {
+                                  setEditingSubject(s);
+                                  setIsSubjectModalOpen(true);
+                                }
+                              }}
+                              onDelete={handleDeleteSubject}
+                            />
+                          ))}
+                        </AnimatePresence>
+                      </ul>
+                      {settings.subjects.length === 0 && (
+                        <div className="text-center py-6 text-muted border-2 border-dashed border-border rounded-lg">
+                          <p className="text-sm">No subjects yet</p>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="mt-2"
+                            onClick={() => setIsSubjectModalOpen(true)}
+                          >
+                            Add your first subject
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Divider */}
+                    <div className="border-t border-border" />
+
+                    {/* Timetable Section */}
+                    <div>
+                      <div className="mb-3">
+                        <h3 className="font-medium text-foreground">
+                          Weekly Schedule
+                        </h3>
+                        <p className="text-sm text-muted">
+                          Configure your regular class schedule
+                        </p>
+                      </div>
+                      <TimetableConfigPanel
+                        subjects={settings.subjects}
+                        timetable={settings.timetable}
+                        onAddSlot={addTimetableSlot}
+                        onRemoveSlot={removeTimetableSlot}
+                        onUpdateSlot={updateTimetableSlot}
+                      />
+                    </div>
+                  </>
+                )}
               </CardContent>
             </Card>
           </StaggerItem>
@@ -1242,7 +1273,7 @@ export const SettingsScreen = (): React.ReactElement => {
                 {isSaving ? (
                   <>
                     <Spinner size="sm" className="mr-2" />
-                    {isSyncing ? "Syncing..." : "Saving..."}
+                    {isSyncing ? "Syncing to vault..." : "Saving..."}
                   </>
                 ) : (
                   <>
@@ -1260,11 +1291,16 @@ export const SettingsScreen = (): React.ReactElement => {
                         d="M5 13l4 4L19 7"
                       />
                     </svg>
-                    Save Settings
+                    Save All Settings
                   </>
                 )}
               </Button>
             </motion.div>
+            <p className="text-xs text-muted text-center mt-2">
+              {isVaultConfigured
+                ? "Saves all settings locally and syncs subjects & timetable to vault"
+                : "Saves all settings locally"}
+            </p>
           </StaggerItem>
         </StaggerContainer>
       </div>

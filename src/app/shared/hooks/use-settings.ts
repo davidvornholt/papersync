@@ -25,7 +25,6 @@ const SubjectSchema = S.Struct({
   id: S.String,
   name: S.String,
   color: S.optional(S.String),
-  order: S.Number,
 });
 
 const TimetableSlotSchema = S.Struct({
@@ -98,10 +97,10 @@ const defaultSettings: Settings = {
     ollamaEndpoint: "http://localhost:11434",
   },
   subjects: [
-    { id: "1", name: "Mathematics", order: 1 },
-    { id: "2", name: "Physics", order: 2 },
-    { id: "3", name: "Chemistry", order: 3 },
-    { id: "4", name: "Literature", order: 4 },
+    { id: "1", name: "Chemistry" },
+    { id: "2", name: "Literature" },
+    { id: "3", name: "Mathematics" },
+    { id: "4", name: "Physics" },
   ],
   timetable: createDefaultTimetable(),
 };
@@ -160,7 +159,7 @@ export type UseSettingsReturn = {
   readonly addSubject: (name: string) => void;
   readonly removeSubject: (id: string) => void;
   readonly updateSubject: (id: string, name: string) => void;
-  readonly reorderSubjects: (subjects: Subject[]) => void;
+  readonly setSubjects: (subjects: Subject[]) => void;
   // Timetable management
   readonly updateTimetable: (timetable: TimetableDay[]) => void;
   readonly addTimetableSlot: (day: DayOfWeek, subjectId: string) => void;
@@ -187,12 +186,7 @@ export const useSettings = (): UseSettingsReturn => {
     });
   }, []);
 
-  // Auto-save settings whenever they change (after initial load)
-  useEffect(() => {
-    if (!isLoading) {
-      Effect.runPromise(saveSettings(settings));
-    }
-  }, [settings, isLoading]);
+
 
   const updateVault = useCallback(
     (updates: Partial<Settings["vault"]>): void => {
@@ -220,7 +214,6 @@ export const useSettings = (): UseSettingsReturn => {
         {
           id: `subj-${Date.now()}`,
           name,
-          order: prev.subjects.length + 1,
         },
       ],
     }));
@@ -245,7 +238,7 @@ export const useSettings = (): UseSettingsReturn => {
     }));
   }, []);
 
-  const reorderSubjects = useCallback((subjects: Subject[]): void => {
+  const setSubjects = useCallback((subjects: Subject[]): void => {
     setSettings((prev) => ({
       ...prev,
       subjects,
@@ -327,7 +320,7 @@ export const useSettings = (): UseSettingsReturn => {
     addSubject,
     removeSubject,
     updateSubject,
-    reorderSubjects,
+    setSubjects,
     updateTimetable,
     addTimetableSlot,
     removeTimetableSlot,

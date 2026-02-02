@@ -6,6 +6,8 @@ import type { TimetableConfig } from "../services/config";
 import {
   getSubjectsPath,
   getTimetablePath,
+  readSubjects,
+  readTimetable,
   writeSubjects,
   writeTimetable,
 } from "../services/config";
@@ -28,6 +30,53 @@ export type SyncSettingsResult =
   | { readonly success: false; readonly error: string };
 
 // ============================================================================
+// Merge Helpers
+// ============================================================================
+
+/**
+ * Merge subjects: preserve existing, add new ones by ID
+ */
+const mergeSubjects = (
+  existing: SubjectsConfig,
+  incoming: SubjectsConfig,
+): SubjectsConfig => {
+  const existingIds = new Set(existing.map((s) => s.id));
+  const newSubjects = incoming.filter((s) => !existingIds.has(s.id));
+  return [...existing, ...newSubjects];
+};
+
+/**
+ * Merge timetable: preserve existing days with slots, add/update others
+ */
+const mergeTimetable = (
+  existing: TimetableConfig,
+  incoming: TimetableConfig,
+): TimetableConfig => {
+  const existingDays = new Map(existing.map((d) => [d.day, d]));
+
+  // For each incoming day, merge slots if existing has slots
+  for (const incomingDay of incoming) {
+    const existingDay = existingDays.get(incomingDay.day);
+    if (existingDay && existingDay.slots.length > 0) {
+      // Existing day has slots - preserve them, add new slots
+      const existingSlotIds = new Set(existingDay.slots.map((s) => s.id));
+      const newSlots = incomingDay.slots.filter(
+        (s) => !existingSlotIds.has(s.id),
+      );
+      existingDays.set(incomingDay.day, {
+        ...existingDay,
+        slots: [...existingDay.slots, ...newSlots],
+      });
+    } else if (incomingDay.slots.length > 0) {
+      // No existing slots - use incoming
+      existingDays.set(incomingDay.day, incomingDay);
+    }
+  }
+
+  return Array.from(existingDays.values());
+};
+
+// ============================================================================
 // Local Filesystem Sync
 // ============================================================================
 
@@ -36,8 +85,21 @@ async function syncToLocalVault(
   vaultPath: string,
 ): Promise<SyncSettingsResult> {
   const program = Effect.gen(function* () {
-    yield* writeSubjects(settings.subjects);
-    yield* writeTimetable(settings.timetable);
+    // Read existing data from vault
+    const existingSubjects = yield* readSubjects().pipe(
+      Effect.catchAll(() => Effect.succeed([] as SubjectsConfig)),
+    );
+    const existingTimetable = yield* readTimetable().pipe(
+      Effect.catchAll(() => Effect.succeed([] as TimetableConfig)),
+    );
+
+    // Merge: preserve existing, add new
+    const mergedSubjects = mergeSubjects(existingSubjects, settings.subjects);
+    const mergedTimetable = mergeTimetable(existingTimetable, settings.timetable);
+
+    // Write merged data
+    yield* writeSubjects(mergedSubjects);
+    yield* writeTimetable(mergedTimetable);
     return [getSubjectsPath(), getTimetablePath()];
   }).pipe(
     Effect.provide(makeLocalVaultLayer(vaultPath)),
@@ -93,12 +155,40 @@ async function syncToGitHub(
   const subjectsPath = getSubjectsPath();
   const timetablePath = getTimetablePath();
 
-  // Get SHA before entering the Effect
-  const subjectsSha = await getFileSha(token, owner, repo, subjectsPath);
-  const timetableSha = await getFileSha(token, owner, repo, timetablePath);
-
+  // Fetch existing data from GitHub for merging
   const program = Effect.gen(function* () {
     const github = yield* GitHubService;
+
+    // Read existing subjects
+    const existingSubjectsContent = yield* github
+      .getFileContent(token, owner, repo, subjectsPath)
+      .pipe(Effect.catchAll(() => Effect.succeed(null)));
+    const existingSubjects: SubjectsConfig = existingSubjectsContent
+      ? JSON.parse(existingSubjectsContent)
+      : [];
+
+    // Read existing timetable
+    const existingTimetableContent = yield* github
+      .getFileContent(token, owner, repo, timetablePath)
+      .pipe(Effect.catchAll(() => Effect.succeed(null)));
+    const existingTimetable: TimetableConfig = existingTimetableContent
+      ? JSON.parse(existingTimetableContent)
+      : [];
+
+    // Merge: preserve existing, add new
+    const mergedSubjects = mergeSubjects(existingSubjects, settings.subjects);
+    const mergedTimetable = mergeTimetable(
+      existingTimetable,
+      settings.timetable,
+    );
+
+    // Get SHA for existing files (needed for update)
+    const subjectsSha = yield* Effect.promise(() =>
+      getFileSha(token, owner, repo, subjectsPath),
+    );
+    const timetableSha = yield* Effect.promise(() =>
+      getFileSha(token, owner, repo, timetablePath),
+    );
 
     // Create or update subjects file
     yield* github.createOrUpdateFile(
@@ -106,7 +196,7 @@ async function syncToGitHub(
       owner,
       repo,
       subjectsPath,
-      JSON.stringify(settings.subjects, null, 2),
+      JSON.stringify(mergedSubjects, null, 2),
       "Update subjects configuration",
       subjectsSha,
     );
@@ -117,7 +207,7 @@ async function syncToGitHub(
       owner,
       repo,
       timetablePath,
-      JSON.stringify(settings.timetable, null, 2),
+      JSON.stringify(mergedTimetable, null, 2),
       "Update timetable configuration",
       timetableSha,
     );

@@ -32,6 +32,13 @@ Font.register({
   fontWeight: 700,
 });
 
+Font.register({
+  family: "Roboto",
+  src: "https://cdnjs.cloudflare.com/ajax/libs/ink/3.1.10/fonts/Roboto/roboto-italic-webfont.ttf",
+  fontWeight: 400,
+  fontStyle: "italic",
+});
+
 Font.registerHyphenationCallback((word) => [word]);
 
 // ============================================================================
