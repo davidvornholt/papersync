@@ -186,8 +186,6 @@ export const useSettings = (): UseSettingsReturn => {
     });
   }, []);
 
-
-
   const updateVault = useCallback(
     (updates: Partial<Settings["vault"]>): void => {
       setSettings((prev) => ({
@@ -258,15 +256,13 @@ export const useSettings = (): UseSettingsReturn => {
       setSettings((prev) => {
         const dayExists = prev.timetable.some((d) => d.day === day);
         const newSlot = { id: `slot-${Date.now()}`, subjectId };
-        
+
         if (dayExists) {
           // Day exists, add slot to it
           return {
             ...prev,
             timetable: prev.timetable.map((d) =>
-              d.day === day
-                ? { ...d, slots: [...d.slots, newSlot] }
-                : d,
+              d.day === day ? { ...d, slots: [...d.slots, newSlot] } : d,
             ),
           };
         }

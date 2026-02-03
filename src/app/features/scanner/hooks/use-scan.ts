@@ -1,5 +1,6 @@
 "use client";
 
+import { Effect } from "effect";
 import { useCallback, useState } from "react";
 import {
   extractHandwriting,
@@ -69,68 +70,57 @@ const getCurrentWeekId = (): WeekId => {
 };
 
 // ============================================================================
-// Hook
+// Effect-Based Helpers
 // ============================================================================
 
-export const useScan = (options: UseScanOptions): UseScanReturn => {
-  const [state, setState] = useState<ScanState>({ status: "idle" });
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [imageData, setImageData] = useState<string | null>(null);
+const readFileAsDataUrl = (
+  file: File,
+  onProgress: (progress: number) => void,
+): Effect.Effect<string, Error> =>
+  Effect.async<string, Error>((resume) => {
+    const reader = new FileReader();
 
-  const weekId = options.weekId ?? getCurrentWeekId();
+    reader.onprogress = (event) => {
+      if (event.lengthComputable) {
+        const progress = Math.round((event.loaded / event.total) * 100);
+        onProgress(progress);
+      }
+    };
 
-  const upload = useCallback(async (file: File): Promise<void> => {
-    setState({ status: "uploading", progress: 0 });
+    reader.onload = (event) => {
+      const result = event.target?.result as string;
+      resume(Effect.succeed(result));
+    };
 
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
+    reader.onerror = () => {
+      resume(Effect.fail(new Error("Failed to read file")));
+    };
 
-      reader.onprogress = (event) => {
-        if (event.lengthComputable) {
-          const progress = Math.round((event.loaded / event.total) * 100);
-          setState({ status: "uploading", progress });
-        }
-      };
+    reader.readAsDataURL(file);
+  });
 
-      reader.onload = (event) => {
-        const result = event.target?.result as string;
-        setImagePreview(result);
-        setImageData(result);
-        setState({ status: "idle" });
-        resolve();
-      };
-
-      reader.onerror = () => {
-        setState({ status: "error", error: "Failed to read file" });
-        reject(new Error("Failed to read file"));
-      };
-
-      reader.readAsDataURL(file);
-    });
-  }, []);
-
-  const process = useCallback(async (): Promise<ScanState> => {
-    if (!imageData) {
-      const newState: ScanState = {
-        status: "error",
-        error: "No image to process",
-      };
-      setState(newState);
-      return newState;
-    }
-
-    setState({ status: "processing" });
-
-    try {
-      const result = await extractHandwriting({
+const processExtractionEffect = (
+  imageData: string,
+  weekId: WeekId,
+  aiSettings: AISettings,
+  vaultSettings?: VaultSettings,
+): Effect.Effect<ScanState, never> =>
+  Effect.tryPromise({
+    try: async () =>
+      extractHandwriting({
         imageBase64: imageData,
         weekId,
-        provider: options.aiSettings.provider,
-        googleApiKey: options.aiSettings.googleApiKey,
-        ollamaEndpoint: options.aiSettings.ollamaEndpoint,
-        vaultSettings: options.vaultSettings,
-      });
-
+        provider: aiSettings.provider,
+        googleApiKey: aiSettings.googleApiKey,
+        ollamaEndpoint: aiSettings.ollamaEndpoint,
+        vaultSettings,
+      }),
+    catch: (error): Error =>
+      error instanceof Error
+        ? error
+        : new Error("Unknown error during extraction"),
+  }).pipe(
+    Effect.flatMap((result): Effect.Effect<ScanState, never> => {
       if (result.success) {
         // Transform OCRResponse entries to ExtractedEntry format
         const entries: ExtractedEntry[] = result.data.entries.map(
@@ -146,30 +136,84 @@ export const useScan = (options: UseScanOptions): UseScanReturn => {
           }),
         );
 
-        const newState: ScanState = {
-          status: "complete",
+        return Effect.succeed({
+          status: "complete" as const,
           entries,
           confidence: result.data.confidence,
           modelUsed: result.modelUsed,
-        };
-        setState(newState);
-        return newState;
+        });
       }
 
-      const newState: ScanState = { status: "error", error: result.error };
-      setState(newState);
-      return newState;
-    } catch (error) {
+      return Effect.succeed({
+        status: "error" as const,
+        error: result.error,
+      });
+    }),
+    Effect.catchAll((error: Error) =>
+      Effect.succeed<ScanState>({
+        status: "error" as const,
+        error: error.message,
+      }),
+    ),
+  );
+
+// ============================================================================
+// Hook
+// ============================================================================
+
+export const useScan = (options: UseScanOptions): UseScanReturn => {
+  const [state, setState] = useState<ScanState>({ status: "idle" });
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [imageData, setImageData] = useState<string | null>(null);
+
+  const weekId = options.weekId ?? getCurrentWeekId();
+
+  const upload = useCallback(async (file: File): Promise<void> => {
+    setState({ status: "uploading", progress: 0 });
+
+    const result = await Effect.runPromise(
+      readFileAsDataUrl(file, (progress) => {
+        setState({ status: "uploading", progress });
+      }).pipe(
+        Effect.map((data) => ({ success: true as const, data })),
+        Effect.catchAll((error) =>
+          Effect.succeed({ success: false as const, error: error.message }),
+        ),
+      ),
+    );
+
+    if (result.success) {
+      setImagePreview(result.data);
+      setImageData(result.data);
+      setState({ status: "idle" });
+    } else {
+      setState({ status: "error", error: result.error });
+    }
+  }, []);
+
+  const process = useCallback(async (): Promise<ScanState> => {
+    if (!imageData) {
       const newState: ScanState = {
         status: "error",
-        error:
-          error instanceof Error
-            ? error.message
-            : "Unknown error during extraction",
+        error: "No image to process",
       };
       setState(newState);
       return newState;
     }
+
+    setState({ status: "processing" });
+
+    const newState = await Effect.runPromise(
+      processExtractionEffect(
+        imageData,
+        weekId,
+        options.aiSettings,
+        options.vaultSettings,
+      ),
+    );
+
+    setState(newState);
+    return newState;
   }, [imageData, weekId, options.aiSettings, options.vaultSettings]);
 
   const clear = useCallback((): void => {

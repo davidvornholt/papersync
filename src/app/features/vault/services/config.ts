@@ -315,7 +315,9 @@ export const parseWeeklyNoteMarkdown = (
       const dueDateMatch = taskContent.match(/\[due::\s*(\d{4}-\d{2}-\d{2})\]/);
       if (dueDateMatch) {
         dueDate = dueDateMatch[1] as ISODate;
-        taskContent = taskContent.replace(/\[due::\s*\d{4}-\d{2}-\d{2}\]/, "").trim();
+        taskContent = taskContent
+          .replace(/\[due::\s*\d{4}-\d{2}-\d{2}\]/, "")
+          .trim();
       }
 
       const task: MutableTask = {

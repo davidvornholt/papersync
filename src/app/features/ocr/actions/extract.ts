@@ -1,6 +1,6 @@
 "use server";
 
-import { Effect } from "effect";
+import { Data, Effect } from "effect";
 import { getWeeklyNotePath } from "@/app/features/vault/services/config";
 import {
   makeLocalVaultLayer,
@@ -14,6 +14,16 @@ import {
   VisionProvider,
   type VisionValidationError,
 } from "../services/vision-provider";
+
+// ============================================================================
+// Error Types
+// ============================================================================
+
+export class ExtractionValidationError extends Data.TaggedError(
+  "ExtractionValidationError",
+)<{
+  readonly message: string;
+}> {}
 
 // ============================================================================
 // Types
@@ -35,56 +45,39 @@ export type ExtractionOptions = {
   readonly vaultSettings?: VaultSettings;
 };
 
-export type ExtractionResult =
-  | {
-      readonly success: true;
-      readonly data: OCRResponse;
-      readonly modelUsed: string;
-    }
-  | { readonly success: false; readonly error: string };
-
 // ============================================================================
-// Helper: Fetch Existing Content from Vault
+// Effect-Based Implementations
 // ============================================================================
 
-async function fetchExistingContent(
+const fetchExistingContentFromLocal = (
   weekId: WeekId,
-  vaultSettings?: VaultSettings,
-): Promise<string> {
-  if (!vaultSettings) return "";
+  localPath: string,
+): Effect.Effect<string, never> =>
+  Effect.gen(function* () {
+    const vault = yield* VaultService;
+    const notePath = getWeeklyNotePath(weekId);
+    const exists = yield* vault.fileExists(notePath);
+    if (!exists) return "";
+    return yield* vault.readFile(notePath);
+  }).pipe(
+    Effect.provide(makeLocalVaultLayer(localPath)),
+    Effect.catchAll(() => Effect.succeed("")),
+  );
 
-  try {
-    if (vaultSettings.method === "local" && vaultSettings.localPath) {
-      // Read from local filesystem
-      const program = Effect.gen(function* () {
-        const vault = yield* VaultService;
-        const notePath = getWeeklyNotePath(weekId);
-        const exists = yield* vault.fileExists(notePath);
-        if (!exists) return "";
-        return yield* vault.readFile(notePath);
-      }).pipe(
-        Effect.provide(makeLocalVaultLayer(vaultSettings.localPath)),
-        Effect.catchAll(() => Effect.succeed("")),
-      );
-
-      return await Effect.runPromise(program);
-    }
-
-    if (
-      vaultSettings.method === "github" &&
-      vaultSettings.githubToken &&
-      vaultSettings.githubRepo
-    ) {
-      // Read from GitHub
-      const [owner, repo] = vaultSettings.githubRepo.split("/");
-      if (!owner || !repo) return "";
-
+const fetchExistingContentFromGitHub = (
+  weekId: WeekId,
+  token: string,
+  owner: string,
+  repo: string,
+): Effect.Effect<string, never> =>
+  Effect.tryPromise({
+    try: async () => {
       const notePath = getWeeklyNotePath(weekId);
       const response = await fetch(
         `https://api.github.com/repos/${owner}/${repo}/contents/${notePath}`,
         {
           headers: {
-            Authorization: `Bearer ${vaultSettings.githubToken}`,
+            Authorization: `Bearer ${token}`,
             Accept: "application/vnd.github.v3+json",
           },
         },
@@ -96,76 +89,122 @@ async function fetchExistingContent(
           return Buffer.from(data.content, "base64").toString("utf-8");
         }
       }
+      return "";
+    },
+    catch: () => "",
+  }).pipe(Effect.catchAll(() => Effect.succeed("")));
+
+const fetchExistingContentEffect = (
+  weekId: WeekId,
+  vaultSettings?: VaultSettings,
+): Effect.Effect<string, never> => {
+  if (!vaultSettings) {
+    return Effect.succeed("");
+  }
+
+  if (vaultSettings.method === "local" && vaultSettings.localPath) {
+    return fetchExistingContentFromLocal(weekId, vaultSettings.localPath);
+  }
+
+  if (
+    vaultSettings.method === "github" &&
+    vaultSettings.githubToken &&
+    vaultSettings.githubRepo
+  ) {
+    const [owner, repo] = vaultSettings.githubRepo.split("/");
+    if (!owner || !repo) {
+      return Effect.succeed("");
     }
-  } catch {
-    // If fetching fails, proceed without existing content
-    console.warn(
-      "[extractHandwriting] Failed to fetch existing content, proceeding without it",
+    return fetchExistingContentFromGitHub(
+      weekId,
+      vaultSettings.githubToken,
+      owner,
+      repo,
     );
   }
 
-  return "";
-}
+  return Effect.succeed("");
+};
 
-// ============================================================================
-// Server Action
-// ============================================================================
-
-export async function extractHandwriting(
+const extractHandwritingEffect = (
   options: ExtractionOptions,
-): Promise<ExtractionResult> {
-  const {
-    imageBase64,
-    weekId,
-    provider,
-    googleApiKey,
-    ollamaEndpoint,
-    vaultSettings,
-  } = options;
-
-  // Validate provider configuration
-  if (provider === "google" && !googleApiKey) {
-    return {
-      success: false,
-      error: "Google API key not configured. Please add it in Settings.",
-    };
-  }
-
-  if (provider === "ollama" && !ollamaEndpoint) {
-    return {
-      success: false,
-      error: "Ollama endpoint not configured. Please add it in Settings.",
-    };
-  }
-
-  // Fetch existing content from vault to provide context to AI
-  const existingContent = await fetchExistingContent(weekId, vaultSettings);
-
-  // Create the appropriate layer based on provider
-  const visionLayer =
-    provider === "google"
-      ? makeGoogleVisionLayer(googleApiKey ?? "")
-      : makeOllamaVisionLayer(ollamaEndpoint ?? "http://localhost:11434");
-
-  // Run the extraction
-  const program = Effect.gen(function* () {
-    const vision = yield* VisionProvider;
-    return yield* vision.extractHandwriting(
+): Effect.Effect<
+  { readonly data: OCRResponse; readonly modelUsed: string },
+  ExtractionValidationError | VisionError | VisionValidationError
+> =>
+  Effect.gen(function* () {
+    const {
       imageBase64,
       weekId,
-      existingContent,
+      provider,
+      googleApiKey,
+      ollamaEndpoint,
+      vaultSettings,
+    } = options;
+
+    // Validate provider configuration
+    if (provider === "google" && !googleApiKey) {
+      return yield* Effect.fail(
+        new ExtractionValidationError({
+          message: "Google API key not configured. Please add it in Settings.",
+        }),
+      );
+    }
+
+    if (provider === "ollama" && !ollamaEndpoint) {
+      return yield* Effect.fail(
+        new ExtractionValidationError({
+          message: "Ollama endpoint not configured. Please add it in Settings.",
+        }),
+      );
+    }
+
+    // Fetch existing content from vault to provide context to AI
+    const existingContent = yield* fetchExistingContentEffect(
+      weekId,
+      vaultSettings,
     );
-  }).pipe(
-    Effect.provide(visionLayer),
-    Effect.map((result) => ({
-      success: true as const,
-      data: result.data,
-      modelUsed: result.modelUsed,
-    })),
-    Effect.catchAll((error: VisionError | VisionValidationError) =>
-      Effect.succeed({ success: false as const, error: error.message }),
+
+    // Create the appropriate layer based on provider
+    const visionLayer =
+      provider === "google"
+        ? makeGoogleVisionLayer(googleApiKey ?? "")
+        : makeOllamaVisionLayer(ollamaEndpoint ?? "http://localhost:11434");
+
+    // Run the extraction with the vision provider
+    const vision = yield* Effect.provide(VisionProvider, visionLayer);
+    const result = yield* Effect.provide(
+      vision.extractHandwriting(imageBase64, weekId, existingContent),
+      visionLayer,
+    );
+
+    return { data: result.data, modelUsed: result.modelUsed };
+  });
+
+// ============================================================================
+// Server Action (Public API)
+// ============================================================================
+
+export type ExtractionResult =
+  | {
+      readonly success: true;
+      readonly data: OCRResponse;
+      readonly modelUsed: string;
+    }
+  | { readonly success: false; readonly error: string };
+
+export const extractHandwriting = async (
+  options: ExtractionOptions,
+): Promise<ExtractionResult> =>
+  Effect.runPromise(
+    extractHandwritingEffect(options).pipe(
+      Effect.map((result) => ({
+        success: true as const,
+        data: result.data,
+        modelUsed: result.modelUsed,
+      })),
+      Effect.catchAll((error) =>
+        Effect.succeed({ success: false as const, error: error.message }),
+      ),
     ),
   );
-
-  return Effect.runPromise(program);
-}

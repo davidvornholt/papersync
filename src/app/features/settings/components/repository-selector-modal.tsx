@@ -49,7 +49,7 @@ export const RepositorySelectorModal = ({
 
       listGitHubRepositories(accessToken).then((result) => {
         if (result.success) {
-          setRepositories(result.repositories);
+          setRepositories([...result.repositories]);
         } else {
           setError(result.error);
         }
@@ -78,7 +78,7 @@ export const RepositorySelectorModal = ({
     setError(null);
     listGitHubRepositories(accessToken).then((result) => {
       if (result.success) {
-        setRepositories(result.repositories);
+        setRepositories([...result.repositories]);
       } else {
         setError(result.error);
       }

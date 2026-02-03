@@ -244,18 +244,18 @@ const AddSubjectModal = ({
       return existingSubjects.some(
         (subject) =>
           subject.name.toLowerCase() === normalizedName &&
-          subject.id !== editingSubject?.id
+          subject.id !== editingSubject?.id,
       );
     },
-    [existingSubjects, editingSubject?.id]
+    [existingSubjects, editingSubject?.id],
   );
 
   const handleSubmit = (e: React.FormEvent): void => {
     e.preventDefault();
     const trimmedName = name.trim();
-    
+
     if (!trimmedName || isDuplicate(trimmedName)) return;
-    
+
     if (editingSubject && onEdit) {
       onEdit(editingSubject.id, trimmedName);
     } else {
@@ -274,9 +274,11 @@ const AddSubjectModal = ({
 
   // Check for duplicate in real-time
   const hasDuplicate = name.trim() !== "" && isDuplicate(name);
-  
+
   // Show error when there's a duplicate (and it's not the same as the original name)
-  const showError = hasDuplicate && name.trim().toLowerCase() !== (editingSubject?.name ?? "").toLowerCase();
+  const showError =
+    hasDuplicate &&
+    name.trim().toLowerCase() !== (editingSubject?.name ?? "").toLowerCase();
 
   const isValid = name.trim() && !hasDuplicate;
 
@@ -366,7 +368,9 @@ const TimetableConfigPanel = ({
       {/* Day Tabs */}
       <div className="w-28 flex-shrink-0">
         <div className="space-y-1">
-          {DAYS_OF_WEEK.map((day) => {
+          {DAYS_OF_WEEK.filter(
+            (day) => day !== "saturday" && day !== "sunday",
+          ).map((day) => {
             const daySchedule = timetable.find((d) => d.day === day);
             const slotCount = daySchedule?.slots.length ?? 0;
             return (
@@ -463,11 +467,13 @@ const TimetableConfigPanel = ({
                     }
                     className="flex-1 px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-accent text-sm"
                   >
-                    {subjects.map((s) => (
-                      <option key={s.id} value={s.id}>
-                        {s.name}
-                      </option>
-                    ))}
+                    {[...subjects]
+                      .sort((a, b) => a.name.localeCompare(b.name))
+                      .map((s) => (
+                        <option key={s.id} value={s.id}>
+                          {s.name}
+                        </option>
+                      ))}
                   </select>
                   <button
                     type="button"
@@ -666,12 +672,7 @@ export const SettingsScreen = (): React.ReactElement => {
         setIsLoadingVaultSettings(false);
       }
     },
-    [
-      lastLoadedLocalPath,
-      addToast,
-      setSubjects,
-      updateTimetable,
-    ],
+    [lastLoadedLocalPath, addToast, setSubjects, updateTimetable],
   );
 
   // Automatically load settings when local vault path changes
@@ -1235,21 +1236,21 @@ export const SettingsScreen = (): React.ReactElement => {
                           {[...settings.subjects]
                             .sort((a, b) => a.name.localeCompare(b.name))
                             .map((subject) => (
-                            <SubjectListItem
-                              key={subject.id}
-                              subject={subject}
-                              onEdit={(id) => {
-                                const s = settings.subjects.find(
-                                  (s) => s.id === id,
-                                );
-                                if (s) {
-                                  setEditingSubject(s);
-                                  setIsSubjectModalOpen(true);
-                                }
-                              }}
-                              onDelete={handleDeleteSubject}
-                            />
-                          ))}
+                              <SubjectListItem
+                                key={subject.id}
+                                subject={subject}
+                                onEdit={(id) => {
+                                  const s = settings.subjects.find(
+                                    (s) => s.id === id,
+                                  );
+                                  if (s) {
+                                    setEditingSubject(s);
+                                    setIsSubjectModalOpen(true);
+                                  }
+                                }}
+                                onDelete={handleDeleteSubject}
+                              />
+                            ))}
                         </AnimatePresence>
                       </ul>
                       {settings.subjects.length === 0 && (

@@ -43,6 +43,42 @@ export type UsePlannerReturn = {
 };
 
 // ============================================================================
+// Effect-Based Helpers
+// ============================================================================
+
+const fetchPdfEffect = (
+  weekId: WeekId,
+  subjects: readonly Subject[],
+  timetable: readonly TimetableDay[],
+): Effect.Effect<Blob, Error> =>
+  Effect.tryPromise({
+    try: async () => {
+      const response = await fetch("/api/planner", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          weekId,
+          subjects,
+          timetable,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = (await response.json()) as { error?: string };
+        throw new Error(errorData.error ?? "Failed to generate PDF");
+      }
+
+      return response.blob();
+    },
+    catch: (error) =>
+      error instanceof Error
+        ? error
+        : new Error("Failed to generate planner PDF"),
+  });
+
+// ============================================================================
 // Hook
 // ============================================================================
 
@@ -59,36 +95,20 @@ export const usePlanner = (initialWeekId?: WeekId): UsePlannerReturn => {
     ): Promise<void> => {
       setState({ status: "generating" });
 
-      try {
-        // Call the API route for server-side PDF generation
-        const response = await fetch("/api/planner", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            weekId,
-            subjects,
-            timetable,
-          }),
-        });
+      const result = await Effect.runPromise(
+        fetchPdfEffect(weekId, subjects, timetable).pipe(
+          Effect.map((blob) => ({ success: true as const, blob })),
+          Effect.catchAll((error) =>
+            Effect.succeed({ success: false as const, error: error.message }),
+          ),
+        ),
+      );
 
-        if (!response.ok) {
-          const errorData = (await response.json()) as { error?: string };
-          throw new Error(errorData.error ?? "Failed to generate PDF");
-        }
-
-        const blob = await response.blob();
-        setState({ status: "generated", blob });
-      } catch (error) {
-        console.error("PDF generation error:", error);
-        setState({
-          status: "error",
-          error:
-            error instanceof Error
-              ? error.message
-              : "Failed to generate planner PDF",
-        });
+      if (result.success) {
+        setState({ status: "generated", blob: result.blob });
+      } else {
+        console.error("PDF generation error:", result.error);
+        setState({ status: "error", error: result.error });
       }
     },
     [weekId],

@@ -1,34 +1,40 @@
-import type { Metadata } from "next";
-import { IBM_Plex_Mono, IBM_Plex_Sans, Source_Serif_4 } from "next/font/google";
-import "./globals.css";
-import { ToastProvider } from "@/app/shared/components";
+import type { Metadata, Viewport } from 'next';
+import { IBM_Plex_Mono, IBM_Plex_Sans, Source_Serif_4 } from 'next/font/google';
+import './globals.css';
+import { ToastProvider } from '@/app/shared/components';
 
 const newsreader = Source_Serif_4({
-  subsets: ["latin"],
-  display: "swap",
-  variable: "--font-display",
-  weight: ["400", "500", "600"],
-  style: ["normal", "italic"],
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-display',
+  weight: ['400', '500', '600'],
+  style: ['normal', 'italic'],
 });
 
 const ibmPlexSans = IBM_Plex_Sans({
-  subsets: ["latin"],
-  display: "swap",
-  variable: "--font-body",
-  weight: ["400", "500", "600"],
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-body',
+  weight: ['400', '500', '600'],
 });
 
 const ibmPlexMono = IBM_Plex_Mono({
-  subsets: ["latin"],
-  display: "swap",
-  variable: "--font-mono",
-  weight: ["400", "500"],
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-mono',
+  weight: ['400', '500'],
 });
 
 export const metadata: Metadata = {
-  title: "PaperSync",
+  title: 'PaperSync',
   description:
-    "Bridge between physical handwriting and digital knowledge management",
+    'Bridge between physical handwriting and digital knowledge management',
+};
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
 };
 
 type RootLayoutProps = {

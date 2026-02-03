@@ -341,71 +341,73 @@ describe("Sync Helper Functions", () => {
   });
 });
 
-  describe("BUG: preserving days not in new entries", () => {
-    it("should preserve Monday when new entries only contain Tuesday", () => {
-      // Scenario: 
-      // 1. First sync creates Monday homework
-      // 2. Second sync has only Tuesday entries (AI filtered out Monday as duplicates)
-      // 3. Monday should still be preserved
-      
-      const tuesdayOnlyEntries: ExtractedEntry[] = [
+describe("BUG: preserving days not in new entries", () => {
+  it("should preserve Monday when new entries only contain Tuesday", () => {
+    // Scenario:
+    // 1. First sync creates Monday homework
+    // 2. Second sync has only Tuesday entries (AI filtered out Monday as duplicates)
+    // 3. Monday should still be preserved
+
+    const tuesdayOnlyEntries: ExtractedEntry[] = [
+      {
+        id: "1",
+        day: "Tuesday",
+        subject: "Physics",
+        content: "Do physics homework",
+        isTask: true,
+        isCompleted: false,
+        isNew: true,
+      },
+    ];
+
+    const existingNoteWithMonday: WeeklyNote = {
+      week: "2026-W05" as WeekId,
+      dateRange: {
+        start: "2026-01-26" as ISODate,
+        end: "2026-02-01" as ISODate,
+      },
+      syncedAt: "2026-01-27T10:00:00Z" as WeeklyNote["syncedAt"],
+      days: [
         {
-          id: "1",
-          day: "Tuesday",
-          subject: "Physics",
-          content: "Do physics homework",
-          isTask: true,
-          isCompleted: false,
-          isNew: true,
+          date: "2026-01-26" as ISODate,
+          dayName: "Monday",
+          entries: [
+            {
+              subject: "Math",
+              tasks: [{ content: "Math homework page 42", isCompleted: false }],
+            },
+          ],
         },
-      ];
+      ],
+      generalTasks: [],
+    };
 
-      const existingNoteWithMonday: WeeklyNote = {
-        week: "2026-W05" as WeekId,
-        dateRange: {
-          start: "2026-01-26" as ISODate,
-          end: "2026-02-01" as ISODate,
-        },
-        syncedAt: "2026-01-27T10:00:00Z" as WeeklyNote["syncedAt"],
-        days: [
-          {
-            date: "2026-01-26" as ISODate,
-            dayName: "Monday",
-            entries: [
-              {
-                subject: "Math",
-                tasks: [{ content: "Math homework page 42", isCompleted: false }],
-              },
-            ],
-          },
-        ],
-        generalTasks: [],
-      };
+    const result = convertEntriesToWeeklyNote(
+      tuesdayOnlyEntries,
+      "2026-W05" as WeekId,
+      existingNoteWithMonday,
+    );
 
-      const result = convertEntriesToWeeklyNote(
-        tuesdayOnlyEntries,
-        "2026-W05" as WeekId,
-        existingNoteWithMonday,
-      );
+    // Both days should exist
+    console.log("Result days:", JSON.stringify(result.days, null, 2));
 
-      // Both days should exist
-      console.log("Result days:", JSON.stringify(result.days, null, 2));
-      
-      expect(result.days).toHaveLength(2);
-      
-      const mondayDay = result.days.find((d) => d.dayName === "Monday");
-      const tuesdayDay = result.days.find((d) => d.dayName === "Tuesday");
-      
-      expect(mondayDay).toBeDefined();
-      expect(tuesdayDay).toBeDefined();
-      
-      // Monday homework should be preserved
-      expect(mondayDay?.entries).toHaveLength(1);
-      expect(mondayDay?.entries[0].subject).toBe("Math");
-      expect(mondayDay?.entries[0].tasks[0].content).toBe("Math homework page 42");
-      
-      // Tuesday homework should be added
-      expect(tuesdayDay?.entries).toHaveLength(1);
-      expect(tuesdayDay?.entries[0].subject).toBe("Physics");
-    });
+    expect(result.days).toHaveLength(2);
+
+    const mondayDay = result.days.find((d) => d.dayName === "Monday");
+    const tuesdayDay = result.days.find((d) => d.dayName === "Tuesday");
+
+    expect(mondayDay).toBeDefined();
+    expect(tuesdayDay).toBeDefined();
+
+    // Monday homework should be preserved
+    expect(mondayDay?.entries).toHaveLength(1);
+    expect(mondayDay?.entries[0].subject).toBe("Math");
+    expect(mondayDay?.entries[0].tasks[0].content).toBe(
+      "Math homework page 42",
+    );
+
+    // Tuesday homework should be added
+    expect(tuesdayDay?.entries).toHaveLength(1);
+    expect(tuesdayDay?.entries[0].subject).toBe("Physics");
   });
+});
