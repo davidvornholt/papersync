@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { AnimatePresence, motion } from "motion/react";
-import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { AnimatePresence, motion } from 'motion/react';
+import Link from 'next/link';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Button,
   Card,
@@ -14,14 +14,14 @@ import {
   StaggerContainer,
   StaggerItem,
   useToast,
-} from "@/app/shared/components";
+} from '@/app/shared/components';
 import {
   type TimetableDay,
   useSettings,
-} from "@/app/shared/hooks/use-settings";
-import type { DayOfWeek, ISODate, Subject, WeekId } from "@/app/shared/types";
-import { usePlanner } from "../hooks";
-import { getWeekId, getWeekStartDate } from "../services/generator";
+} from '@/app/shared/hooks/use-settings';
+import type { DayOfWeek, ISODate, Subject, WeekId } from '@/app/shared/types';
+import { usePlanner } from '../hooks';
+import { getWeekId, getWeekStartDate } from '../services/generator';
 
 // ============================================================================
 // Types
@@ -41,21 +41,21 @@ type ScheduleException = {
 
 // Only weekdays (Mon-Fri) - no weekend support
 const WEEKDAYS: DayOfWeek[] = [
-  "monday",
-  "tuesday",
-  "wednesday",
-  "thursday",
-  "friday",
+  'monday',
+  'tuesday',
+  'wednesday',
+  'thursday',
+  'friday',
 ];
 
 const DAY_SHORT_LABELS: Record<DayOfWeek, string> = {
-  monday: "Mon",
-  tuesday: "Tue",
-  wednesday: "Wed",
-  thursday: "Thu",
-  friday: "Fri",
-  saturday: "Sat",
-  sunday: "Sun",
+  monday: 'Mon',
+  tuesday: 'Tue',
+  wednesday: 'Wed',
+  thursday: 'Thu',
+  friday: 'Fri',
+  saturday: 'Sat',
+  sunday: 'Sun',
 };
 
 // ============================================================================
@@ -91,21 +91,21 @@ const WeekSelectionModal = ({
       endDate.setDate(startDate.getDate() + 6);
 
       const dateOptions: Intl.DateTimeFormatOptions = {
-        month: "short",
-        day: "numeric",
+        month: 'short',
+        day: 'numeric',
       };
 
       weeks.push({
         weekId,
         label:
           offset === 0
-            ? "This Week"
+            ? 'This Week'
             : offset === 1
-              ? "Next Week"
+              ? 'Next Week'
               : offset === -1
-                ? "Last Week"
+                ? 'Last Week'
                 : weekId,
-        dateRange: `${startDate.toLocaleDateString("en-US", dateOptions)} – ${endDate.toLocaleDateString("en-US", { ...dateOptions, year: "numeric" })}`,
+        dateRange: `${startDate.toLocaleDateString('en-US', dateOptions)} – ${endDate.toLocaleDateString('en-US', { ...dateOptions, year: 'numeric' })}`,
       });
     }
 
@@ -141,8 +141,8 @@ const WeekSelectionModal = ({
             onClick={() => setSelectedWeekId(week.weekId)}
             className={`w-full p-4 rounded-lg border text-left transition-all ${
               selectedWeekId === week.weekId
-                ? "border-accent bg-accent/10 ring-2 ring-accent/20"
-                : "border-border hover:border-accent/50 hover:bg-surface"
+                ? 'border-accent bg-accent/10 ring-2 ring-accent/20'
+                : 'border-border hover:border-accent/50 hover:bg-surface'
             }`}
           >
             <div className="flex items-center justify-between">
@@ -173,7 +173,7 @@ type ExceptionEditorModalProps = {
   readonly subjects: readonly Subject[];
   readonly defaultSlots: Array<{ id: string; subjectId: string }>;
   readonly exception: ScheduleException | null;
-  readonly onSave: (exception: Omit<ScheduleException, "id">) => void;
+  readonly onSave: (exception: Omit<ScheduleException, 'id'>) => void;
   readonly onRemove: () => void;
 };
 
@@ -189,7 +189,7 @@ const ExceptionEditorModal = ({
   onRemove,
 }: ExceptionEditorModalProps): React.ReactElement => {
   const [slots, setSlots] = useState(exception?.slots ?? defaultSlots);
-  const [reason, setReason] = useState(exception?.reason ?? "");
+  const [reason, setReason] = useState(exception?.reason ?? '');
 
   const isEditing = exception !== null;
 
@@ -197,7 +197,7 @@ const ExceptionEditorModal = ({
   useEffect(() => {
     if (isOpen) {
       setSlots(exception?.slots ?? defaultSlots);
-      setReason(exception?.reason ?? "");
+      setReason(exception?.reason ?? '');
     }
   }, [isOpen, exception, defaultSlots]);
 
@@ -221,7 +221,7 @@ const ExceptionEditorModal = ({
   };
 
   const handleSave = (): void => {
-    const isoDate = date.toISOString().split("T")[0] as ISODate;
+    const isoDate = date.toISOString().split('T')[0] as ISODate;
     onSave({
       date: isoDate,
       dayOfWeek,
@@ -231,17 +231,17 @@ const ExceptionEditorModal = ({
     onClose();
   };
 
-  const dateStr = date.toLocaleDateString("en-US", {
-    weekday: "long",
-    month: "long",
-    day: "numeric",
+  const dateStr = date.toLocaleDateString('en-US', {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
   });
 
   return (
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={isEditing ? "Edit Exception" : "Add Exception"}
+      title={isEditing ? 'Edit Exception' : 'Add Exception'}
       description={`Modify the schedule for ${dateStr}`}
       size="md"
       footer={
@@ -262,7 +262,7 @@ const ExceptionEditorModal = ({
             Cancel
           </Button>
           <Button onClick={handleSave}>
-            {isEditing ? "Save Changes" : "Add Exception"}
+            {isEditing ? 'Save Changes' : 'Add Exception'}
           </Button>
         </>
       }
@@ -391,7 +391,7 @@ const WeekScheduleOverview = ({
   onEditException,
 }: WeekScheduleOverviewProps): React.ReactElement => {
   const getSubjectName = (subjectId: string): string => {
-    return subjects.find((s) => s.id === subjectId)?.name ?? "Unknown";
+    return subjects.find((s) => s.id === subjectId)?.name ?? 'Unknown';
   };
 
   const getDayDate = (dayIndex: number): Date => {
@@ -401,7 +401,7 @@ const WeekScheduleOverview = ({
   };
 
   const getExceptionForDate = (date: Date): ScheduleException | undefined => {
-    const isoDate = date.toISOString().split("T")[0] as ISODate;
+    const isoDate = date.toISOString().split('T')[0] as ISODate;
     return exceptions.find((e) => e.date === isoDate);
   };
 
@@ -415,9 +415,9 @@ const WeekScheduleOverview = ({
         const slots = hasException
           ? exception.slots
           : (daySchedule?.slots ?? []);
-        const dateStr = dayDate.toLocaleDateString("en-US", {
-          month: "short",
-          day: "numeric",
+        const dateStr = dayDate.toLocaleDateString('en-US', {
+          month: 'short',
+          day: 'numeric',
         });
 
         return (
@@ -428,8 +428,8 @@ const WeekScheduleOverview = ({
             transition={{ delay: index * 0.05 }}
             className={`p-3 rounded-lg border transition-all ${
               hasException
-                ? "border-amber-500/50 bg-amber-500/5"
-                : "border-border bg-background"
+                ? 'border-amber-500/50 bg-amber-500/5'
+                : 'border-border bg-background'
             }`}
           >
             <div className="flex items-center justify-between">
@@ -469,7 +469,7 @@ const WeekScheduleOverview = ({
                 variant="ghost"
                 size="sm"
                 onClick={() => onEditException(dayDate, day)}
-                className={hasException ? "text-amber-600" : ""}
+                className={hasException ? 'text-amber-600' : ''}
               >
                 {hasException ? (
                   <>
@@ -521,7 +521,7 @@ const WeekScheduleOverview = ({
 // Preview Component
 // ============================================================================
 
-type PreviewPanelState = "configure" | "generating" | "generated" | "error";
+type PreviewPanelState = 'configure' | 'generating' | 'generated' | 'error';
 
 type PreviewPanelProps = {
   readonly state: PreviewPanelState;
@@ -544,7 +544,7 @@ const PreviewPanel = ({
     </CardHeader>
     <CardContent className="flex items-center justify-center min-h-[400px]">
       <AnimatePresence mode="wait">
-        {state === "generating" && (
+        {state === 'generating' && (
           <motion.div
             key="generating"
             initial={{ opacity: 0 }}
@@ -564,7 +564,7 @@ const PreviewPanel = ({
           </motion.div>
         )}
 
-        {state === "generated" && (
+        {state === 'generated' && (
           <motion.div
             key="generated"
             initial={{ opacity: 0, scale: 0.9 }}
@@ -575,7 +575,7 @@ const PreviewPanel = ({
             <motion.div
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
-              transition={{ type: "spring", bounce: 0.5, delay: 0.1 }}
+              transition={{ type: 'spring', bounce: 0.5, delay: 0.1 }}
               className="w-20 h-20 mx-auto rounded-full bg-accent/10 flex items-center justify-center"
             >
               <motion.svg
@@ -644,7 +644,7 @@ const PreviewPanel = ({
           </motion.div>
         )}
 
-        {state === "configure" && (
+        {state === 'configure' && (
           <motion.div
             key="configure"
             initial={{ opacity: 0 }}
@@ -673,7 +673,7 @@ const PreviewPanel = ({
           </motion.div>
         )}
 
-        {state === "error" && (
+        {state === 'error' && (
           <motion.div
             key="error"
             initial={{ opacity: 0 }}
@@ -701,7 +701,7 @@ const PreviewPanel = ({
             <div>
               <p className="font-medium text-foreground">Generation Failed</p>
               <p className="text-sm text-muted mt-1">
-                {errorMessage ?? "An unexpected error occurred"}
+                {errorMessage ?? 'An unexpected error occurred'}
               </p>
             </div>
           </motion.div>
@@ -741,13 +741,13 @@ export const PlannerScreen = (): React.ReactElement => {
   // Format date range for display
   const formatDateRange = (start: Date, end: Date): string => {
     const options: Intl.DateTimeFormatOptions = {
-      month: "long",
-      day: "numeric",
+      month: 'long',
+      day: 'numeric',
     };
-    const startStr = start.toLocaleDateString("en-US", options);
-    const endStr = end.toLocaleDateString("en-US", {
+    const startStr = start.toLocaleDateString('en-US', options);
+    const endStr = end.toLocaleDateString('en-US', {
       ...options,
-      year: "numeric",
+      year: 'numeric',
     });
     return `${startStr} – ${endStr}`;
   };
@@ -760,14 +760,14 @@ export const PlannerScreen = (): React.ReactElement => {
   // Map planner state to preview state
   const getPreviewState = (): PreviewPanelState => {
     switch (planner.state.status) {
-      case "generating":
-        return "generating";
-      case "generated":
-        return "generated";
-      case "error":
-        return "error";
+      case 'generating':
+        return 'generating';
+      case 'generated':
+        return 'generated';
+      case 'error':
+        return 'error';
       default:
-        return "configure";
+        return 'configure';
     }
   };
 
@@ -803,29 +803,51 @@ export const PlannerScreen = (): React.ReactElement => {
     // Filter timetable to only include weekdays (Mon-Fri)
     const weekdayTimetable = settings.timetable.filter(
       (day) =>
-        day.day === "monday" ||
-        day.day === "tuesday" ||
-        day.day === "wednesday" ||
-        day.day === "thursday" ||
-        day.day === "friday",
+        day.day === 'monday' ||
+        day.day === 'tuesday' ||
+        day.day === 'wednesday' ||
+        day.day === 'thursday' ||
+        day.day === 'friday',
     );
+
+    // Apply exceptions to the timetable
+    // Each exception replaces the slots for its corresponding day
+    const timetableWithExceptions = weekdayTimetable.map((daySchedule) => {
+      // Find the date for this day in the current week
+      const dayIndex = WEEKDAYS.indexOf(daySchedule.day);
+      const dayDate = new Date(weekStartDate);
+      dayDate.setDate(weekStartDate.getDate() + dayIndex);
+      const isoDate = dayDate.toISOString().split('T')[0] as ISODate;
+
+      // Check if there's an exception for this date
+      const exception = exceptions.find((e) => e.date === isoDate);
+      if (exception) {
+        // Replace slots with exception's slots
+        return {
+          ...daySchedule,
+          slots: exception.slots,
+        };
+      }
+
+      return daySchedule;
+    });
 
     await planner.generate(
       subjectsToUse,
-      weekdayTimetable as Parameters<typeof planner.generate>[1],
+      timetableWithExceptions as Parameters<typeof planner.generate>[1],
     );
   };
 
   const handleDownload = (): void => {
     planner.download();
-    addToast("Download started", "info");
+    addToast('Download started', 'info');
   };
 
   const handleWeekSelect = (weekId: WeekId): void => {
     setSelectedWeekId(weekId);
     setExceptions([]); // Clear exceptions when changing week
     planner.reset();
-    addToast(`Selected ${weekId}`, "info");
+    addToast(`Selected ${weekId}`, 'info');
   };
 
   const handleEditException = (date: Date, dayOfWeek: DayOfWeek): void => {
@@ -833,7 +855,7 @@ export const PlannerScreen = (): React.ReactElement => {
   };
 
   const handleSaveException = (
-    exceptionData: Omit<ScheduleException, "id">,
+    exceptionData: Omit<ScheduleException, 'id'>,
   ): void => {
     setExceptions((prev) => {
       const existing = prev.find((e) => e.date === exceptionData.date);
@@ -844,16 +866,16 @@ export const PlannerScreen = (): React.ReactElement => {
       }
       return [...prev, { ...exceptionData, id: `exc-${Date.now()}` }];
     });
-    addToast("Schedule exception saved", "success");
+    addToast('Schedule exception saved', 'success');
   };
 
   const handleRemoveException = (): void => {
     if (exceptionEditingDate) {
       const isoDate = exceptionEditingDate.date
         .toISOString()
-        .split("T")[0] as ISODate;
+        .split('T')[0] as ISODate;
       setExceptions((prev) => prev.filter((e) => e.date !== isoDate));
-      addToast("Exception removed", "info");
+      addToast('Exception removed', 'info');
     }
   };
 
@@ -870,7 +892,7 @@ export const PlannerScreen = (): React.ReactElement => {
     if (!exceptionEditingDate) return null;
     const isoDate = exceptionEditingDate.date
       .toISOString()
-      .split("T")[0] as ISODate;
+      .split('T')[0] as ISODate;
     return exceptions.find((e) => e.date === isoDate) ?? null;
   };
 
@@ -1017,8 +1039,8 @@ export const PlannerScreen = (): React.ReactElement => {
                         </h2>
                         <p className="text-sm text-muted">
                           {exceptionsCount > 0
-                            ? `${exceptionsCount} exception${exceptionsCount !== 1 ? "s" : ""} for this week`
-                            : "Review and add exceptions if needed"}
+                            ? `${exceptionsCount} exception${exceptionsCount !== 1 ? 's' : ''} for this week`
+                            : 'Review and add exceptions if needed'}
                         </p>
                       </div>
                     </div>
@@ -1098,14 +1120,14 @@ export const PlannerScreen = (): React.ReactElement => {
                 <Button
                   onClick={handleGenerate}
                   disabled={
-                    planner.state.status === "generating" ||
+                    planner.state.status === 'generating' ||
                     settings.subjects.length === 0 ||
                     !hasTimetableConfigured
                   }
                   className="w-full"
                   size="lg"
                 >
-                  {planner.state.status === "generating" ? (
+                  {planner.state.status === 'generating' ? (
                     <>
                       <Spinner size="sm" className="mr-2" />
                       Generating...
@@ -1146,7 +1168,7 @@ export const PlannerScreen = (): React.ReactElement => {
               onOpen={planner.openInNewTab}
               weekId={currentWeekId}
               errorMessage={
-                planner.state.status === "error"
+                planner.state.status === 'error'
                   ? planner.state.error
                   : undefined
               }

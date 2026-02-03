@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import { AnimatePresence, motion } from "motion/react";
-import Image from "next/image";
-import Link from "next/link";
-import { useCallback, useRef, useState } from "react";
-import { syncEntriesToVault } from "@/app/features/vault/actions";
+import { AnimatePresence, motion } from 'motion/react';
+import Image from 'next/image';
+import Link from 'next/link';
+import { useCallback, useRef, useState } from 'react';
+import { syncEntriesToVault } from '@/app/features/vault/actions';
 import {
   Button,
   Card,
@@ -15,20 +15,20 @@ import {
   StaggerContainer,
   StaggerItem,
   useToast,
-} from "@/app/shared/components";
-import { useSettings } from "@/app/shared/hooks";
+} from '@/app/shared/components';
+import { useSettings } from '@/app/shared/hooks';
 import {
   discoverScanners,
   getScannerCapabilities,
   scanFromDevice,
-} from "../actions";
-import { type ExtractedEntry, useScan } from "../hooks";
+} from '../actions';
+import { type ExtractedEntry, useScan } from '../hooks';
 import type {
   ColorMode,
   DiscoveredScanner,
   InputSource,
   ScannerCapabilities,
-} from "../services";
+} from '../services';
 
 // ============================================================================
 // Drag Drop Zone
@@ -45,14 +45,27 @@ const DragDropZone = ({
   isDragging,
   setIsDragging,
 }: DragDropZoneProps): React.ReactElement => {
-  const inputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (file) {
+        onFileSelect(file);
+        // Reset the input so the same file can be selected again
+        e.target.value = '';
+      }
+    },
+    [onFileSelect],
+  );
 
   const handleDrop = useCallback(
     (e: React.DragEvent) => {
       e.preventDefault();
       setIsDragging(false);
       const file = e.dataTransfer.files[0];
-      if (file?.type.startsWith("image/")) {
+      if (file?.type.startsWith('image/')) {
         onFileSelect(file);
       }
     },
@@ -64,64 +77,142 @@ const DragDropZone = ({
   }, []);
 
   return (
-    <motion.button
-      type="button"
-      onClick={() => inputRef.current?.click()}
+    <section
+      aria-label="Drop zone for planner images"
       onDrop={handleDrop}
       onDragOver={handleDragOver}
       onDragEnter={() => setIsDragging(true)}
       onDragLeave={() => setIsDragging(false)}
-      whileHover={{ scale: 1.01 }}
-      whileTap={{ scale: 0.99 }}
-      className={`w-full border-2 border-dashed rounded-xl p-12 transition-all duration-300 cursor-pointer ${
-        isDragging
-          ? "border-accent bg-accent/5 scale-[1.02]"
-          : "border-border hover:border-accent/50 hover:bg-surface"
+      className={`w-full border-2 border-dashed rounded-xl p-8 transition-all duration-300 ${
+        isDragging ? 'border-accent bg-accent/5 scale-[1.01]' : 'border-border'
       }`}
     >
+      {/* Hidden file inputs */}
       <input
-        ref={inputRef}
+        ref={cameraInputRef}
         type="file"
         accept="image/*"
-        onChange={(e) => {
-          const file = e.target.files?.[0];
-          if (file) onFileSelect(file);
-        }}
+        capture="environment"
+        onChange={handleFileChange}
         className="hidden"
-        aria-label="Select planner image"
+        aria-label="Take photo with camera"
       />
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        onChange={handleFileChange}
+        className="hidden"
+        aria-label="Select image from device"
+      />
+
       <div className="text-center">
         <motion.div
           animate={
             isDragging ? { scale: 1.1, rotate: 5 } : { scale: 1, rotate: 0 }
           }
-          className="w-16 h-16 mx-auto mb-4 rounded-full bg-accent/10 flex items-center justify-center"
+          className="w-16 h-16 mx-auto mb-6 rounded-full bg-accent/10 flex items-center justify-center"
         >
           <svg
-            className={`w-8 h-8 transition-colors ${isDragging ? "text-accent" : "text-muted-light"}`}
+            className={`w-8 h-8 transition-colors ${isDragging ? 'text-accent' : 'text-muted-light'}`}
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
             aria-hidden="true"
           >
-            <title>Upload</title>
+            <title>Scan</title>
             <path
               strokeLinecap="round"
               strokeLinejoin="round"
               strokeWidth={1.5}
-              d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+              d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"
+            />
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={1.5}
+              d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"
             />
           </svg>
         </motion.div>
-        <p className="text-foreground font-medium">
-          {isDragging ? "Drop image here" : "Click to upload image"}
-        </p>
-        <p className="mt-1 text-sm text-muted">or drag and drop your scan</p>
-        <p className="mt-4 text-xs text-muted-light">
-          Supports JPG, PNG, HEIC • Max 10MB
+
+        {isDragging ? (
+          <p className="text-accent font-medium text-lg mb-6">
+            Drop image here
+          </p>
+        ) : (
+          <>
+            <p className="text-foreground font-medium mb-2">
+              Capture your planner
+            </p>
+            <p className="text-sm text-muted mb-6">
+              Take a photo or upload an existing scan
+            </p>
+          </>
+        )}
+
+        {/* Action buttons */}
+        <div className="flex flex-col sm:flex-row gap-3 justify-center">
+          <motion.button
+            type="button"
+            onClick={() => cameraInputRef.current?.click()}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-accent text-white font-medium rounded-lg hover:bg-accent/90 transition-colors"
+          >
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <title>Camera</title>
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"
+              />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"
+              />
+            </svg>
+            Take Photo
+          </motion.button>
+
+          <motion.button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-surface border border-border text-foreground font-medium rounded-lg hover:bg-background hover:border-accent/50 transition-colors"
+          >
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <title>Upload</title>
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+              />
+            </svg>
+            Upload Image
+          </motion.button>
+        </div>
+
+        <p className="mt-6 text-xs text-muted-light">
+          Supports JPG, PNG, HEIC • Drag & drop also supported
         </p>
       </div>
-    </motion.button>
+    </section>
   );
 };
 
@@ -203,13 +294,13 @@ const ImagePreview = ({
 // ============================================================================
 
 const DAYS_OF_WEEK = [
-  "Monday",
-  "Tuesday",
-  "Wednesday",
-  "Thursday",
-  "Friday",
-  "Saturday",
-  "Sunday",
+  'Monday',
+  'Tuesday',
+  'Wednesday',
+  'Thursday',
+  'Friday',
+  'Saturday',
+  'Sunday',
 ] as const;
 
 type EditableEntryItemProps = {
@@ -249,7 +340,7 @@ const EditableEntryItem = ({
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-2 flex-wrap">
-            {entry.subject !== "General Tasks" && (
+            {entry.subject !== 'General Tasks' && (
               <select
                 value={entry.day}
                 onChange={(e) => onUpdate(entry.id, { day: e.target.value })}
@@ -334,11 +425,11 @@ const EditableEntryItem = ({
 // ============================================================================
 
 type ResultsPanelState =
-  | "idle"
-  | "uploading"
-  | "processing"
-  | "complete"
-  | "error";
+  | 'idle'
+  | 'uploading'
+  | 'processing'
+  | 'complete'
+  | 'error';
 
 type ResultsPanelProps = {
   readonly state: ResultsPanelState;
@@ -395,7 +486,7 @@ const ResultsPanel = ({
     </CardHeader>
     <CardContent className="flex-1 flex flex-col min-h-0">
       <AnimatePresence mode="wait">
-        {state === "complete" && entries.length > 0 && (
+        {state === 'complete' && entries.length > 0 && (
           <motion.div
             key="results"
             initial={{ opacity: 0 }}
@@ -411,7 +502,7 @@ const ResultsPanel = ({
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-accent">
-                    ✓ {entries.length} entr{entries.length === 1 ? "y" : "ies"}{" "}
+                    ✓ {entries.length} entr{entries.length === 1 ? 'y' : 'ies'}{' '}
                     extracted
                   </p>
                   <p className="text-xs text-muted mt-0.5">
@@ -484,7 +575,7 @@ const ResultsPanel = ({
           </motion.div>
         )}
 
-        {state === "complete" && entries.length === 0 && (
+        {state === 'complete' && entries.length === 0 && (
           <motion.div
             key="empty"
             initial={{ opacity: 0 }}
@@ -517,7 +608,7 @@ const ResultsPanel = ({
           </motion.div>
         )}
 
-        {state === "processing" && (
+        {state === 'processing' && (
           <motion.div
             key="processing"
             initial={{ opacity: 0 }}
@@ -540,7 +631,7 @@ const ResultsPanel = ({
           </motion.div>
         )}
 
-        {(state === "idle" || state === "uploading") && (
+        {(state === 'idle' || state === 'uploading') && (
           <motion.div
             key="idle"
             initial={{ opacity: 0 }}
@@ -598,8 +689,8 @@ const NetworkScannersPanel = ({
     null,
   );
   const [resolution, setResolution] = useState<number>(300);
-  const [colorMode, setColorMode] = useState<ColorMode>("color");
-  const [inputSource, setInputSource] = useState<InputSource>("Platen");
+  const [colorMode, setColorMode] = useState<ColorMode>('color');
+  const [inputSource, setInputSource] = useState<InputSource>('Platen');
   const { addToast } = useToast();
 
   const handleDiscover = useCallback(async () => {
@@ -610,12 +701,12 @@ const NetworkScannersPanel = ({
     if (result.success) {
       setScanners([...result.scanners]);
       if (result.scanners.length === 0) {
-        addToast("No scanners found on network", "info");
+        addToast('No scanners found on network', 'info');
       } else {
-        addToast(`Found ${result.scanners.length} scanner(s)`, "success");
+        addToast(`Found ${result.scanners.length} scanner(s)`, 'success');
       }
     } else {
-      addToast(result.error, "error");
+      addToast(result.error, 'error');
     }
   }, [addToast]);
 
@@ -631,7 +722,7 @@ const NetworkScannersPanel = ({
       if (result.success) {
         setCapabilities(result.capabilities);
         // Set defaults from first available input source
-        const firstSource = result.capabilities.inputSources[0] || "Platen";
+        const firstSource = result.capabilities.inputSources[0] || 'Platen';
         setInputSource(firstSource);
 
         // Set resolution from the first source's capabilities
@@ -647,7 +738,7 @@ const NetworkScannersPanel = ({
           setColorMode(sourceCaps.colorModes[0]);
         }
       } else {
-        addToast(`Failed to fetch capabilities: ${result.error}`, "error");
+        addToast(`Failed to fetch capabilities: ${result.error}`, 'error');
       }
     },
     [addToast],
@@ -682,16 +773,16 @@ const NetworkScannersPanel = ({
     const result = await scanFromDevice(selectedScanner, {
       colorMode,
       resolution,
-      format: "jpeg",
+      format: 'jpeg',
       inputSource,
     });
     setIsScanning(false);
 
     if (result.success) {
       onScanComplete(result.imageData);
-      addToast("Scan completed successfully", "success");
+      addToast('Scan completed successfully', 'success');
     } else {
-      addToast(result.error, "error");
+      addToast(result.error, 'error');
     }
   }, [
     selectedScanner,
@@ -743,7 +834,7 @@ const NetworkScannersPanel = ({
                 <Spinner size="sm" className="mr-2" /> Searching...
               </>
             ) : (
-              "Discover"
+              'Discover'
             )}
           </Button>
         </div>
@@ -782,8 +873,8 @@ const NetworkScannersPanel = ({
                   whileTap={{ scale: 0.99 }}
                   className={`w-full p-3 rounded-lg border text-left transition-all ${
                     selectedScanner?.id === scanner.id
-                      ? "border-accent bg-accent/5"
-                      : "border-border hover:border-accent/50"
+                      ? 'border-accent bg-accent/5'
+                      : 'border-border hover:border-accent/50'
                   }`}
                 >
                   <div className="flex items-center justify-between">
@@ -794,7 +885,7 @@ const NetworkScannersPanel = ({
                       </p>
                     </div>
                     <div
-                      className={`w-2 h-2 rounded-full ${selectedScanner?.id === scanner.id ? "bg-accent" : "bg-muted-light"}`}
+                      className={`w-2 h-2 rounded-full ${selectedScanner?.id === scanner.id ? 'bg-accent' : 'bg-muted-light'}`}
                     />
                   </div>
                 </motion.button>
@@ -805,7 +896,7 @@ const NetworkScannersPanel = ({
             {selectedScanner && (
               <motion.div
                 initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
+                animate={{ opacity: 1, height: 'auto' }}
                 className="pt-4 border-t border-border space-y-3"
               >
                 {isLoadingCapabilities ? (
@@ -837,9 +928,9 @@ const NetworkScannersPanel = ({
                           >
                             {capabilities.inputSources.map((source) => (
                               <option key={source} value={source}>
-                                {source === "Platen"
-                                  ? "Flatbed Glass"
-                                  : "Document Feeder (ADF)"}
+                                {source === 'Platen'
+                                  ? 'Flatbed Glass'
+                                  : 'Document Feeder (ADF)'}
                               </option>
                             ))}
                           </select>
@@ -847,10 +938,10 @@ const NetworkScannersPanel = ({
                       )}
                       {capabilities.inputSources.length === 1 && (
                         <div className="col-span-2 text-sm text-muted">
-                          Source:{" "}
-                          {capabilities.inputSources[0] === "Platen"
-                            ? "Flatbed Glass"
-                            : "Document Feeder (ADF)"}
+                          Source:{' '}
+                          {capabilities.inputSources[0] === 'Platen'
+                            ? 'Flatbed Glass'
+                            : 'Document Feeder (ADF)'}
                         </div>
                       )}
                       <div>
@@ -896,11 +987,11 @@ const NetworkScannersPanel = ({
                             inputSource
                           ].colorModes.map((mode: ColorMode) => (
                             <option key={mode} value={mode}>
-                              {mode === "color"
-                                ? "Color"
-                                : mode === "grayscale"
-                                  ? "Grayscale"
-                                  : "Black & White"}
+                              {mode === 'color'
+                                ? 'Color'
+                                : mode === 'grayscale'
+                                  ? 'Grayscale'
+                                  : 'Black & White'}
                             </option>
                           ))}
                         </select>
@@ -917,7 +1008,7 @@ const NetworkScannersPanel = ({
                           <Spinner size="sm" className="mr-2" /> Scanning...
                         </>
                       ) : (
-                        "Scan Document"
+                        'Scan Document'
                       )}
                     </Button>
                   </>
@@ -962,28 +1053,28 @@ export const ScanScreen = (): React.ReactElement => {
   // Map scan state to panel state
   const getPanelState = (): ResultsPanelState => {
     switch (scan.state.status) {
-      case "processing":
-        return "processing";
-      case "complete":
-        return "complete";
-      case "error":
-        return "error";
-      case "uploading":
-        return "uploading";
+      case 'processing':
+        return 'processing';
+      case 'complete':
+        return 'complete';
+      case 'error':
+        return 'error';
+      case 'uploading':
+        return 'uploading';
       default:
-        return "idle";
+        return 'idle';
     }
   };
 
   const handleFileSelect = async (file: File): Promise<void> => {
     // Don't clear entries - allow accumulating from multiple scans
     await scan.upload(file);
-    addToast("Image uploaded successfully", "success");
+    addToast('Image uploaded successfully', 'success');
   };
 
   const handleProcess = async (): Promise<void> => {
     const scanResult = await scan.process();
-    if (scanResult.status === "complete") {
+    if (scanResult.status === 'complete') {
       const count = scanResult.entries.length;
       if (count > 0) {
         // Append new entries to existing ones (accumulate across multiple scans)
@@ -997,13 +1088,13 @@ export const ScanScreen = (): React.ReactElement => {
         });
         addToast(
           `Extracted ${count} new entries - scan more pages or sync to vault`,
-          "success",
+          'success',
         );
       } else {
-        addToast("No new entries found in scan", "info");
+        addToast('No new entries found in scan', 'info');
       }
-    } else if (scanResult.status === "error") {
-      addToast(`Failed to process scan: ${scanResult.error}`, "error");
+    } else if (scanResult.status === 'error') {
+      addToast(`Failed to process scan: ${scanResult.error}`, 'error');
     }
   };
 
@@ -1021,7 +1112,7 @@ export const ScanScreen = (): React.ReactElement => {
   const handleDeleteEntry = useCallback(
     (id: string) => {
       setEditedEntries((prev) => prev.filter((entry) => entry.id !== id));
-      addToast("Entry removed", "info");
+      addToast('Entry removed', 'info');
     },
     [addToast],
   );
@@ -1031,23 +1122,23 @@ export const ScanScreen = (): React.ReactElement => {
     const { method, localPath, githubConnected, githubToken, githubRepo } =
       settings.vault;
 
-    if (method === "local") {
+    if (method === 'local') {
       if (!localPath) {
-        addToast("Configure vault path in Settings first", "error");
+        addToast('Configure vault path in Settings first', 'error');
         return;
       }
-    } else if (method === "github") {
+    } else if (method === 'github') {
       if (!githubConnected || !githubToken || !githubRepo) {
         addToast(
-          "Connect GitHub and select a repository in Settings first",
-          "error",
+          'Connect GitHub and select a repository in Settings first',
+          'error',
         );
         return;
       }
     }
 
     if (editedEntries.length === 0) {
-      addToast("No entries to sync", "info");
+      addToast('No entries to sync', 'info');
       return;
     }
 
@@ -1061,16 +1152,16 @@ export const ScanScreen = (): React.ReactElement => {
       });
 
       if (result.success) {
-        addToast("Synced to vault successfully! 🎉", "success");
+        addToast('Synced to vault successfully! 🎉', 'success');
         setEditedEntries([]); // Clear after successful sync
         scan.clear();
       } else {
-        addToast(`Sync failed: ${result.error}`, "error");
+        addToast(`Sync failed: ${result.error}`, 'error');
       }
     } catch (error) {
       addToast(
-        `Sync error: ${error instanceof Error ? error.message : "Unknown error"}`,
-        "error",
+        `Sync error: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        'error',
       );
     } finally {
       setIsSyncing(false);
@@ -1089,18 +1180,18 @@ export const ScanScreen = (): React.ReactElement => {
       try {
         const response = await fetch(imageData);
         const blob = await response.blob();
-        const file = new File([blob], "scanned-document.jpg", {
+        const file = new File([blob], 'scanned-document.jpg', {
           type: blob.type,
         });
         await scan.upload(file);
         addToast(
           "Document scanned successfully! Click 'Process' to extract content.",
-          "success",
+          'success',
         );
       } catch (error) {
         addToast(
-          `Failed to process scanned image: ${error instanceof Error ? error.message : "Unknown error"}`,
-          "error",
+          `Failed to process scanned image: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          'error',
         );
       }
     },
@@ -1196,7 +1287,7 @@ export const ScanScreen = (): React.ReactElement => {
                       preview={scan.imagePreview}
                       onClear={handleClear}
                       onProcess={handleProcess}
-                      isProcessing={scan.state.status === "processing"}
+                      isProcessing={scan.state.status === 'processing'}
                     />
                   )}
                 </CardContent>
@@ -1206,7 +1297,7 @@ export const ScanScreen = (): React.ReactElement => {
             <StaggerItem>
               <NetworkScannersPanel
                 onScanComplete={handleScanFromDevice}
-                isDisabled={scan.state.status === "processing"}
+                isDisabled={scan.state.status === 'processing'}
               />
             </StaggerItem>
           </StaggerContainer>
@@ -1222,15 +1313,15 @@ export const ScanScreen = (): React.ReactElement => {
               state={getPanelState()}
               entries={editedEntries}
               confidence={
-                scan.state.status === "complete" ? scan.state.confidence : 0
+                scan.state.status === 'complete' ? scan.state.confidence : 0
               }
               modelUsed={
-                scan.state.status === "complete"
+                scan.state.status === 'complete'
                   ? scan.state.modelUsed
                   : undefined
               }
               _errorMessage={
-                scan.state.status === "error" ? scan.state.error : undefined
+                scan.state.status === 'error' ? scan.state.error : undefined
               }
               onUpdateEntry={handleUpdateEntry}
               onDeleteEntry={handleDeleteEntry}

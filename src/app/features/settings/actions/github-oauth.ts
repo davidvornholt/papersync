@@ -1,69 +1,30 @@
 "use server";
 
-import { Data, Effect } from "effect";
+import { Effect } from "effect";
+import {
+  GitHubAPIError,
+  GitHubAuthPending,
+  GitHubOAuthError,
+  GitHubSlowDown,
+  type DeviceCodeResponse,
+  type DeviceCodeResult,
+  type GitHubReposResult,
+  type GitHubRepository,
+  type GitHubUser,
+  type GitHubUserResult,
+  type TokenPollResult,
+  type TokenResponse,
+} from "./github-oauth-types";
 
 /**
  * Server Actions for GitHub OAuth Device Flow
  *
  * GitHub's OAuth endpoints don't support CORS, so they must be called
  * from the server-side rather than directly from the browser.
+ *
+ * Note: Types and error classes are in github-oauth-types.ts because
+ * "use server" files can only export async functions.
  */
-
-// ============================================================================
-// Error Types
-// ============================================================================
-
-export class GitHubOAuthError extends Data.TaggedError("GitHubOAuthError")<{
-  readonly message: string;
-  readonly cause?: unknown;
-}> {}
-
-export class GitHubAPIError extends Data.TaggedError("GitHubAPIError")<{
-  readonly message: string;
-  readonly status?: number;
-  readonly cause?: unknown;
-}> {}
-
-export class GitHubAuthPending extends Data.TaggedError("GitHubAuthPending")<{
-  readonly shouldRetry: true;
-}> {}
-
-export class GitHubSlowDown extends Data.TaggedError("GitHubSlowDown")<{
-  readonly shouldRetry: true;
-}> {}
-
-// ============================================================================
-// Success Types
-// ============================================================================
-
-export type DeviceCodeResponse = {
-  readonly deviceCode: string;
-  readonly userCode: string;
-  readonly verificationUri: string;
-  readonly expiresIn: number;
-  readonly interval: number;
-};
-
-export type TokenResponse = {
-  readonly accessToken: string;
-  readonly tokenType: string;
-  readonly scope: string;
-};
-
-export type GitHubUser = {
-  readonly login: string;
-  readonly name: string | null;
-  readonly avatarUrl: string;
-};
-
-export type GitHubRepository = {
-  readonly id: number;
-  readonly name: string;
-  readonly fullName: string;
-  readonly owner: string;
-  readonly private: boolean;
-  readonly description: string | null;
-};
 
 // ============================================================================
 // Effect-Based Implementations
@@ -286,10 +247,6 @@ const listRepositoriesEffect = (
 // Server Actions (Public API - runs Effect at boundary)
 // ============================================================================
 
-export type DeviceCodeResult =
-  | ({ readonly success: true } & DeviceCodeResponse)
-  | { readonly success: false; readonly error: string };
-
 export const initiateGitHubDeviceFlow = async (
   clientId: string,
 ): Promise<DeviceCodeResult> =>
@@ -301,14 +258,6 @@ export const initiateGitHubDeviceFlow = async (
       ),
     ),
   );
-
-export type TokenPollResult =
-  | ({ readonly success: true } & TokenResponse)
-  | {
-      readonly success: false;
-      readonly error: string;
-      readonly shouldRetry?: boolean;
-    };
 
 export const pollGitHubToken = async (
   clientId: string,
@@ -341,10 +290,6 @@ export const pollGitHubToken = async (
     ),
   );
 
-export type GitHubUserResult =
-  | ({ readonly success: true } & GitHubUser)
-  | { readonly success: false; readonly error: string };
-
 export const getGitHubUser = async (
   accessToken: string,
 ): Promise<GitHubUserResult> =>
@@ -356,13 +301,6 @@ export const getGitHubUser = async (
       ),
     ),
   );
-
-export type GitHubReposResult =
-  | {
-      readonly success: true;
-      readonly repositories: readonly GitHubRepository[];
-    }
-  | { readonly success: false; readonly error: string };
 
 export const listGitHubRepositories = async (
   accessToken: string,

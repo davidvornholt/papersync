@@ -1,6 +1,6 @@
 "use server";
 
-import { Data, Effect } from "effect";
+import { Effect } from "effect";
 import type { WeekId } from "@/app/shared/types";
 import {
   generateOverviewContent,
@@ -18,43 +18,27 @@ import {
   type ExtractedEntry,
   getCurrentWeekId,
 } from "./sync-helpers";
+import {
+  GitHubFileError,
+  GitHubFileNotFound,
+  SyncValidationError,
+  type SyncOptions,
+  type SyncResult,
+} from "./sync-types";
 
-// Re-export ExtractedEntry type for backward compatibility
-export type { ExtractedEntry } from "./sync-helpers";
+/**
+ * Server Actions for Vault Sync
+ *
+ * Note: Types and error classes are in sync-types.ts because
+ * "use server" files can only export async functions.
+ */
 
-// ============================================================================
-// Error Types
-// ============================================================================
-
-export class SyncValidationError extends Data.TaggedError(
-  "SyncValidationError",
-)<{
-  readonly message: string;
-}> {}
-
-export class GitHubFileError extends Data.TaggedError("GitHubFileError")<{
-  readonly message: string;
-  readonly status?: number;
-  readonly cause?: unknown;
-}> {}
-
-export class GitHubFileNotFound extends Data.TaggedError("GitHubFileNotFound")<{
-  readonly path: string;
-}> {}
+// Re-export types from the types file for convenience
+export type { ExtractedEntry, SyncOptions, SyncResult, VaultMethod } from "./sync-types";
 
 // ============================================================================
-// Types
+// Internal Types
 // ============================================================================
-
-export type VaultMethod = "local" | "github";
-
-export type SyncOptions = {
-  readonly method: VaultMethod;
-  readonly localPath?: string;
-  readonly githubToken?: string;
-  readonly githubRepo?: string;
-  readonly weekId?: WeekId;
-};
 
 type GitHubFileContent = {
   readonly content: string;
@@ -299,10 +283,6 @@ const syncToGitHubEffect = (
 // ============================================================================
 // Server Actions (Public API)
 // ============================================================================
-
-export type SyncResult =
-  | { readonly success: true; readonly notePath: string }
-  | { readonly success: false; readonly error: string };
 
 export const syncToVault = async (
   entries: readonly ExtractedEntry[],

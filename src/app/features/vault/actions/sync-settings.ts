@@ -1,6 +1,6 @@
 "use server";
 
-import { Data, Effect } from "effect";
+import { Effect } from "effect";
 import type { SubjectsConfig } from "@/app/shared/types";
 import type { TimetableConfig } from "../services/config";
 import {
@@ -13,32 +13,29 @@ import {
 } from "../services/config";
 import { makeLocalVaultLayer } from "../services/filesystem";
 import { GitHubService, GitHubServiceLive } from "../services/github";
+import {
+  GitHubSyncError,
+  SyncSettingsValidationError,
+  type LoadSettingsResult,
+  type SettingsToSync,
+  type SyncSettingsResult,
+  type VaultMethod,
+} from "./sync-settings-types";
 
-// ============================================================================
-// Error Types
-// ============================================================================
+/**
+ * Server Actions for Settings Sync
+ *
+ * Note: Types and error classes are in sync-settings-types.ts because
+ * "use server" files can only export async functions.
+ */
 
-export class SyncSettingsValidationError extends Data.TaggedError(
-  "SyncSettingsValidationError",
-)<{
-  readonly message: string;
-}> {}
-
-export class GitHubSyncError extends Data.TaggedError("GitHubSyncError")<{
-  readonly message: string;
-  readonly cause?: unknown;
-}> {}
-
-// ============================================================================
-// Types
-// ============================================================================
-
-export type SettingsToSync = {
-  readonly subjects: SubjectsConfig;
-  readonly timetable: TimetableConfig;
-};
-
-export type VaultMethod = "local" | "github";
+// Re-export types from the types file for convenience
+export type {
+  LoadSettingsResult,
+  SettingsToSync,
+  SyncSettingsResult,
+  VaultMethod,
+} from "./sync-settings-types";
 
 // ============================================================================
 // Merge Helpers
@@ -339,10 +336,6 @@ const loadFromGitHubEffect = (
 // Server Actions (Public API)
 // ============================================================================
 
-export type SyncSettingsResult =
-  | { readonly success: true; readonly paths: readonly string[] }
-  | { readonly success: false; readonly error: string };
-
 export const syncSettingsToVault = async (
   settings: SettingsToSync,
   method: VaultMethod,
@@ -396,14 +389,6 @@ export const syncSettingsToVault = async (
 // ============================================================================
 // Load Settings from Vault
 // ============================================================================
-
-export type LoadSettingsResult =
-  | {
-      readonly success: true;
-      readonly subjects: SubjectsConfig;
-      readonly timetable: TimetableConfig;
-    }
-  | { readonly success: false; readonly error: string };
 
 export const loadSettingsFromVault = async (
   method: VaultMethod,

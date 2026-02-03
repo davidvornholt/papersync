@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { AnimatePresence, motion } from "motion/react";
-import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
-import { syncSettingsToVault } from "@/app/features/vault/actions/sync-settings";
+import { AnimatePresence, motion } from 'motion/react';
+import Link from 'next/link';
+import { useCallback, useEffect, useState } from 'react';
+import { syncSettingsToVault } from '@/app/features/vault/actions/sync-settings';
 import {
   Button,
   Card,
@@ -15,41 +15,41 @@ import {
   StaggerContainer,
   StaggerItem,
   useToast,
-} from "@/app/shared/components";
+} from '@/app/shared/components';
 import {
   DAYS_OF_WEEK,
   type DayOfWeek,
   type Subject,
   type TimetableDay,
   useSettings,
-} from "@/app/shared/hooks/use-settings";
-import type { GitHubRepository } from "../actions/github-oauth";
-import { GitHubOAuthModal } from "../components/github-oauth-modal";
-import { RepositorySelectorModal } from "../components/repository-selector-modal";
-import { useGitHubOAuth } from "../hooks/use-github-oauth";
+} from '@/app/shared/hooks/use-settings';
+import type { GitHubRepository } from '../actions/github-oauth-types';
+import { GitHubOAuthModal } from '../components/github-oauth-modal';
+import { RepositorySelectorModal } from '../components/repository-selector-modal';
+import { useGitHubOAuth } from '../hooks/use-github-oauth';
 
 // ============================================================================
 // Constants
 // ============================================================================
 
 const DAY_LABELS: Record<DayOfWeek, string> = {
-  monday: "Monday",
-  tuesday: "Tuesday",
-  wednesday: "Wednesday",
-  thursday: "Thursday",
-  friday: "Friday",
-  saturday: "Saturday",
-  sunday: "Sunday",
+  monday: 'Monday',
+  tuesday: 'Tuesday',
+  wednesday: 'Wednesday',
+  thursday: 'Thursday',
+  friday: 'Friday',
+  saturday: 'Saturday',
+  sunday: 'Sunday',
 };
 
 const DAY_SHORT_LABELS: Record<DayOfWeek, string> = {
-  monday: "Mon",
-  tuesday: "Tue",
-  wednesday: "Wed",
-  thursday: "Thu",
-  friday: "Fri",
-  saturday: "Sat",
-  sunday: "Sun",
+  monday: 'Mon',
+  tuesday: 'Tue',
+  wednesday: 'Wed',
+  thursday: 'Thu',
+  friday: 'Fri',
+  saturday: 'Sat',
+  sunday: 'Sun',
 };
 
 // ============================================================================
@@ -84,16 +84,16 @@ const ToggleButtons = ({
         whileTap={{ scale: 0.98 }}
         className={`flex-1 p-4 rounded-xl border-2 transition-all duration-200 text-left ${
           value === option.value
-            ? "border-accent bg-accent/5"
-            : "border-border hover:border-muted"
+            ? 'border-accent bg-accent/5'
+            : 'border-border hover:border-muted'
         }`}
       >
         <div className="flex items-center gap-3 mb-2">
           <div
             className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${
               value === option.value
-                ? "bg-accent text-white"
-                : "bg-background text-muted"
+                ? 'bg-accent text-white'
+                : 'bg-background text-muted'
             }`}
           >
             {option.icon}
@@ -122,7 +122,7 @@ type InputFieldProps = {
 const InputField = ({
   id,
   label,
-  type = "text",
+  type = 'text',
   value,
   onChange,
   placeholder,
@@ -236,7 +236,7 @@ const AddSubjectModal = ({
   onEdit,
   existingSubjects,
 }: AddSubjectModalProps): React.ReactElement => {
-  const [name, setName] = useState(editingSubject?.name ?? "");
+  const [name, setName] = useState(editingSubject?.name ?? '');
 
   const isDuplicate = useCallback(
     (newName: string): boolean => {
@@ -261,24 +261,24 @@ const AddSubjectModal = ({
     } else {
       onAdd(trimmedName);
     }
-    setName("");
+    setName('');
     onClose();
   };
 
   // Reset name when modal opens or when editing subject changes
   useEffect(() => {
     if (isOpen) {
-      setName(editingSubject?.name ?? "");
+      setName(editingSubject?.name ?? '');
     }
   }, [isOpen, editingSubject]);
 
   // Check for duplicate in real-time
-  const hasDuplicate = name.trim() !== "" && isDuplicate(name);
+  const hasDuplicate = name.trim() !== '' && isDuplicate(name);
 
   // Show error when there's a duplicate (and it's not the same as the original name)
   const showError =
     hasDuplicate &&
-    name.trim().toLowerCase() !== (editingSubject?.name ?? "").toLowerCase();
+    name.trim().toLowerCase() !== (editingSubject?.name ?? '').toLowerCase();
 
   const isValid = name.trim() && !hasDuplicate;
 
@@ -286,10 +286,10 @@ const AddSubjectModal = ({
     <Modal
       isOpen={isOpen}
       onClose={() => {
-        setName("");
+        setName('');
         onClose();
       }}
-      title={editingSubject ? "Edit Subject" : "Add Subject"}
+      title={editingSubject ? 'Edit Subject' : 'Add Subject'}
       size="sm"
       footer={
         <>
@@ -297,14 +297,14 @@ const AddSubjectModal = ({
             type="button"
             variant="secondary"
             onClick={() => {
-              setName("");
+              setName('');
               onClose();
             }}
           >
             Cancel
           </Button>
           <Button type="submit" disabled={!isValid} onClick={handleSubmit}>
-            {editingSubject ? "Save Changes" : "Add Subject"}
+            {editingSubject ? 'Save Changes' : 'Add Subject'}
           </Button>
         </>
       }
@@ -317,8 +317,8 @@ const AddSubjectModal = ({
           placeholder="Subject name"
           className={`w-full px-4 py-3 border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:border-transparent transition-colors ${
             showError
-              ? "border-red-500 focus:ring-red-500"
-              : "border-border focus:ring-accent"
+              ? 'border-red-500 focus:ring-red-500'
+              : 'border-border focus:ring-accent'
           }`}
         />
         {showError && (
@@ -354,7 +354,7 @@ const TimetableConfigPanel = ({
   onRemoveSlot,
   onUpdateSlot,
 }: TimetableConfigPanelProps): React.ReactElement => {
-  const [activeDay, setActiveDay] = useState<DayOfWeek>("monday");
+  const [activeDay, setActiveDay] = useState<DayOfWeek>('monday');
   const activeSchedule = timetable.find((d) => d.day === activeDay);
 
   const handleAddSlot = (): void => {
@@ -369,7 +369,7 @@ const TimetableConfigPanel = ({
       <div className="w-28 flex-shrink-0">
         <div className="space-y-1">
           {DAYS_OF_WEEK.filter(
-            (day) => day !== "saturday" && day !== "sunday",
+            (day) => day !== 'saturday' && day !== 'sunday',
           ).map((day) => {
             const daySchedule = timetable.find((d) => d.day === day);
             const slotCount = daySchedule?.slots.length ?? 0;
@@ -380,8 +380,8 @@ const TimetableConfigPanel = ({
                 onClick={() => setActiveDay(day)}
                 className={`w-full px-3 py-2 rounded-lg text-left transition-all flex items-center justify-between ${
                   activeDay === day
-                    ? "bg-accent text-white"
-                    : "hover:bg-surface text-foreground"
+                    ? 'bg-accent text-white'
+                    : 'hover:bg-surface text-foreground'
                 }`}
               >
                 <span className="font-medium text-sm">
@@ -389,7 +389,7 @@ const TimetableConfigPanel = ({
                 </span>
                 {slotCount > 0 && (
                   <span
-                    className={`text-xs px-1.5 py-0.5 rounded ${activeDay === day ? "bg-white/20" : "bg-surface"}`}
+                    className={`text-xs px-1.5 py-0.5 rounded ${activeDay === day ? 'bg-white/20' : 'bg-surface'}`}
                   >
                     {slotCount}
                   </span>
@@ -533,7 +533,7 @@ export const SettingsScreen = (): React.ReactElement => {
   const [editingSubject, setEditingSubject] = useState<Subject | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
   const [isLoadingVaultSettings, setIsLoadingVaultSettings] = useState(false);
-  const [lastLoadedLocalPath, setLastLoadedLocalPath] = useState<string>("");
+  const [lastLoadedLocalPath, setLastLoadedLocalPath] = useState<string>('');
 
   const { addToast } = useToast();
   const {
@@ -552,7 +552,7 @@ export const SettingsScreen = (): React.ReactElement => {
   const handleOAuthSuccess = useCallback(
     async (accessToken: string): Promise<void> => {
       // Fetch GitHub user info
-      const { getGitHubUser } = await import("../actions/github-oauth");
+      const { getGitHubUser } = await import('../actions/github-oauth');
       const userResult = await getGitHubUser(accessToken);
 
       if (userResult.success) {
@@ -564,7 +564,7 @@ export const SettingsScreen = (): React.ReactElement => {
         });
         addToast(
           `Connected to GitHub as ${userResult.name || userResult.login}!`,
-          "success",
+          'success',
         );
       } else {
         // Still store the connection, but without username
@@ -572,7 +572,7 @@ export const SettingsScreen = (): React.ReactElement => {
           githubConnected: true,
           githubToken: accessToken,
         });
-        addToast("Connected to GitHub successfully!", "success");
+        addToast('Connected to GitHub successfully!', 'success');
       }
 
       setIsOAuthModalOpen(false);
@@ -595,10 +595,10 @@ export const SettingsScreen = (): React.ReactElement => {
 
       // Try to load existing settings from the vault
       const { loadSettingsFromVault } = await import(
-        "@/app/features/vault/actions/sync-settings"
+        '@/app/features/vault/actions/sync-settings'
       );
 
-      const result = await loadSettingsFromVault("github", {
+      const result = await loadSettingsFromVault('github', {
         githubToken: settings.vault.githubToken,
         githubRepo: repo.fullName,
       });
@@ -613,11 +613,11 @@ export const SettingsScreen = (): React.ReactElement => {
         }
         addToast(
           `Connected to ${repo.fullName} and loaded settings from vault`,
-          "success",
+          'success',
         );
       } else {
         // No existing settings in vault, that's okay
-        addToast(`Selected repository: ${repo.fullName}`, "success");
+        addToast(`Selected repository: ${repo.fullName}`, 'success');
       }
     },
     [
@@ -632,11 +632,11 @@ export const SettingsScreen = (): React.ReactElement => {
   const handleDisconnect = useCallback((): void => {
     updateVault({
       githubConnected: false,
-      githubRepo: "",
-      githubUsername: "",
-      githubToken: "",
+      githubRepo: '',
+      githubUsername: '',
+      githubToken: '',
     });
-    addToast("Disconnected from GitHub", "info");
+    addToast('Disconnected from GitHub', 'info');
   }, [updateVault, addToast]);
 
   // Load settings from local vault when path is set
@@ -649,10 +649,10 @@ export const SettingsScreen = (): React.ReactElement => {
 
       try {
         const { loadSettingsFromVault } = await import(
-          "@/app/features/vault/actions/sync-settings"
+          '@/app/features/vault/actions/sync-settings'
         );
 
-        const result = await loadSettingsFromVault("local", { localPath });
+        const result = await loadSettingsFromVault('local', { localPath });
 
         if (result.success) {
           // Load subjects and timetable from vault if they exist
@@ -663,7 +663,7 @@ export const SettingsScreen = (): React.ReactElement => {
             updateTimetable(result.timetable as TimetableDay[]);
           }
           if (result.subjects.length > 0 || result.timetable.length > 0) {
-            addToast("Loaded settings from vault", "success");
+            addToast('Loaded settings from vault', 'success');
           }
         }
       } catch {
@@ -678,7 +678,7 @@ export const SettingsScreen = (): React.ReactElement => {
   // Automatically load settings when local vault path changes
   useEffect(() => {
     if (
-      settings.vault.method === "local" &&
+      settings.vault.method === 'local' &&
       settings.vault.localPath &&
       settings.vault.localPath !== lastLoadedLocalPath
     ) {
@@ -695,24 +695,24 @@ export const SettingsScreen = (): React.ReactElement => {
     const subject = settings.subjects.find((s) => s.id === id);
     removeSubject(id);
     if (subject) {
-      addToast(`Deleted "${subject.name}"`, "info");
+      addToast(`Deleted "${subject.name}"`, 'info');
     }
   };
 
   const handleAddSubject = (name: string): void => {
     addSubject(name);
-    addToast(`Added "${name}"`, "success");
+    addToast(`Added "${name}"`, 'success');
   };
 
   const handleEditSubject = (id: string, name: string): void => {
     updateSubject(id, name);
-    addToast(`Updated subject`, "success");
+    addToast(`Updated subject`, 'success');
     setEditingSubject(null);
   };
 
   const isVaultConfigured =
-    (settings.vault.method === "local" && settings.vault.localPath) ||
-    (settings.vault.method === "github" &&
+    (settings.vault.method === 'local' && settings.vault.localPath) ||
+    (settings.vault.method === 'github' &&
       settings.vault.githubConnected &&
       settings.vault.githubRepo);
 
@@ -737,23 +737,23 @@ export const SettingsScreen = (): React.ReactElement => {
         );
 
         if (result.success) {
-          addToast("Settings saved and synced to vault!", "success");
+          addToast('Settings saved and synced to vault!', 'success');
         } else {
           addToast(
             `Settings saved, but sync failed: ${result.error}`,
-            "warning",
+            'warning',
           );
         }
       } catch (error) {
         addToast(
-          `Settings saved, but sync failed: ${error instanceof Error ? error.message : "Unknown error"}`,
-          "warning",
+          `Settings saved, but sync failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          'warning',
         );
       } finally {
         setIsSyncing(false);
       }
     } else {
-      addToast("Settings saved successfully!", "success");
+      addToast('Settings saved successfully!', 'success');
     }
 
     setIsSaving(false);
@@ -761,9 +761,9 @@ export const SettingsScreen = (): React.ReactElement => {
 
   const vaultOptions: ToggleOption[] = [
     {
-      value: "local",
-      label: "Local Filesystem",
-      description: "Direct file system access",
+      value: 'local',
+      label: 'Local Filesystem',
+      description: 'Direct file system access',
       icon: (
         <svg
           className="w-4 h-4"
@@ -782,9 +782,9 @@ export const SettingsScreen = (): React.ReactElement => {
       ),
     },
     {
-      value: "github",
-      label: "GitHub Repository",
-      description: "Sync via Git",
+      value: 'github',
+      label: 'GitHub Repository',
+      description: 'Sync via Git',
       icon: (
         <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
           <title>GitHub</title>
@@ -796,9 +796,9 @@ export const SettingsScreen = (): React.ReactElement => {
 
   const aiOptions: ToggleOption[] = [
     {
-      value: "google",
-      label: "Google Gemini",
-      description: "Cloud-based, highly accurate",
+      value: 'google',
+      label: 'Google Gemini',
+      description: 'Cloud-based, highly accurate',
       icon: (
         <svg
           className="w-4 h-4"
@@ -817,9 +817,9 @@ export const SettingsScreen = (): React.ReactElement => {
       ),
     },
     {
-      value: "ollama",
-      label: "Ollama (Local)",
-      description: "Privacy-first, runs locally",
+      value: 'ollama',
+      label: 'Ollama (Local)',
+      description: 'Privacy-first, runs locally',
       icon: (
         <svg
           className="w-4 h-4"
@@ -935,23 +935,23 @@ export const SettingsScreen = (): React.ReactElement => {
                   options={vaultOptions}
                   value={settings.vault.method}
                   onChange={(v) =>
-                    updateVault({ method: v as "local" | "github" })
+                    updateVault({ method: v as 'local' | 'github' })
                   }
                 />
 
                 <AnimatePresence mode="wait">
-                  {settings.vault.method === "local" ? (
+                  {settings.vault.method === 'local' ? (
                     <motion.div
                       key="local"
                       initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
+                      animate={{ opacity: 1, height: 'auto' }}
                       exit={{ opacity: 0, height: 0 }}
                       className="space-y-3"
                     >
                       <InputField
                         id="vault-path"
                         label="Vault Path"
-                        value={settings.vault.localPath ?? ""}
+                        value={settings.vault.localPath ?? ''}
                         onChange={(v) => updateVault({ localPath: v })}
                         placeholder="/path/to/your/vault"
                       />
@@ -966,7 +966,7 @@ export const SettingsScreen = (): React.ReactElement => {
                     <motion.div
                       key="github"
                       initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
+                      animate={{ opacity: 1, height: 'auto' }}
                       exit={{ opacity: 0, height: 0 }}
                       className="space-y-3"
                     >
@@ -994,7 +994,7 @@ export const SettingsScreen = (): React.ReactElement => {
                                 Connected to GitHub
                               </p>
                               <p className="text-sm text-muted">
-                                @{settings.vault.githubUsername || "unknown"}
+                                @{settings.vault.githubUsername || 'unknown'}
                               </p>
                               {settings.vault.githubRepo && (
                                 <p className="text-xs text-accent mt-1">
@@ -1010,8 +1010,8 @@ export const SettingsScreen = (): React.ReactElement => {
                               onClick={() => setIsRepoSelectorOpen(true)}
                             >
                               {settings.vault.githubRepo
-                                ? "Change Repo"
-                                : "Select Repo"}
+                                ? 'Change Repo'
+                                : 'Select Repo'}
                             </Button>
                             <Button
                               variant="ghost"
@@ -1093,23 +1093,23 @@ export const SettingsScreen = (): React.ReactElement => {
                   options={aiOptions}
                   value={settings.ai.provider}
                   onChange={(v) =>
-                    updateAI({ provider: v as "google" | "ollama" })
+                    updateAI({ provider: v as 'google' | 'ollama' })
                   }
                 />
 
                 <AnimatePresence mode="wait">
-                  {settings.ai.provider === "google" ? (
+                  {settings.ai.provider === 'google' ? (
                     <motion.div
                       key="google"
                       initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
+                      animate={{ opacity: 1, height: 'auto' }}
                       exit={{ opacity: 0, height: 0 }}
                     >
                       <InputField
                         id="api-key"
                         label="API Key"
                         type="password"
-                        value={settings.ai.googleApiKey ?? ""}
+                        value={settings.ai.googleApiKey ?? ''}
                         onChange={(v) => updateAI({ googleApiKey: v })}
                         placeholder="Enter your Gemini API key"
                       />
@@ -1118,13 +1118,13 @@ export const SettingsScreen = (): React.ReactElement => {
                     <motion.div
                       key="ollama"
                       initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
+                      animate={{ opacity: 1, height: 'auto' }}
                       exit={{ opacity: 0, height: 0 }}
                     >
                       <InputField
                         id="ollama-endpoint"
                         label="Ollama Endpoint"
-                        value={settings.ai.ollamaEndpoint ?? ""}
+                        value={settings.ai.ollamaEndpoint ?? ''}
                         onChange={(v) => updateAI({ ollamaEndpoint: v })}
                         placeholder="http://localhost:11434"
                       />
@@ -1164,12 +1164,12 @@ export const SettingsScreen = (): React.ReactElement => {
                       {isVaultConfigured ? (
                         <>
                           {settings.subjects.length} subject
-                          {settings.subjects.length !== 1 ? "s" : ""} •{" "}
+                          {settings.subjects.length !== 1 ? 's' : ''} •{' '}
                           {configuredDaysCount} day
-                          {configuredDaysCount !== 1 ? "s" : ""} configured
+                          {configuredDaysCount !== 1 ? 's' : ''} configured
                         </>
                       ) : (
-                        "Configure vault connection first"
+                        'Configure vault connection first'
                       )}
                     </p>
                   </div>
@@ -1307,7 +1307,7 @@ export const SettingsScreen = (): React.ReactElement => {
                 {isSaving ? (
                   <>
                     <Spinner size="sm" className="mr-2" />
-                    {isSyncing ? "Syncing to vault..." : "Saving..."}
+                    {isSyncing ? 'Syncing to vault...' : 'Saving...'}
                   </>
                 ) : (
                   <>
@@ -1332,8 +1332,8 @@ export const SettingsScreen = (): React.ReactElement => {
             </motion.div>
             <p className="text-xs text-muted text-center mt-2">
               {isVaultConfigured
-                ? "Saves all settings locally and syncs subjects & timetable to vault"
-                : "Saves all settings locally"}
+                ? 'Saves all settings locally and syncs subjects & timetable to vault'
+                : 'Saves all settings locally'}
             </p>
           </StaggerItem>
         </StaggerContainer>
@@ -1365,7 +1365,7 @@ export const SettingsScreen = (): React.ReactElement => {
         isOpen={isRepoSelectorOpen}
         onClose={() => setIsRepoSelectorOpen(false)}
         onSelect={handleRepoSelect}
-        accessToken={settings.vault.githubToken || ""}
+        accessToken={settings.vault.githubToken || ''}
       />
     </PageTransition>
   );

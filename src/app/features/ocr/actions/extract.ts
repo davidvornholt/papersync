@@ -1,6 +1,6 @@
 "use server";
 
-import { Data, Effect } from "effect";
+import { Effect } from "effect";
 import { getWeeklyNotePath } from "@/app/features/vault/services/config";
 import {
   makeLocalVaultLayer,
@@ -14,36 +14,22 @@ import {
   VisionProvider,
   type VisionValidationError,
 } from "../services/vision-provider";
+import {
+  ExtractionValidationError,
+  type ExtractionOptions,
+  type ExtractionResult,
+  type VaultSettings,
+} from "./extract-types";
 
-// ============================================================================
-// Error Types
-// ============================================================================
+/**
+ * Server Actions for OCR Extraction
+ *
+ * Note: Types and error classes are in extract-types.ts because
+ * "use server" files can only export async functions.
+ */
 
-export class ExtractionValidationError extends Data.TaggedError(
-  "ExtractionValidationError",
-)<{
-  readonly message: string;
-}> {}
-
-// ============================================================================
-// Types
-// ============================================================================
-
-export type VaultSettings = {
-  readonly method: "local" | "github";
-  readonly localPath?: string;
-  readonly githubToken?: string;
-  readonly githubRepo?: string;
-};
-
-export type ExtractionOptions = {
-  readonly imageBase64: string;
-  readonly weekId: WeekId;
-  readonly provider: "google" | "ollama";
-  readonly googleApiKey?: string;
-  readonly ollamaEndpoint?: string;
-  readonly vaultSettings?: VaultSettings;
-};
+// Re-export types from the types file for convenience
+export type { ExtractionOptions, ExtractionResult, VaultSettings };
 
 // ============================================================================
 // Effect-Based Implementations
@@ -184,14 +170,6 @@ const extractHandwritingEffect = (
 // ============================================================================
 // Server Action (Public API)
 // ============================================================================
-
-export type ExtractionResult =
-  | {
-      readonly success: true;
-      readonly data: OCRResponse;
-      readonly modelUsed: string;
-    }
-  | { readonly success: false; readonly error: string };
 
 export const extractHandwriting = async (
   options: ExtractionOptions,

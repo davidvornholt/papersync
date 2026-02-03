@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import {
   AlertTriangle,
@@ -6,14 +6,12 @@ import {
   Loader2,
   RefreshCw,
   Search,
-} from "lucide-react";
-import { AnimatePresence, motion } from "motion/react";
-import { useCallback, useEffect, useState } from "react";
-import { Button, Modal, Spinner } from "@/app/shared/components";
-import {
-  type GitHubRepository,
-  listGitHubRepositories,
-} from "../actions/github-oauth";
+} from 'lucide-react';
+import { AnimatePresence, motion } from 'motion/react';
+import { useCallback, useEffect, useState } from 'react';
+import { Button, Modal, Spinner } from '@/app/shared/components';
+import type { GitHubRepository } from '../actions/github-oauth-types';
+import { listGitHubRepositories } from '../actions/github-oauth';
 
 // ============================================================================
 // Types
@@ -39,7 +37,7 @@ export const RepositorySelectorModal = ({
   const [repositories, setRepositories] = useState<GitHubRepository[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Load repositories when modal opens
   useEffect(() => {
@@ -147,8 +145,8 @@ export const RepositorySelectorModal = ({
             <div className="flex flex-col items-center justify-center py-12 gap-2">
               <p className="text-muted">
                 {searchQuery
-                  ? "No repositories match your search"
-                  : "No repositories found"}
+                  ? 'No repositories match your search'
+                  : 'No repositories found'}
               </p>
             </div>
           ) : (
