@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { IBM_Plex_Mono, IBM_Plex_Sans, Source_Serif_4 } from 'next/font/google';
 import './globals.css';
-import { ToastProvider } from '@/app/shared/components';
+import { MainLayout, ToastProvider } from '@/app/shared/components';
 
 const newsreader = Source_Serif_4({
   subsets: ['latin'],
@@ -48,10 +48,13 @@ const RootLayout = ({ children }: RootLayoutProps): React.ReactElement => {
       className={`${newsreader.variable} ${ibmPlexSans.variable} ${ibmPlexMono.variable}`}
     >
       <body>
-        <ToastProvider>{children}</ToastProvider>
+        <ToastProvider>
+          <MainLayout>{children}</MainLayout>
+        </ToastProvider>
       </body>
     </html>
   );
 };
 
 export default RootLayout;
+

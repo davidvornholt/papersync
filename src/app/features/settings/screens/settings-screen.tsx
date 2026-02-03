@@ -1,7 +1,6 @@
 'use client';
 
 import { AnimatePresence, motion } from 'motion/react';
-import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import { syncSettingsToVault } from '@/app/features/vault/actions/sync-settings';
 import {
@@ -74,7 +73,7 @@ const ToggleButtons = ({
   value,
   onChange,
 }: ToggleButtonsProps): React.ReactElement => (
-  <div className="flex gap-3">
+  <div className="flex flex-col sm:flex-row gap-3">
     {options.map((option) => (
       <motion.button
         key={option.value}
@@ -82,7 +81,7 @@ const ToggleButtons = ({
         onClick={() => onChange(option.value)}
         whileHover={{ scale: 1.02 }}
         whileTap={{ scale: 0.98 }}
-        className={`flex-1 p-4 rounded-xl border-2 transition-all duration-200 text-left ${
+        className={`flex-1 p-3 sm:p-4 rounded-xl border-2 transition-all duration-200 text-left touch-manipulation ${
           value === option.value
             ? 'border-accent bg-accent/5'
             : 'border-border hover:border-muted'
@@ -364,10 +363,10 @@ const TimetableConfigPanel = ({
   };
 
   return (
-    <div className="flex gap-4">
-      {/* Day Tabs */}
-      <div className="w-28 flex-shrink-0">
-        <div className="space-y-1">
+    <div className="flex flex-col md:flex-row gap-4">
+      {/* Day Tabs - Horizontal scroll on mobile, vertical sidebar on desktop */}
+      <div className="md:w-28 shrink-0">
+        <div className="flex md:flex-col gap-1 overflow-x-auto scrollbar-hide pb-2 md:pb-0 -mx-1 px-1">
           {DAYS_OF_WEEK.filter(
             (day) => day !== 'saturday' && day !== 'sunday',
           ).map((day) => {
@@ -378,18 +377,18 @@ const TimetableConfigPanel = ({
                 key={day}
                 type="button"
                 onClick={() => setActiveDay(day)}
-                className={`w-full px-3 py-2 rounded-lg text-left transition-all flex items-center justify-between ${
+                className={`shrink-0 md:w-full px-4 py-2.5 md:py-2 rounded-lg text-left transition-all flex items-center justify-between gap-2 touch-manipulation ${
                   activeDay === day
                     ? 'bg-accent text-white'
-                    : 'hover:bg-surface text-foreground'
+                    : 'hover:bg-surface text-foreground bg-surface md:bg-transparent'
                 }`}
               >
-                <span className="font-medium text-sm">
+                <span className="font-medium text-sm whitespace-nowrap">
                   {DAY_SHORT_LABELS[day]}
                 </span>
                 {slotCount > 0 && (
                   <span
-                    className={`text-xs px-1.5 py-0.5 rounded ${activeDay === day ? 'bg-white/20' : 'bg-surface'}`}
+                    className={`text-xs px-1.5 py-0.5 rounded ${activeDay === day ? 'bg-white/20' : 'bg-background md:bg-surface'}`}
                   >
                     {slotCount}
                   </span>
@@ -860,30 +859,10 @@ export const SettingsScreen = (): React.ReactElement => {
         {/* Header */}
         <header className="page-header">
           <div>
-            <Link
-              href="/"
-              className="inline-flex items-center gap-1 text-sm text-muted hover:text-accent transition-colors group"
-            >
-              <svg
-                className="w-4 h-4 transform group-hover:-translate-x-1 transition-transform"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <title>Back</title>
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M15 19l-7-7 7-7"
-                />
-              </svg>
-              Back to Dashboard
-            </Link>
             <motion.h1
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="text-foreground mt-2"
+              className="text-foreground"
             >
               Settings
             </motion.h1>

@@ -248,3 +248,83 @@ a:hover {
   padding-bottom: 1.5rem;
   border-bottom: 1px solid var(--color-border);
 }
+
+/* ============================================================================
+   Mobile & Responsive Utilities
+   ============================================================================ */
+
+/* Safe area padding for notched devices */
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.safe-area-top {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+/* Touch-friendly utilities */
+.touch-manipulation {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Prevent overscroll on iOS */
+html {
+  overscroll-behavior: none;
+}
+
+/* Mobile viewport height fix */
+@supports (height: 100dvh) {
+  .min-h-screen {
+    min-height: 100dvh;
+  }
+}
+
+/* Improved focus for touch devices */
+@media (pointer: coarse) {
+  :focus-visible {
+    outline-offset: 4px;
+  }
+  
+  button,
+  [role="button"],
+  a {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+/* Hide scrollbar on mobile nav */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* ============================================================================
+   Responsive Page Adjustments
+   ============================================================================ */
+
+@media (max-width: 768px) {
+  .page-container {
+    padding: 1rem;
+    padding-bottom: 5rem; /* Space for bottom nav */
+  }
+  
+  .page-header {
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+  }
+  
+  h1 {
+    font-size: 1.75rem;
+  }
+  
+  h2 {
+    font-size: 1.25rem;
+  }
+}
+

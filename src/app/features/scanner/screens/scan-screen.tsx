@@ -2,7 +2,6 @@
 
 import { AnimatePresence, motion } from 'motion/react';
 import Image from 'next/image';
-import Link from 'next/link';
 import { useCallback, useRef, useState } from 'react';
 import { syncEntriesToVault } from '@/app/features/vault/actions';
 import {
@@ -1204,30 +1203,10 @@ export const ScanScreen = (): React.ReactElement => {
         {/* Header */}
         <header className="page-header">
           <div>
-            <Link
-              href="/"
-              className="inline-flex items-center gap-1 text-sm text-muted hover:text-accent transition-colors group"
-            >
-              <svg
-                className="w-4 h-4 transform group-hover:-translate-x-1 transition-transform"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <title>Back</title>
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M15 19l-7-7 7-7"
-                />
-              </svg>
-              Back to Dashboard
-            </Link>
             <motion.h1
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="text-foreground mt-2"
+              className="text-foreground"
             >
               Scan & Sync
             </motion.h1>
