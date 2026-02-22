@@ -1,13 +1,13 @@
 import { pdf } from '@react-pdf/renderer';
 import { Data, Effect } from 'effect';
 import { NextResponse } from 'next/server';
-import { PlannerDocument } from '@/app/features/planner/components/planner-document';
+import { PlannerDocument } from '@/features/planner/components/planner-document';
 import {
   getWeekDateRange,
   getWeekId,
-} from '@/app/features/planner/services/generator';
-import { encodeQRPayload } from '@/app/features/planner/services/qr';
-import type { Subject, WeekId } from '@/app/shared/types';
+} from '@/features/planner/services/generator';
+import { encodeQRPayload } from '@/features/planner/services/qr';
+import type { Subject, WeekId } from '@/shared/types';
 
 // ============================================================================
 // Error Types
