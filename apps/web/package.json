@@ -1,0 +1,53 @@
+{
+  "name": "@papersync/web",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "check-types": "tsc --noEmit",
+    "test": "bun test",
+    "test:watch": "bun test --watch",
+    "test:coverage": "bun test --coverage",
+    "check:fix": "bun run lint:fix && bun run check-types && bun run test"
+  },
+  "dependencies": {
+    "@ai-sdk/google": "latest",
+    "@effect/schema": "latest",
+    "@react-pdf/renderer": "latest",
+    "ai": "latest",
+    "bonjour-service": "latest",
+    "effect": "latest",
+    "jsqr": "latest",
+    "lucide-react": "latest",
+    "motion": "latest",
+    "next": "latest",
+    "octokit": "latest",
+    "qrcode": "latest",
+    "react": "latest",
+    "react-dom": "latest",
+    "undici": "latest"
+  },
+  "devDependencies": {
+    "@papersync/typescript-config": "workspace:*",
+    "@tailwindcss/postcss": "latest",
+    "@types/node": "latest",
+    "@types/qrcode": "latest",
+    "@types/react": "latest",
+    "@types/react-dom": "latest",
+    "babel-plugin-react-compiler": "latest",
+    "bun-types": "^1.3.9",
+    "tailwindcss": "latest"
+  },
+  "ignoreScripts": [
+    "sharp",
+    "unrs-resolver"
+  ],
+  "trustedDependencies": [
+    "sharp",
+    "unrs-resolver"
+  ]
+}

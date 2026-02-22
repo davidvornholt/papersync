@@ -1,0 +1,230 @@
+
+[0m[2m[35m$[0m [2m[1mbun run lint:fix && bun run check-types && bun run test[0m
+[0m[2m[35m$[0m [2m[1mbiome check --write .[0m
+[0m[34mChecked 83 files in 26[0m[0m[2m[34mms[0m[0m[34m.[0m[0m[34m No fixes applied.[0m
+[0m[2m[35m$[0m [2m[1mtsc --noEmit[0m
+[0m[2m[35m$[0m [2m[1mbun test[0m
+[0m[1mbun test [0m[2mv1.3.9 (cf6cdbbb)[0m
+[0m
+src/app/shared/types/__tests__/schemas.test.ts:
+[0m[32m✓[0m [0mWeekId Schema[2m >[0m[1m should accept valid week IDs[0m [0m[2m[4.00ms[0m[2m][0m
+[0m[32m✓[0m [0mWeekId Schema[2m >[0m[1m should reject invalid week IDs[0m
+[0m[32m✓[0m [0mISODate Schema[2m >[0m[1m should accept valid ISO dates[0m
+[0m[32m✓[0m [0mISODate Schema[2m >[0m[1m should reject invalid ISO dates[0m
+[0m[32m✓[0m [0mISODateTime Schema[2m >[0m[1m should accept valid ISO date-times[0m
+[0m[32m✓[0m [0mSubject Schema[2m >[0m[1m should accept valid subjects with required fields[0m
+[0m[32m✓[0m [0mSubject Schema[2m >[0m[1m should allow optional color[0m
+[0m[32m✓[0m [0mSubject Schema[2m >[0m[1m should reject missing name[0m
+[0m[32m✓[0m [0mTaskAction Schema[2m >[0m[1m should accept valid task actions[0m
+[0m[32m✓[0m [0mTaskAction Schema[2m >[0m[1m should reject invalid task actions[0m
+[0m[32m✓[0m [0mTaskEntry Schema[2m >[0m[1m should accept valid task entries[0m
+[0m[32m✓[0m [0mOCRResponse Schema[2m >[0m[1m should accept valid OCR response[0m
+[0m[32m✓[0m [0mOCRResponse Schema[2m >[0m[1m should accept optional notes[0m
+[0m[32m✓[0m [0mOCRResponse Schema[2m >[0m[1m should clamp confidence to valid range[0m
+[0m[32m✓[0m [0mWeeklyNote Schema[2m >[0m[1m should accept valid weekly note[0m
+[0m[32m✓[0m [0mWeeklyNote Schema[2m >[0m[1m should accept weekly note with day entries[0m
+[0m[32m✓[0m [0mQRPayload Schema[2m >[0m[1m should accept valid QR payload[0m
+[0m[32m✓[0m [0mQRPayload Schema[2m >[0m[1m should reject invalid version[0m
+[0m[32m✓[0m [0mQRPayload Schema[2m >[0m[1m should require valid week ID format[0m
+[0m[32m✓[0m [0mAppConfig Schema[2m >[0m[1m should accept valid app config[0m
+[0m[32m✓[0m [0mAppConfig Schema[2m >[0m[1m should accept github vault method with tokens[0m [0m[2m[1.00ms[0m[2m][0m
+[0m[32m✓[0m [0mAppConfig Schema[2m >[0m[1m should validate subjectsPerDay range (3-6)[0m
+[0m[32m✓[0m [0mAIProvider Schema[2m >[0m[1m should accept valid providers[0m
+[0m[32m✓[0m [0mAIProvider Schema[2m >[0m[1m should reject invalid providers[0m
+[0m[32m✓[0m [0mVaultAccessMethod Schema[2m >[0m[1m should accept valid access methods[0m
+[0m[32m✓[0m [0mVaultAccessMethod Schema[2m >[0m[1m should reject invalid access methods[0m
+[0m
+src/app/shared/hooks/__tests__/use-settings.test.ts:
+[0m[32m✓[0m [0mSettings Persistence[2m > [0mDefault values[2m >[0m[1m should provide default settings when localStorage is empty[0m
+[0m[32m✓[0m [0mSettings Persistence[2m > [0mLocalStorage serialization[2m >[0m[1m should serialize settings to JSON[0m
+[0m[32m✓[0m [0mSettings Persistence[2m > [0mLocalStorage serialization[2m >[0m[1m should deserialize settings from JSON[0m
+[0m[32m✓[0m [0mSettings Persistence[2m > [0mSettings validation[2m >[0m[1m should validate vault mode[0m
+[0m[32m✓[0m [0mSettings Persistence[2m > [0mSettings validation[2m >[0m[1m should validate AI provider[0m
+[0m[32m✓[0m [0mSettings Persistence[2m > [0mSettings validation[2m >[0m[1m should validate subject color format[0m
+[0m
+src/app/features/planner/services/__tests__/qr.test.ts:
+[0m[32m✓[0m [0mQR Services[2m > [0mencodeQRPayload[2m >[0m[1m should generate a data URL[0m [0m[2m[9.00ms[0m[2m][0m
+[0m[32m✓[0m [0mQR Services[2m > [0mencodeQRPayload[2m >[0m[1m should generate consistent QR codes for same week[0m [0m[2m[4.00ms[0m[2m][0m
+[0m[32m✓[0m [0mQR Services[2m > [0mencodeQRPayload[2m >[0m[1m should generate different QR codes for different weeks[0m [0m[2m[4.00ms[0m[2m][0m
+[0m[32m✓[0m [0mQR Services[2m > [0mencodeQRPayload[2m >[0m[1m should encode week ID in the QR payload[0m [0m[2m[1.00ms[0m[2m][0m
+[0m[32m✓[0m [0mQR Services[2m > [0mQREncodeError[2m >[0m[1m should create error with message[0m
+[0m[32m✓[0m [0mQR Services[2m > [0mQRDecodeError[2m >[0m[1m should create error with message[0m
+[0m
+src/app/features/planner/services/__tests__/generator.test.ts:
+[0m[32m✓[0m [0mWeek Calculation Utilities[2m > [0mgetWeekId[2m >[0m[1m should return ISO week format YYYY-Www[0m [0m[2m[2.00ms[0m[2m][0m
+[0m[32m✓[0m [0mWeek Calculation Utilities[2m > [0mgetWeekId[2m >[0m[1m should calculate correct week for start of year[0m
+[0m[32m✓[0m [0mWeek Calculation Utilities[2m > [0mgetWeekId[2m >[0m[1m should calculate correct week for mid-year[0m
+[0m[32m✓[0m [0mWeek Calculation Utilities[2m > [0mgetWeekId[2m >[0m[1m should handle year boundaries correctly[0m
+[0m[32m✓[0m [0mWeek Calculation Utilities[2m > [0mgetWeekId[2m >[0m[1m should use current date when no argument provided[0m
+[0m[32m✓[0m [0mWeek Calculation Utilities[2m > [0mgetWeekStartDate[2m >[0m[1m should return a Monday[0m
+[0m[32m✓[0m [0mWeek Calculation Utilities[2m > [0mgetWeekStartDate[2m >[0m[1m should return correct date for week 1[0m
+[0m[32m✓[0m [0mWeek Calculation Utilities[2m > [0mgetWeekStartDate[2m >[0m[1m should return correct date for week 27[0m
+[0m[32m✓[0m [0mWeek Calculation Utilities[2m > [0mgetWeekEndDate[2m >[0m[1m should return a Sunday[0m
+[0m[32m✓[0m [0mWeek Calculation Utilities[2m > [0mgetWeekEndDate[2m >[0m[1m should be 6 days after start date[0m
+[0m[32m✓[0m [0mWeek Calculation Utilities[2m > [0mgetWeekDateRange[2m >[0m[1m should return object with start and end dates[0m
+[0m[32m✓[0m [0mWeek Calculation Utilities[2m > [0mgetWeekDateRange[2m >[0m[1m should have start as Monday and end as Sunday[0m
+[0m
+src/app/features/scanner/services/__tests__/escl-client.test.ts:
+[0m[32m✓[0m [0meSCL Client Types[2m > [0mColorMode[2m >[0m[1m should accept valid color modes[0m
+[0m[32m✓[0m [0meSCL Client Types[2m > [0mScanSettings[2m >[0m[1m should create valid scan settings[0m
+[0m[32m✓[0m [0meSCL Client Types[2m > [0mScannerCapabilities[2m >[0m[1m should create valid scanner capabilities[0m
+[0m
+src/app/features/ocr/services/__tests__/vision-provider.test.ts:
+[0m[32m✓[0m [0mOCR Response Schema[2m >[0m[1m should validate a complete OCR response with entries[0m
+[0m[32m✓[0m [0mOCR Response Schema[2m >[0m[1m should validate an empty OCR response[0m
+[0m[32m✓[0m [0mOCR Response Schema[2m >[0m[1m should reject missing required fields[0m
+[0m[32m✓[0m [0mOCR Response Schema[2m >[0m[1m should accept valid confidence values[0m
+[0m[32m✓[0m [0mVisionError[2m >[0m[1m should create error with message[0m [0m[2m[1.00ms[0m[2m][0m
+[0m[32m✓[0m [0mVisionError[2m >[0m[1m should create error with message and cause[0m
+[0m[32m✓[0m [0mVisionValidationError[2m >[0m[1m should create error with message[0m
+[0m[32m✓[0m [0mVisionValidationError[2m >[0m[1m should create error with message and raw response[0m
+[0m[32m✓[0m [0mGemini Model Configuration[2m >[0m[1m should have correct model priority order[0m
+[0m[32m✓[0m [0mGemini Model Configuration[2m >[0m[1m should identify Gemini 3 models correctly[0m
+[0m[32m✓[0m [0mGemini Model Configuration[2m >[0m[1m should identify Gemini 2.5 models correctly[0m
+[0m[32m✓[0m [0mExtraction System Prompt[2m >[0m[1m should include week context in prompt[0m
+[0m[32m✓[0m [0mExtraction System Prompt[2m >[0m[1m should handle empty existing content[0m
+[0m[32m✓[0m [0mExtraction System Prompt[2m >[0m[1m should include key instruction keywords[0m
+[0m[32m✓[0m [0mVision Provider Layer Factories[2m >[0m[1m should create Google Vision layer with API key[0m
+[0m[32m✓[0m [0mVision Provider Layer Factories[2m >[0m[1m should create Ollama Vision layer with default endpoint[0m
+[0m[32m✓[0m [0mVision Provider Layer Factories[2m >[0m[1m should create Ollama Vision layer with custom endpoint[0m
+[0m[32m✓[0m [0mOCR Result Transformation[2m >[0m[1m should transform snake_case to camelCase and add defaults[0m [0m[2m[1.00ms[0m[2m][0m
+[0m[32m✓[0m [0mOCR Result Transformation[2m >[0m[1m should preserve all entry fields during transformation[0m
+[0m[32m✓[0m [0mOCR Result Transformation[2m >[0m[1m should always set isCompleted to false (tracked digitally)[0m
+[0m[32m✓[0m [0mOCR Result Transformation[2m >[0m[1m should always set action to 'add' (only new entries)[0m
+[0m[32m✓[0m [0mOCRResultWithModel[2m >[0m[1m should include model used in result[0m
+[0m[32m✓[0m [0mOCRResultWithModel[2m >[0m[1m should preserve OCR data alongside model info[0m
+[0m[32m✓[0m [0mEffect-based Extraction Pipeline[2m >[0m[1m should handle successful extraction result[0m
+[0m[32m✓[0m [0mEffect-based Extraction Pipeline[2m >[0m[1m should handle VisionError correctly[0m
+[0m[32m✓[0m [0mEffect-based Extraction Pipeline[2m >[0m[1m should handle VisionValidationError correctly[0m
+[0m[32m✓[0m [0mProvider Options Configuration[2m >[0m[1m should configure high media resolution[0m
+[0m[32m✓[0m [0mProvider Options Configuration[2m >[0m[1m should configure thinkingLevel for Gemini 3 models[0m
+[0m[32m✓[0m [0mProvider Options Configuration[2m >[0m[1m should configure thinkingBudget for Gemini 2.5 models[0m
+[0m
+src/app/features/ocr/actions/__tests__/extract.test.ts:
+[0m[32m✓[0m [0mOCR Extraction with Vault Context[2m > [0mVaultSettings type[2m >[0m[1m should define local vault settings type[0m
+[0m[32m✓[0m [0mOCR Extraction with Vault Context[2m > [0mVaultSettings type[2m >[0m[1m should define github vault settings type[0m
+[0m[32m✓[0m [0mOCR Extraction with Vault Context[2m > [0mVaultSettings type[2m >[0m[1m should allow undefined vault settings[0m
+[0m[32m✓[0m [0mOCR Extraction with Vault Context[2m > [0mExtractionOptions[2m >[0m[1m should accept options with vault settings[0m
+[0m[32m✓[0m [0mOCR Extraction with Vault Context[2m > [0mExtractionOptions[2m >[0m[1m should accept options without vault settings[0m
+[0m[32m✓[0m [0mOCR Extraction with Vault Context[2m > [0mEdge cases for vault content fetching[2m >[0m[1m should handle empty vault path gracefully[0m
+[0m[32m✓[0m [0mOCR Extraction with Vault Context[2m > [0mEdge cases for vault content fetching[2m >[0m[1m should handle missing github credentials[0m
+[0m[32m✓[0m [0mOCR Extraction with Vault Context[2m > [0mEdge cases for vault content fetching[2m >[0m[1m should handle invalid github repo format[0m
+[0m
+src/app/features/vault/services/__tests__/filesystem.test.ts:
+[0m[32m✓[0m [0mLocal Filesystem VaultService[2m > [0msetVaultPath[2m >[0m[1m should accept a valid directory path[0m [0m[2m[3.00ms[0m[2m][0m
+[0m[32m✓[0m [0mLocal Filesystem VaultService[2m > [0msetVaultPath[2m >[0m[1m should reject a non-existent path[0m [0m[2m[2.00ms[0m[2m][0m
+[0m[32m✓[0m [0mLocal Filesystem VaultService[2m > [0msetVaultPath[2m >[0m[1m should reject a file path (not a directory)[0m [0m[2m[1.00ms[0m[2m][0m
+[0m[32m✓[0m [0mLocal Filesystem VaultService[2m > [0mreadFile[2m >[0m[1m should read an existing file[0m [0m[2m[1.00ms[0m[2m][0m
+[0m[32m✓[0m [0mLocal Filesystem VaultService[2m > [0mreadFile[2m >[0m[1m should return VaultFileNotFoundError for non-existent file[0m [0m[2m[1.00ms[0m[2m][0m
+[0m[32m✓[0m [0mLocal Filesystem VaultService[2m > [0mreadFile[2m >[0m[1m should read nested files[0m [0m[2m[1.00ms[0m[2m][0m
+[0m[32m✓[0m [0mLocal Filesystem VaultService[2m > [0mwriteFile[2m >[0m[1m should write a new file[0m
+[0m[32m✓[0m [0mLocal Filesystem VaultService[2m > [0mwriteFile[2m >[0m[1m should create nested directories[0m
+[0m[32m✓[0m [0mLocal Filesystem VaultService[2m > [0mwriteFile[2m >[0m[1m should overwrite existing file[0m [0m[2m[1.00ms[0m[2m][0m
+[0m[32m✓[0m [0mLocal Filesystem VaultService[2m > [0mfileExists[2m >[0m[1m should return true for existing file[0m [0m[2m[2.00ms[0m[2m][0m
+[0m[32m✓[0m [0mLocal Filesystem VaultService[2m > [0mfileExists[2m >[0m[1m should return false for non-existent file[0m
+[0m[32m✓[0m [0mLocal Filesystem VaultService[2m > [0mlistFiles[2m >[0m[1m should list files in a directory[0m [0m[2m[1.00ms[0m[2m][0m
+[0m[32m✓[0m [0mLocal Filesystem VaultService[2m > [0mlistFiles[2m >[0m[1m should return empty array for non-existent directory[0m [0m[2m[1.00ms[0m[2m][0m
+[0m[32m✓[0m [0mLocal Filesystem VaultService[2m > [0mensureDirectory[2m >[0m[1m should create a new directory[0m
+[0m[32m✓[0m [0mLocal Filesystem VaultService[2m > [0mensureDirectory[2m >[0m[1m should create nested directories[0m
+[0m[32m✓[0m [0mLocal Filesystem VaultService[2m > [0mensureDirectory[2m >[0m[1m should succeed if directory already exists[0m [0m[2m[1.00ms[0m[2m][0m
+[0m[32m✓[0m [0mLocal Filesystem VaultService[2m > [0mdeleteFile[2m >[0m[1m should delete an existing file[0m [0m[2m[1.00ms[0m[2m][0m
+[0m[32m✓[0m [0mLocal Filesystem VaultService[2m > [0mdeleteFile[2m >[0m[1m should throw for non-existent file[0m
+[0m[32m✓[0m [0mLocal Filesystem VaultService[2m > [0mend-to-end workflow[2m >[0m[1m should support full vault initialization workflow[0m [0m[2m[1.00ms[0m[2m][0m
+[0m
+src/app/features/vault/services/__tests__/config.test.ts:
+[0m[32m✓[0m [0mConfig Path Utilities[2m > [0mgetConfigPath[2m >[0m[1m should return path to config.json[0m
+[0m[32m✓[0m [0mConfig Path Utilities[2m > [0mgetSubjectsPath[2m >[0m[1m should return path to subjects.json[0m
+[0m[32m✓[0m [0mConfig Path Utilities[2m > [0mgetWeeklyNotePath[2m >[0m[1m should return path with week ID[0m
+[0m[32m✓[0m [0mMarkdown Serialization[2m > [0mserializeWeeklyNoteToMarkdown[2m >[0m[1m should include YAML frontmatter[0m
+[0m[32m✓[0m [0mMarkdown Serialization[2m > [0mserializeWeeklyNoteToMarkdown[2m >[0m[1m should include syncedAt when present[0m
+[0m[32m✓[0m [0mMarkdown Serialization[2m > [0mserializeWeeklyNoteToMarkdown[2m >[0m[1m should serialize day entries with subjects[0m [0m[2m[4.00ms[0m[2m][0m
+[0m[32m✓[0m [0mMarkdown Serialization[2m > [0mserializeWeeklyNoteToMarkdown[2m >[0m[1m should serialize general tasks at the end[0m
+[0m[32m✓[0m [0mMarkdown Serialization[2m > [0mparseWeeklyNoteMarkdown[2m >[0m[1m should parse YAML frontmatter[0m
+[0m[32m✓[0m [0mMarkdown Serialization[2m > [0mparseWeeklyNoteMarkdown[2m >[0m[1m should handle missing frontmatter gracefully[0m
+[0m[32m✓[0m [0mMarkdown Serialization[2m > [0mparseWeeklyNoteMarkdown[2m >[0m[1m should parse day headers and create day records[0m
+[0m[32m✓[0m [0mMarkdown Serialization[2m > [0mparseWeeklyNoteMarkdown[2m >[0m[1m should parse subject entries and tasks[0m [0m[2m[1.00ms[0m[2m][0m
+[0m[32m✓[0m [0mMarkdown Serialization[2m > [0mparseWeeklyNoteMarkdown[2m >[0m[1m should parse due dates from tasks[0m
+[0m[32m✓[0m [0mMarkdown Serialization[2m > [0mparseWeeklyNoteMarkdown[2m >[0m[1m should parse week-level general tasks section at the end[0m
+[0m[32m✓[0m [0mMarkdown Serialization[2m > [0mparseWeeklyNoteMarkdown[2m >[0m[1m should round-trip serialize and parse without losing data[0m
+[0m[32m✓[0m [0mMarkdown Serialization[2m > [0mformatDate[2m >[0m[1m should format ISO date to readable format[0m
+[0m[32m✓[0m [0mMarkdown Serialization[2m > [0mformatDate[2m >[0m[1m should handle different months[0m
+[0m
+src/app/features/vault/services/__tests__/github.test.ts:
+[0m[32m✓[0m [0mGitHubService Interface[2m > [0minitiateDeviceFlow[2m >[0m[1m should have correct interface signature[0m
+[0m[32m✓[0m [0mGitHubService Interface[2m > [0mDeviceCodeResponse type[2m >[0m[1m should have all required fields[0m
+[0m[32m✓[0m [0mGitHubService Interface[2m > [0mOAuthTokenResponse type[2m >[0m[1m should have all required fields[0m
+[0m[32m✓[0m [0mGitHubService Interface[2m > [0mGitHubAuthError[2m >[0m[1m should create error with message[0m
+[0m[32m✓[0m [0mGitHubService Interface[2m > [0mGitHubAuthError[2m >[0m[1m should create error with cause[0m
+[0m[32m✓[0m [0mGitHubService Interface[2m > [0mGitHubAPIError[2m >[0m[1m should create error with message[0m
+[0m[32m✓[0m [0mGitHubService Interface[2m > [0mGitHubAPIError[2m >[0m[1m should create error with status code[0m
+[0m[32m✓[0m [0mGitHubService Interface[2m > [0mGitHubServiceLive layer[2m >[0m[1m should provide a valid GitHubService[0m
+[0m[32m✓[0m [0mGitHubService Interface[2m > [0mGitHubServiceLive layer[2m >[0m[1m should have all required methods[0m
+[0m[32m✓[0m [0mGitHubService Mock Implementation[2m > [0mdevice flow[2m >[0m[1m should return device code response[0m [0m[2m[1.00ms[0m[2m][0m
+[0m[32m✓[0m [0mGitHubService Mock Implementation[2m > [0mdevice flow[2m >[0m[1m should poll for token and return access token[0m
+[0m[32m✓[0m [0mGitHubService Mock Implementation[2m > [0mrepository operations[2m >[0m[1m should list repositories[0m
+[0m[32m✓[0m [0mGitHubService Mock Implementation[2m > [0mrepository operations[2m >[0m[1m should get file content[0m
+[0m[32m✓[0m [0mGitHubService Mock Implementation[2m > [0mrepository operations[2m >[0m[1m should return null for non-existent file[0m [0m[2m[1.00ms[0m[2m][0m
+[0m[32m✓[0m [0mGitHubService Mock Implementation[2m > [0mrepository operations[2m >[0m[1m should create or update file[0m
+[0m[32m✓[0m [0mGitHubService Mock Implementation[2m > [0merror handling[2m >[0m[1m should handle auth errors[0m
+[0m[32m✓[0m [0mGitHubService Mock Implementation[2m > [0merror handling[2m >[0m[1m should handle API errors[0m [0m[2m[1.00ms[0m[2m][0m
+[0m[32m✓[0m [0mGitHubService Mock Implementation[2m > [0mOAuth flow integration[2m >[0m[1m should complete full OAuth flow[0m
+[0m
+src/app/features/vault/actions/__tests__/sync-helpers.test.ts:
+[0m[32m✓[0m [0mSync Helper Functions[2m > [0mgetCurrentWeekId[2m >[0m[1m should return ISO week format YYYY-Www[0m
+[0m[32m✓[0m [0mSync Helper Functions[2m > [0mgetWeekDateRange[2m >[0m[1m should return start and end ISO dates[0m
+[0m[32m✓[0m [0mSync Helper Functions[2m > [0mgetWeekDateRange[2m >[0m[1m should have start before end with correct gap[0m
+[0m[32m✓[0m [0mSync Helper Functions[2m > [0mgetWeekDateRange[2m >[0m[1m should have 6 days between start and end[0m
+[0m[32m✓[0m [0mSync Helper Functions[2m > [0mgetDayDate[2m >[0m[1m should return Monday date for Monday[0m
+[0m[32m✓[0m [0mSync Helper Functions[2m > [0mgetDayDate[2m >[0m[1m should return correct offset for each day[0m
+[0m[32m✓[0m [0mSync Helper Functions[2m > [0mgetDayDate[2m >[0m[1m should default to Monday offset for unknown day names[0m
+[0m[32m✓[0m [0mSync Helper Functions[2m > [0mconvertEntriesToWeeklyNote[2m >[0m[1m should create WeeklyNote with correct week ID[0m
+[0m[32m✓[0m [0mSync Helper Functions[2m > [0mconvertEntriesToWeeklyNote[2m >[0m[1m should group entries by day[0m
+[0m[32m✓[0m [0mSync Helper Functions[2m > [0mconvertEntriesToWeeklyNote[2m >[0m[1m should group entries by subject within a day[0m
+[0m[32m✓[0m [0mSync Helper Functions[2m > [0mconvertEntriesToWeeklyNote[2m >[0m[1m should handle general tasks at week level (no subject)[0m
+[0m[32m✓[0m [0mSync Helper Functions[2m > [0mconvertEntriesToWeeklyNote[2m >[0m[1m should handle general tasks with 'General Tasks' subject[0m
+[0m[32m✓[0m [0mSync Helper Functions[2m > [0mconvertEntriesToWeeklyNote[2m >[0m[1m should merge with existing note and deduplicate tasks[0m
+[0m[32m✓[0m [0mSync Helper Functions[2m > [0mconvertEntriesToWeeklyNote[2m >[0m[1m should merge week-level general tasks[0m
+Result days: [
+  {
+    "date": "2026-01-26",
+    "dayName": "Monday",
+    "entries": [
+      {
+        "subject": "Math",
+        "tasks": [
+          {
+            "content": "Math homework page 42",
+            "isCompleted": false
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "date": "2026-01-27",
+    "dayName": "Tuesday",
+    "entries": [
+      {
+        "subject": "Physics",
+        "tasks": [
+          {
+            "content": "Do physics homework",
+            "isCompleted": false
+          }
+        ]
+      }
+    ]
+  }
+]
+[0m[32m✓[0m [0mBUG: preserving days not in new entries[2m >[0m[1m should preserve Monday when new entries only contain Tuesday[0m
+[0m
+src/app/features/vault/actions/__tests__/sync.test.ts:
+[0m[32m✓[0m [0mVault Sync Logic[2m > [0mWeek ID generation[2m >[0m[1m should generate correct week ID format[0m
+[0m[32m✓[0m [0mVault Sync Logic[2m > [0mEntry to WeeklyNote conversion[2m >[0m[1m should group entries by day and subject[0m
+[0m[32m✓[0m [0mVault Sync Logic[2m > [0mEntry to WeeklyNote conversion[2m >[0m[1m should deduplicate tasks by content[0m
+[0m[32m✓[0m [0mVault Sync Logic[2m > [0mDate range calculation[2m >[0m[1m should calculate start and end of week[0m
+
+[0m[32m 162 pass[0m
+[0m[2m 0 fail[0m
+ 352 expect() calls
+Ran 162 tests across 12 files. [0m[2m[[1m283.00ms[0m[2m][0m
