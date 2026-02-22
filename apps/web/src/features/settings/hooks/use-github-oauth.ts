@@ -1,5 +1,6 @@
 'use client';
 
+import { Effect } from 'effect';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   initiateGitHubDeviceFlow,
@@ -48,33 +49,47 @@ export const useGitHubOAuth = (): UseGitHubOAuthReturn => {
     isPollingRef.current = true;
     let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
-    const poll = async () => {
-      if (!isPollingRef.current) return;
+    const poll = (): void => {
+      if (!isPollingRef.current) {
+        return;
+      }
 
-      const result = await pollGitHubToken(
-        GITHUB_CLIENT_ID,
-        pollingConfig.deviceCode,
+      const program = Effect.tryPromise({
+        try: () => pollGitHubToken(GITHUB_CLIENT_ID, pollingConfig.deviceCode),
+        catch: () => new Error('Failed to poll GitHub token'),
+      }).pipe(
+        Effect.match({
+          onFailure: (error) => {
+            if (!isPollingRef.current) {
+              return;
+            }
+            setPollingConfig(null);
+            setOAuthState({ status: 'error', message: error.message });
+          },
+          onSuccess: (result) => {
+            if (!isPollingRef.current) {
+              return;
+            }
+            if (result.success) {
+              setPollingConfig(null);
+              setOAuthState({
+                status: 'success',
+                accessToken: result.accessToken,
+              });
+              return;
+            }
+            if (!result.shouldRetry) {
+              setPollingConfig(null);
+              setOAuthState({ status: 'error', message: result.error });
+              return;
+            }
+            const pollInterval = Math.max(pollingConfig.interval, 5) * 1000;
+            timeoutId = setTimeout(poll, pollInterval);
+          },
+        }),
       );
 
-      if (!isPollingRef.current) return;
-
-      if (result.success) {
-        setPollingConfig(null); // Stop polling
-        setOAuthState({
-          status: 'success',
-          accessToken: result.accessToken,
-        });
-      } else if (!result.shouldRetry) {
-        setPollingConfig(null); // Stop polling
-        setOAuthState({
-          status: 'error',
-          message: result.error,
-        });
-      } else {
-        // Keep polling - schedule next poll
-        const pollInterval = Math.max(pollingConfig.interval, 5) * 1000;
-        timeoutId = setTimeout(poll, pollInterval);
-      }
+      void Effect.runPromise(program);
     };
 
     // Start first poll after the interval
@@ -95,7 +110,7 @@ export const useGitHubOAuth = (): UseGitHubOAuthReturn => {
     setOAuthState({ status: 'idle' });
   }, []);
 
-  const startOAuth = useCallback(async () => {
+  const startOAuth = useCallback(() => {
     if (!isConfigured) {
       setOAuthState({
         status: 'error',
@@ -109,31 +124,39 @@ export const useGitHubOAuth = (): UseGitHubOAuthReturn => {
     cancelOAuth();
     setOAuthState({ status: 'loading' });
 
-    const result = await initiateGitHubDeviceFlow(GITHUB_CLIENT_ID);
+    const program = Effect.tryPromise({
+      try: () => initiateGitHubDeviceFlow(GITHUB_CLIENT_ID),
+      catch: () => new Error('Failed to start GitHub OAuth'),
+    }).pipe(
+      Effect.match({
+        onFailure: (error) => {
+          setOAuthState({ status: 'error', message: error.message });
+        },
+        onSuccess: (result) => {
+          if (!result.success) {
+            setOAuthState({
+              status: 'error',
+              message: result.error,
+            });
+            return;
+          }
 
-    if (!result.success) {
-      setOAuthState({
-        status: 'error',
-        message: result.error,
-      });
-      return;
-    }
+          const expiresAt = new Date(Date.now() + result.expiresIn * 1000);
+          setOAuthState({
+            status: 'awaiting-authorization',
+            userCode: result.userCode,
+            verificationUri: result.verificationUri,
+            expiresAt,
+          });
+          setPollingConfig({
+            deviceCode: result.deviceCode,
+            interval: result.interval,
+          });
+        },
+      }),
+    );
 
-    // Update state with device code info
-    const expiresAt = new Date(Date.now() + result.expiresIn * 1000);
-
-    setOAuthState({
-      status: 'awaiting-authorization',
-      userCode: result.userCode,
-      verificationUri: result.verificationUri,
-      expiresAt,
-    });
-
-    // Start polling by setting the polling config
-    setPollingConfig({
-      deviceCode: result.deviceCode,
-      interval: result.interval,
-    });
+    void Effect.runPromise(program);
   }, [isConfigured, cancelOAuth]);
 
   const reset = useCallback(() => {

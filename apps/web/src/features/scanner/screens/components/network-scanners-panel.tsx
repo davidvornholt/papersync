@@ -46,54 +46,60 @@ export const NetworkScannersPanel = ({
   const [inputSource, setInputSource] = useState<InputSource>('Platen');
   const { addToast } = useToast();
 
-  const handleDiscover = useCallback(async () => {
+  const handleDiscover = useCallback(() => {
     setIsDiscovering(true);
-    const result = await discoverScanners(10000);
-    setIsDiscovering(false);
-
-    if (result.success) {
-      setScanners([...result.scanners]);
-      addToast(
-        result.scanners.length > 0
-          ? `Found ${result.scanners.length} scanner(s)`
-          : 'No scanners found on network',
-        result.scanners.length > 0 ? 'success' : 'info',
-      );
-      return;
-    }
-
-    addToast(result.error, 'error');
+    void discoverScanners(10000)
+      .then((result) => {
+        if (result.success) {
+          setScanners([...result.scanners]);
+          addToast(
+            result.scanners.length > 0
+              ? `Found ${result.scanners.length} scanner(s)`
+              : 'No scanners found on network',
+            result.scanners.length > 0 ? 'success' : 'info',
+          );
+          return;
+        }
+        addToast(result.error, 'error');
+      })
+      .finally(() => {
+        setIsDiscovering(false);
+      });
   }, [addToast]);
 
   const handleSelectScanner = useCallback(
-    async (scanner: DiscoveredScanner) => {
+    (scanner: DiscoveredScanner) => {
       setSelectedScanner(scanner);
       setCapabilities(null);
       setIsLoadingCapabilities(true);
 
-      const result = await getScannerCapabilities(scanner);
-      setIsLoadingCapabilities(false);
+      void getScannerCapabilities(scanner)
+        .then((result) => {
+          if (!result.success) {
+            addToast(`Failed to fetch capabilities: ${result.error}`, 'error');
+            return;
+          }
 
-      if (!result.success) {
-        addToast(`Failed to fetch capabilities: ${result.error}`, 'error');
-        return;
-      }
+          setCapabilities(result.capabilities);
+          const firstSource = result.capabilities.inputSources[0] || 'Platen';
+          setInputSource(firstSource);
 
-      setCapabilities(result.capabilities);
-      const firstSource = result.capabilities.inputSources[0] || 'Platen';
-      setInputSource(firstSource);
-
-      const sourceCaps = result.capabilities.sourceCapabilities[firstSource];
-      if (sourceCaps.resolutions.length > 0) {
-        setResolution(
-          sourceCaps.resolutions.includes(300)
-            ? 300
-            : sourceCaps.resolutions[0],
-        );
-      }
-      if (sourceCaps.colorModes.length > 0) {
-        setColorMode(sourceCaps.colorModes[0]);
-      }
+          const sourceCaps =
+            result.capabilities.sourceCapabilities[firstSource];
+          if (sourceCaps.resolutions.length > 0) {
+            setResolution(
+              sourceCaps.resolutions.includes(300)
+                ? 300
+                : sourceCaps.resolutions[0],
+            );
+          }
+          if (sourceCaps.colorModes.length > 0) {
+            setColorMode(sourceCaps.colorModes[0]);
+          }
+        })
+        .finally(() => {
+          setIsLoadingCapabilities(false);
+        });
     },
     [addToast],
   );

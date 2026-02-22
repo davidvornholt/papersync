@@ -17,8 +17,8 @@ const getFileShaEffect = (
   filePath: string,
 ): Effect.Effect<string | undefined, never> =>
   Effect.tryPromise({
-    try: async () => {
-      const response = await fetch(
+    try: () =>
+      fetch(
         `https://api.github.com/repos/${owner}/${repo}/contents/${filePath}`,
         {
           headers: {
@@ -26,13 +26,12 @@ const getFileShaEffect = (
             Accept: 'application/vnd.github.v3+json',
           },
         },
-      );
-      if (response.ok) {
-        const data = await response.json();
-        return data.sha as string;
-      }
-      return undefined;
-    },
+      ).then((response) => {
+        if (!response.ok) {
+          return undefined;
+        }
+        return response.json().then((data) => data.sha as string);
+      }),
     catch: () => undefined,
   }).pipe(Effect.catchAll(() => Effect.succeed(undefined)));
 

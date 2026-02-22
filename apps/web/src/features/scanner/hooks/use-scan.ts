@@ -27,50 +27,48 @@ export const useScan = (options: UseScanOptions): UseScanReturn => {
   const [imageData, setImageData] = useState<string | null>(null);
   const weekId = options.weekId ?? getCurrentWeekId();
 
-  const upload = useCallback(async (file: File): Promise<void> => {
+  const upload = useCallback((file: File): Promise<void> => {
     setState({ status: 'uploading', progress: 0 });
-    const result = await Effect.runPromise(
+    return Effect.runPromise(
       readFileAsDataUrl(file, (progress) =>
         setState({ status: 'uploading', progress }),
       ).pipe(
-        Effect.map((data) => ({ success: true as const, data })),
-        Effect.catchAll((error) =>
-          Effect.succeed({ success: false as const, error: error.message }),
+        Effect.tap((data) =>
+          Effect.sync(() => {
+            setImagePreview(data);
+            setImageData(data);
+            setState({ status: 'idle' });
+          }),
         ),
+        Effect.catchAll((error) =>
+          Effect.sync(() =>
+            setState({ status: 'error', error: error.message }),
+          ),
+        ),
+        Effect.asVoid,
       ),
     );
-
-    if (result.success) {
-      setImagePreview(result.data);
-      setImageData(result.data);
-      setState({ status: 'idle' });
-      return;
-    }
-
-    setState({ status: 'error', error: result.error });
   }, []);
 
-  const process = useCallback(async (): Promise<ScanState> => {
+  const process = useCallback((): Promise<ScanState> => {
     if (!imageData) {
       const nextState: ScanState = {
         status: 'error',
         error: 'No image to process',
       };
       setState(nextState);
-      return nextState;
+      return Promise.resolve(nextState);
     }
 
     setState({ status: 'processing' });
-    const nextState = await Effect.runPromise(
+    return Effect.runPromise(
       processExtractionEffect(
         imageData,
         weekId,
         options.aiSettings,
         options.vaultSettings,
-      ),
+      ).pipe(Effect.tap((nextState) => Effect.sync(() => setState(nextState)))),
     );
-    setState(nextState);
-    return nextState;
   }, [imageData, weekId, options.aiSettings, options.vaultSettings]);
 
   const clear = useCallback((): void => {

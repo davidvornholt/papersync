@@ -9,22 +9,23 @@ export const getGitHubUserEffect = (
   accessToken: string,
 ): Effect.Effect<GitHubUser, GitHubAPIError> =>
   Effect.tryPromise({
-    try: async () => {
-      const response = await fetch('https://api.github.com/user', {
+    try: () =>
+      fetch('https://api.github.com/user', {
         headers: {
           Accept: 'application/vnd.github+json',
           Authorization: `Bearer ${accessToken}`,
           'X-GitHub-Api-Version': '2022-11-28',
         },
-      });
-
-      if (!response.ok) {
-        return Promise.reject({ status: response.status });
-      }
-
-      const data = await response.json();
-      return { login: data.login, name: data.name, avatarUrl: data.avatar_url };
-    },
+      }).then((response) => {
+        if (!response.ok) {
+          return Promise.reject({ status: response.status });
+        }
+        return response.json().then((data) => ({
+          login: data.login,
+          name: data.name,
+          avatarUrl: data.avatar_url,
+        }));
+      }),
     catch: (error) =>
       new GitHubAPIError({
         message:
@@ -45,41 +46,37 @@ export const listRepositoriesEffect = (
   accessToken: string,
 ): Effect.Effect<readonly GitHubRepository[], GitHubAPIError> =>
   Effect.tryPromise({
-    try: async () => {
-      const response = await fetch(
-        'https://api.github.com/user/repos?sort=updated&per_page=100',
-        {
-          headers: {
-            Accept: 'application/vnd.github+json',
-            Authorization: `Bearer ${accessToken}`,
-            'X-GitHub-Api-Version': '2022-11-28',
-          },
+    try: () =>
+      fetch('https://api.github.com/user/repos?sort=updated&per_page=100', {
+        headers: {
+          Accept: 'application/vnd.github+json',
+          Authorization: `Bearer ${accessToken}`,
+          'X-GitHub-Api-Version': '2022-11-28',
         },
-      );
-
-      if (!response.ok) {
-        return Promise.reject({ status: response.status });
-      }
-
-      const data = await response.json();
-      return data.map(
-        (repo: {
-          id: number;
-          name: string;
-          full_name: string;
-          owner: { login: string };
-          private: boolean;
-          description: string | null;
-        }) => ({
-          id: repo.id,
-          name: repo.name,
-          fullName: repo.full_name,
-          owner: repo.owner.login,
-          private: repo.private,
-          description: repo.description,
-        }),
-      );
-    },
+      }).then((response) => {
+        if (!response.ok) {
+          return Promise.reject({ status: response.status });
+        }
+        return response.json().then((data) =>
+          data.map(
+            (repo: {
+              id: number;
+              name: string;
+              full_name: string;
+              owner: { login: string };
+              private: boolean;
+              description: string | null;
+            }) => ({
+              id: repo.id,
+              name: repo.name,
+              fullName: repo.full_name,
+              owner: repo.owner.login,
+              private: repo.private,
+              description: repo.description,
+            }),
+          ),
+        );
+      }),
     catch: (error) =>
       new GitHubAPIError({
         message:

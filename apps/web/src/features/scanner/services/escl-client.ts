@@ -29,7 +29,7 @@ const insecureAgent = new Agent({
 const createESCLClient = (): ESCLClient => ({
   getCapabilities: (scanner: DiscoveredScanner) =>
     Effect.tryPromise({
-      try: async () => {
+      try: () => {
         const baseUrl = `${scanner.protocol}://${scanner.host}:${scanner.port}`;
         const fetchOptions: RequestInit & { dispatcher?: unknown } = {
           method: 'GET',
@@ -39,17 +39,16 @@ const createESCLClient = (): ESCLClient => ({
           fetchOptions.dispatcher = insecureAgent;
         }
 
-        const response = await fetch(
-          `${baseUrl}/eSCL/ScannerCapabilities`,
-          fetchOptions,
+        return fetch(`${baseUrl}/eSCL/ScannerCapabilities`, fetchOptions).then(
+          (response) => {
+            if (!response.ok) {
+              return Promise.reject(
+                new Error(`HTTP ${response.status}: ${response.statusText}`),
+              );
+            }
+            return response.text().then(parseCapabilitiesXml);
+          },
         );
-        if (!response.ok) {
-          return Promise.reject(
-            new Error(`HTTP ${response.status}: ${response.statusText}`),
-          );
-        }
-
-        return parseCapabilitiesXml(await response.text());
       },
       catch: (error) =>
         new ESCLCapabilitiesError({
@@ -60,7 +59,7 @@ const createESCLClient = (): ESCLClient => ({
 
   startScan: (scanner: DiscoveredScanner, settings: ScanSettings) =>
     Effect.tryPromise({
-      try: async () => {
+      try: () => {
         const baseUrl = `${scanner.protocol}://${scanner.host}:${scanner.port}`;
         const fetchOptions: RequestInit & { dispatcher?: unknown } = {
           method: 'POST',
@@ -71,22 +70,29 @@ const createESCLClient = (): ESCLClient => ({
           fetchOptions.dispatcher = insecureAgent;
         }
 
-        const response = await fetch(`${baseUrl}/eSCL/ScanJobs`, fetchOptions);
-        if (response.status !== 201) {
-          return Promise.reject(
-            new Error(`Failed to create scan job: HTTP ${response.status}`),
-          );
-        }
+        return fetch(`${baseUrl}/eSCL/ScanJobs`, fetchOptions).then(
+          (response) => {
+            if (response.status !== 201) {
+              return Promise.reject(
+                new Error(`Failed to create scan job: HTTP ${response.status}`),
+              );
+            }
 
-        const jobUrl = response.headers.get('Location');
-        if (!jobUrl) {
-          return Promise.reject(new Error('No job URL returned from scanner'));
-        }
+            const jobUrl = response.headers.get('Location');
+            if (!jobUrl) {
+              return Promise.reject(
+                new Error('No job URL returned from scanner'),
+              );
+            }
 
-        return {
-          jobUrl: jobUrl.startsWith('http') ? jobUrl : `${baseUrl}${jobUrl}`,
-          status: 'pending' as const,
-        };
+            return {
+              jobUrl: jobUrl.startsWith('http')
+                ? jobUrl
+                : `${baseUrl}${jobUrl}`,
+              status: 'pending' as const,
+            };
+          },
+        );
       },
       catch: (error) =>
         new ESCLError({ message: 'Failed to start scan job', cause: error }),
@@ -94,9 +100,7 @@ const createESCLClient = (): ESCLClient => ({
 
   getScanResult: (jobUrl: string) =>
     Effect.tryPromise({
-      try: async () => {
-        await new Promise((resolve) => setTimeout(resolve, 2000));
-
+      try: () => {
         const fetchOptions: RequestInit & { dispatcher?: unknown } = {
           method: 'GET',
         };
@@ -104,18 +108,22 @@ const createESCLClient = (): ESCLClient => ({
           fetchOptions.dispatcher = insecureAgent;
         }
 
-        const response = await fetch(`${jobUrl}/NextDocument`, fetchOptions);
-        if (!response.ok) {
-          return Promise.reject(
-            new Error(`Failed to get scan result: HTTP ${response.status}`),
-          );
-        }
+        return new Promise<void>((resolve) => setTimeout(resolve, 2000))
+          .then(() => fetch(`${jobUrl}/NextDocument`, fetchOptions))
+          .then((response) => {
+            if (!response.ok) {
+              return Promise.reject(
+                new Error(`Failed to get scan result: HTTP ${response.status}`),
+              );
+            }
 
-        const buffer = await response.arrayBuffer();
-        const base64 = Buffer.from(buffer).toString('base64');
-        const contentType =
-          response.headers.get('Content-Type') || 'image/jpeg';
-        return `data:${contentType};base64,${base64}`;
+            const contentType =
+              response.headers.get('Content-Type') || 'image/jpeg';
+            return response.arrayBuffer().then((buffer) => {
+              const base64 = Buffer.from(buffer).toString('base64');
+              return `data:${contentType};base64,${base64}`;
+            });
+          });
       },
       catch: (error) =>
         new ESCLError({

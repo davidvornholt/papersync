@@ -17,7 +17,7 @@ export {
 const createMdnsDiscoveryService = (): ScannerDiscoveryServiceContract => ({
   discover: (timeoutMs = 10000) =>
     Effect.tryPromise({
-      try: async () => {
+      try: () => {
         const scanners = new Map<string, ReturnType<typeof serviceToScanner>>();
         const bonjour = new Bonjour();
 

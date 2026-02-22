@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { Schema } from '@effect/schema';
+import { Schema } from 'effect';
 import { OCRResponse, QRPayload, WeeklyNote } from '@/shared/types/schemas';
 
 describe('OCRResponse Schema', () => {

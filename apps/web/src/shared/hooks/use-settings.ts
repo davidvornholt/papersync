@@ -3,15 +3,11 @@
 import { Effect } from 'effect';
 import { useCallback, useEffect, useState } from 'react';
 import {
-  type AIProvider,
-  DAYS_OF_WEEK,
   type DayOfWeek,
   defaultSettings,
   type Settings,
   type Subject,
   type TimetableDay,
-  type TimetableSlot,
-  type VaultMethod,
 } from './use-settings-schema';
 import { loadSettings, saveSettings } from './use-settings-storage';
 
@@ -160,9 +156,10 @@ export const useSettings = (): UseSettingsReturn => {
     [],
   );
 
-  const save = useCallback(async (): Promise<void> => {
-    await Effect.runPromise(saveSettings(settings));
-  }, [settings]);
+  const save = useCallback(
+    (): Promise<void> => Effect.runPromise(saveSettings(settings)),
+    [settings],
+  );
 
   const reset = useCallback((): void => {
     setSettings(defaultSettings);
@@ -195,6 +192,5 @@ export type {
   TimetableDay,
   TimetableSlot,
   VaultMethod,
-};
-
-export { DAYS_OF_WEEK };
+} from './use-settings-schema';
+export { DAYS_OF_WEEK } from './use-settings-schema';

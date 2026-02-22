@@ -1,27 +1,23 @@
-export const runCommand = async (
+const toShellArgument = (value: string): string =>
+  `'${value.replaceAll("'", "'\\''")}'`;
+
+export const runCommand = (
   cmd: string[],
 ): Promise<{
   readonly exitCode: number;
   readonly stdout: string;
   readonly stderr: string;
-}> => {
-  const process = Bun.spawn(cmd, {
-    stdout: 'pipe',
-    stderr: 'pipe',
-  });
+}> =>
+  Bun.$`${{ raw: cmd.map(toShellArgument).join(' ') }}`
+    .quiet()
+    .nothrow()
+    .then((result) => ({
+      exitCode: result.exitCode,
+      stdout: result.stdout.toString(),
+      stderr: result.stderr.toString(),
+    }));
 
-  const [exitCode, stdout, stderr] = await Promise.all([
-    process.exited,
-    new Response(process.stdout).text(),
-    new Response(process.stderr).text(),
-  ]);
-
-  return { exitCode, stdout, stderr };
-};
-
-export const isDirectoryPath = async (
-  directoryPath: string,
-): Promise<boolean> => {
-  const result = await runCommand(['test', '-d', directoryPath]);
-  return result.exitCode === 0;
-};
+export const isDirectoryPath = (directoryPath: string): Promise<boolean> =>
+  runCommand(['test', '-d', directoryPath]).then(
+    (result) => result.exitCode === 0,
+  );

@@ -55,34 +55,34 @@ export const useScanScreen = (): UseScanScreenReturn => {
       ? scan.state.status
       : 'idle';
 
-  const handleFileSelect = async (file: File): Promise<void> => {
-    await scan.upload(file);
-    addToast('Image uploaded successfully', 'success');
-  };
+  const handleFileSelect = (file: File): Promise<void> =>
+    scan.upload(file).then(() => {
+      addToast('Image uploaded successfully', 'success');
+    });
 
-  const handleProcess = async (): Promise<void> => {
-    const result = await scan.process();
-    if (result.status === 'complete') {
-      setEditedEntries((prev) => {
-        const newEntries = result.entries.filter(
-          (entry) =>
-            !prev.some((existing) => existing.content === entry.content),
+  const handleProcess = (): Promise<void> =>
+    scan.process().then((result) => {
+      if (result.status === 'complete') {
+        setEditedEntries((prev) => {
+          const newEntries = result.entries.filter(
+            (entry) =>
+              !prev.some((existing) => existing.content === entry.content),
+          );
+          return [...prev, ...newEntries];
+        });
+        addToast(
+          result.entries.length > 0
+            ? `Extracted ${result.entries.length} new entries`
+            : 'No new entries found in scan',
+          result.entries.length > 0 ? 'success' : 'info',
         );
-        return [...prev, ...newEntries];
-      });
-      addToast(
-        result.entries.length > 0
-          ? `Extracted ${result.entries.length} new entries`
-          : 'No new entries found in scan',
-        result.entries.length > 0 ? 'success' : 'info',
-      );
-      return;
-    }
+        return;
+      }
 
-    if (result.status === 'error') {
-      addToast(`Failed to process scan: ${result.error}`, 'error');
-    }
-  };
+      if (result.status === 'error') {
+        addToast(`Failed to process scan: ${result.error}`, 'error');
+      }
+    });
 
   const handleUpdateEntry = useCallback(
     (id: string, updates: Partial<ExtractedEntry>) => {
@@ -103,33 +103,33 @@ export const useScanScreen = (): UseScanScreenReturn => {
     [addToast],
   );
 
-  const handleSync = async (): Promise<void> => {
+  const handleSync = (): Promise<void> => {
     if (editedEntries.length === 0) {
       addToast('No entries to sync', 'info');
-      return;
+      return Promise.resolve();
     }
 
     const { method, localPath, githubToken, githubRepo } = settings.vault;
     setIsSyncing(true);
 
-    try {
-      const result = await syncEntriesToVault(editedEntries, {
-        method,
-        localPath,
-        githubToken,
-        githubRepo,
-      });
-
-      if (result.success) {
-        addToast('Synced to vault successfully!', 'success');
-        setEditedEntries([]);
-        scan.clear();
-      } else {
+    return syncEntriesToVault(editedEntries, {
+      method,
+      localPath,
+      githubToken,
+      githubRepo,
+    })
+      .then((result) => {
+        if (result.success) {
+          addToast('Synced to vault successfully!', 'success');
+          setEditedEntries([]);
+          scan.clear();
+          return;
+        }
         addToast(`Sync failed: ${result.error}`, 'error');
-      }
-    } finally {
-      setIsSyncing(false);
-    }
+      })
+      .finally(() => {
+        setIsSyncing(false);
+      });
   };
 
   const handleClear = (): void => {
@@ -137,13 +137,18 @@ export const useScanScreen = (): UseScanScreenReturn => {
     scan.clear();
   };
 
-  const handleScanFromDevice = async (imageData: string): Promise<void> => {
-    const response = await fetch(imageData);
-    const blob = await response.blob();
-    const file = new File([blob], 'scanned-document.jpg', { type: blob.type });
-    await scan.upload(file);
-    addToast("Document scanned successfully! Click 'Process'.", 'success');
-  };
+  const handleScanFromDevice = (imageData: string): Promise<void> =>
+    fetch(imageData)
+      .then((response) => response.blob())
+      .then((blob) => {
+        const file = new File([blob], 'scanned-document.jpg', {
+          type: blob.type,
+        });
+        return scan.upload(file);
+      })
+      .then(() => {
+        addToast("Document scanned successfully! Click 'Process'.", 'success');
+      });
 
   return {
     scan,

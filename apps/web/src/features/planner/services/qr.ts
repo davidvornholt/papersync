@@ -1,5 +1,4 @@
-import { Schema } from '@effect/schema';
-import { Data, Effect } from 'effect';
+import { Data, Effect, Schema } from 'effect';
 import jsQR from 'jsqr';
 import QRCode from 'qrcode';
 import type { QRPayload, WeekId } from '@/shared/types';
@@ -50,7 +49,7 @@ export const encodeQRPayload = (
   weekId: WeekId,
 ): Effect.Effect<string, QREncodeError> =>
   Effect.tryPromise({
-    try: async () => {
+    try: () => {
       const payload: QRPayload = {
         week: weekId,
         checksum: generateChecksum(weekId),
@@ -58,7 +57,7 @@ export const encodeQRPayload = (
       };
 
       const jsonString = JSON.stringify(payload);
-      const dataUrl = await QRCode.toDataURL(jsonString, {
+      return QRCode.toDataURL(jsonString, {
         errorCorrectionLevel: 'M',
         margin: 1,
         width: 120,
@@ -67,8 +66,6 @@ export const encodeQRPayload = (
           light: '#FFFFFF',
         },
       });
-
-      return dataUrl;
     },
     catch: (error) =>
       new QREncodeError({

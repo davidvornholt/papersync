@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { Schema } from '@effect/schema';
+import { Schema } from 'effect';
 import type { WeekId } from '@/shared/types';
 import { VisionError, VisionValidationError } from '../vision-provider';
 

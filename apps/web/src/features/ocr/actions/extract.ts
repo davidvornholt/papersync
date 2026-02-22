@@ -57,9 +57,9 @@ const fetchExistingContentFromGitHub = (
   repo: string,
 ): Effect.Effect<string, never> =>
   Effect.tryPromise({
-    try: async () => {
+    try: () => {
       const notePath = getWeeklyNotePath(weekId);
-      const response = await fetch(
+      return fetch(
         `https://api.github.com/repos/${owner}/${repo}/contents/${notePath}`,
         {
           headers: {
@@ -67,15 +67,17 @@ const fetchExistingContentFromGitHub = (
             Accept: 'application/vnd.github.v3+json',
           },
         },
-      );
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data.content) {
-          return Buffer.from(data.content, 'base64').toString('utf-8');
+      ).then((response) => {
+        if (!response.ok) {
+          return '';
         }
-      }
-      return '';
+        return response.json().then((data) => {
+          if (!data.content) {
+            return '';
+          }
+          return Buffer.from(data.content, 'base64').toString('utf-8');
+        });
+      });
     },
     catch: () => '',
   }).pipe(Effect.catchAll(() => Effect.succeed('')));

@@ -30,8 +30,8 @@ export const createGoogleVisionProvider = (apiKey: string): VisionProvider => ({
 
       for (const modelConfig of GEMINI_MODELS) {
         const result = yield* Effect.tryPromise({
-          try: async () => {
-            const response = await generateText({
+          try: () =>
+            generateText({
               model: google(modelConfig.modelId),
               output: Output.object({
                 schema: jsonSchema<typeof OCRResponseSchema.Type>(
@@ -53,9 +53,10 @@ export const createGoogleVisionProvider = (apiKey: string): VisionProvider => ({
                     : { thinkingBudget: 4096 },
                 },
               },
-            });
-            return { object: response.output, modelId: modelConfig.modelId };
-          },
+            }).then((response) => ({
+              object: response.output,
+              modelId: modelConfig.modelId,
+            })),
           catch: (error) => error,
         }).pipe(Effect.option);
 

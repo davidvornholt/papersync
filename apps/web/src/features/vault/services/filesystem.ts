@@ -27,13 +27,13 @@ const createLocalVaultService = (initialPath: string): VaultService => {
 
     setVaultPath: (newPath: string) =>
       Effect.tryPromise({
-        try: async () => {
-          const isDirectory = await isDirectoryPath(newPath);
-          if (!isDirectory) {
-            return Promise.reject(new Error('Path is not a directory'));
-          }
-          vaultPath = newPath;
-        },
+        try: () =>
+          isDirectoryPath(newPath).then((isDirectory) => {
+            if (!isDirectory) {
+              return Promise.reject(new Error('Path is not a directory'));
+            }
+            vaultPath = newPath;
+          }),
         catch: (error) =>
           new VaultError({
             message: `Failed to set vault path: ${newPath}`,
@@ -43,14 +43,15 @@ const createLocalVaultService = (initialPath: string): VaultService => {
 
     readFile: (relativePath: string) =>
       Effect.tryPromise({
-        try: async () => {
+        try: () => {
           const fullPath = resolvePath(relativePath);
           const file = Bun.file(fullPath);
-          const exists = await file.exists();
-          if (!exists) {
-            return Promise.reject({ _tag: 'file_not_found' });
-          }
-          return file.text();
+          return file.exists().then((exists) => {
+            if (!exists) {
+              return Promise.reject({ _tag: 'file_not_found' as const });
+            }
+            return file.text();
+          });
         },
         catch: (error) => {
           if (
@@ -72,18 +73,19 @@ const createLocalVaultService = (initialPath: string): VaultService => {
 
     writeFile: (relativePath: string, content: string) =>
       Effect.tryPromise({
-        try: async () => {
+        try: () => {
           const fullPath = resolvePath(relativePath);
           const dir = path.dirname(fullPath);
-          const mkdirResult = await runCommand(['mkdir', '-p', dir]);
-          if (mkdirResult.exitCode !== 0) {
-            return Promise.reject(
-              new Error(
-                mkdirResult.stderr || `Failed to create directory: ${dir}`,
-              ),
-            );
-          }
-          await Bun.write(fullPath, content);
+          return runCommand(['mkdir', '-p', dir]).then((mkdirResult) => {
+            if (mkdirResult.exitCode !== 0) {
+              return Promise.reject(
+                new Error(
+                  mkdirResult.stderr || `Failed to create directory: ${dir}`,
+                ),
+              );
+            }
+            return Bun.write(fullPath, content).then(() => undefined);
+          });
         },
         catch: (error) =>
           new VaultError({
@@ -94,7 +96,7 @@ const createLocalVaultService = (initialPath: string): VaultService => {
 
     fileExists: (relativePath: string) =>
       Effect.tryPromise({
-        try: async () => {
+        try: () => {
           const fullPath = resolvePath(relativePath);
           return Bun.file(fullPath).exists();
         },
@@ -107,22 +109,18 @@ const createLocalVaultService = (initialPath: string): VaultService => {
 
     listFiles: (relativePath: string) =>
       Effect.tryPromise({
-        try: async () => {
+        try: () => {
           const fullPath = resolvePath(relativePath);
-          const isDirectory = await isDirectoryPath(fullPath);
-          if (!isDirectory) {
-            return [];
-          }
-
-          const files: string[] = [];
-          for await (const file of new Bun.Glob('*').scan({
-            cwd: fullPath,
-            onlyFiles: true,
-          })) {
-            files.push(file);
-          }
-
-          return files;
+          return isDirectoryPath(fullPath).then((isDirectory) =>
+            isDirectory
+              ? Array.fromAsync(
+                  new Bun.Glob('*').scan({
+                    cwd: fullPath,
+                    onlyFiles: true,
+                  }),
+                )
+              : [],
+          );
         },
         catch: (error) =>
           new VaultError({
@@ -133,17 +131,18 @@ const createLocalVaultService = (initialPath: string): VaultService => {
 
     ensureDirectory: (relativePath: string) =>
       Effect.tryPromise({
-        try: async () => {
+        try: () => {
           const fullPath = resolvePath(relativePath);
-          const mkdirResult = await runCommand(['mkdir', '-p', fullPath]);
-          if (mkdirResult.exitCode !== 0) {
-            return Promise.reject(
-              new Error(
-                mkdirResult.stderr ||
-                  `Failed to create directory: ${relativePath}`,
-              ),
-            );
-          }
+          return runCommand(['mkdir', '-p', fullPath]).then((mkdirResult) => {
+            if (mkdirResult.exitCode !== 0) {
+              return Promise.reject(
+                new Error(
+                  mkdirResult.stderr ||
+                    `Failed to create directory: ${relativePath}`,
+                ),
+              );
+            }
+          });
         },
         catch: (error) =>
           new VaultError({
@@ -154,16 +153,26 @@ const createLocalVaultService = (initialPath: string): VaultService => {
 
     deleteFile: (relativePath: string) =>
       Effect.tryPromise({
-        try: async () => {
+        try: () => {
           const fullPath = resolvePath(relativePath);
-          const rmResult = await runCommand(['rm', fullPath]);
-          if (rmResult.exitCode !== 0) {
-            return Promise.reject(
-              new Error(
-                rmResult.stderr || `Failed to delete file: ${fullPath}`,
-              ),
-            );
-          }
+          return Bun.file(fullPath)
+            .exists()
+            .then((exists) => {
+              if (!exists) {
+                return Promise.reject(
+                  new Error(`Failed to delete file: ${fullPath}`),
+                );
+              }
+              return runCommand(['rm', fullPath]).then((rmResult) => {
+                if (rmResult.exitCode !== 0) {
+                  return Promise.reject(
+                    new Error(
+                      rmResult.stderr || `Failed to delete file: ${fullPath}`,
+                    ),
+                  );
+                }
+              });
+            });
         },
         catch: (error) =>
           new VaultError({

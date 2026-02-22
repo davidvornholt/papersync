@@ -52,28 +52,26 @@ const fetchPdfEffect = (
   timetable: readonly TimetableDay[],
 ): Effect.Effect<Blob, Error> =>
   Effect.tryPromise({
-    try: async () => {
-      const response = await fetch('/api/planner', {
+    try: () =>
+      fetch('/api/planner', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          weekId,
-          subjects,
-          timetable,
-        }),
-      });
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ weekId, subjects, timetable }),
+      }).then((response) => {
+        if (!response.ok) {
+          return response
+            .json()
+            .then((errorData) => {
+              const parsed = errorData as { error?: string };
+              return Promise.reject(
+                new Error(parsed.error ?? 'Failed to generate PDF'),
+              );
+            })
+            .catch(() => Promise.reject(new Error('Failed to generate PDF')));
+        }
 
-      if (!response.ok) {
-        const errorData = (await response.json()) as { error?: string };
-        return Promise.reject(
-          new Error(errorData.error ?? 'Failed to generate PDF'),
-        );
-      }
-
-      return response.blob();
-    },
+        return response.blob();
+      }),
     catch: (error) =>
       error instanceof Error
         ? error
@@ -91,26 +89,24 @@ export const usePlanner = (initialWeekId?: WeekId): UsePlannerReturn => {
   const [state, setState] = useState<PlannerState>({ status: 'idle' });
 
   const generate = useCallback(
-    async (
+    (
       subjects: readonly Subject[],
       timetable: readonly TimetableDay[],
     ): Promise<void> => {
       setState({ status: 'generating' });
-
-      const result = await Effect.runPromise(
+      return Effect.runPromise(
         fetchPdfEffect(weekId, subjects, timetable).pipe(
-          Effect.map((blob) => ({ success: true as const, blob })),
-          Effect.catchAll((error) =>
-            Effect.succeed({ success: false as const, error: error.message }),
+          Effect.tap((blob) =>
+            Effect.sync(() => setState({ status: 'generated', blob })),
           ),
+          Effect.catchAll((error) =>
+            Effect.sync(() =>
+              setState({ status: 'error', error: error.message }),
+            ),
+          ),
+          Effect.asVoid,
         ),
       );
-
-      if (result.success) {
-        setState({ status: 'generated', blob: result.blob });
-      } else {
-        setState({ status: 'error', error: result.error });
-      }
     },
     [weekId],
   );

@@ -47,7 +47,7 @@ export const processExtractionEffect = (
   vaultSettings?: VaultSettings,
 ): Effect.Effect<ScanState, never> =>
   Effect.tryPromise({
-    try: async () =>
+    try: () =>
       extractHandwriting({
         imageBase64: imageData,
         weekId,

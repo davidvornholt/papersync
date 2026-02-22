@@ -49,7 +49,7 @@ export const PlannerScreen = (): React.ReactElement => {
     (day) => day.slots.length > 0,
   );
 
-  const handleGenerate = async (): Promise<void> => {
+  const handleGenerate = (): void => {
     const subjectsToUse = getSubjectsForWeek(
       settings.timetable,
       settings.subjects,
@@ -62,7 +62,7 @@ export const PlannerScreen = (): React.ReactElement => {
       exceptions,
     );
 
-    await planner.generate(
+    void planner.generate(
       subjectsToUse,
       timetableWithExceptions as Parameters<typeof planner.generate>[1],
     );
@@ -137,7 +137,7 @@ export const PlannerScreen = (): React.ReactElement => {
             onEditException={(date, dayOfWeek) =>
               setExceptionEditingDate({ date, dayOfWeek })
             }
-            onGenerate={() => void handleGenerate()}
+            onGenerate={handleGenerate}
             isGenerating={planner.state.status === 'generating'}
             isGenerateDisabled={
               planner.state.status === 'generating' ||

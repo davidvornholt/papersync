@@ -1,4 +1,4 @@
-import { JSONSchema, Schema } from '@effect/schema';
+import { JSONSchema, Schema } from 'effect';
 
 const OCREntrySchema = Schema.Struct({
   day: Schema.String,

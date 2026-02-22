@@ -1,5 +1,4 @@
-import { Schema } from '@effect/schema';
-import { Effect } from 'effect';
+import { Effect, Schema } from 'effect';
 import type { OCRResponse, WeekId } from '@/shared/types';
 import type { VisionProvider } from './vision-contract';
 import { VisionError, VisionValidationError } from './vision-contract';
@@ -19,8 +18,8 @@ export const createOllamaVisionProvider = (
   ) =>
     Effect.gen(function* () {
       const response = yield* Effect.tryPromise({
-        try: async () => {
-          const res = await fetch(`${endpoint}/api/generate`, {
+        try: () =>
+          fetch(`${endpoint}/api/generate`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -29,15 +28,14 @@ export const createOllamaVisionProvider = (
               images: [imageBase64.replace(/^data:image\/\w+;base64,/, '')],
               stream: false,
             }),
-          });
-
-          if (!res.ok) {
-            return Promise.reject(new Error(`Ollama API error: ${res.status}`));
-          }
-
-          const data = await res.json();
-          return data.response as string;
-        },
+          }).then((res) => {
+            if (!res.ok) {
+              return Promise.reject(
+                new Error(`Ollama API error: ${res.status}`),
+              );
+            }
+            return res.json().then((data) => data.response as string);
+          }),
         catch: (error) =>
           new VisionError({
             message: 'Failed to call Ollama Vision API',

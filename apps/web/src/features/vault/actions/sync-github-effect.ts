@@ -30,8 +30,8 @@ const fetchGitHubFileEffect = (
   filePath: string,
 ): Effect.Effect<GitHubFileContent, GitHubFileError | GitHubFileNotFound> =>
   Effect.tryPromise({
-    try: async () => {
-      const response = await fetch(
+    try: () =>
+      fetch(
         `https://api.github.com/repos/${owner}/${repo}/contents/${filePath}`,
         {
           headers: {
@@ -39,32 +39,33 @@ const fetchGitHubFileEffect = (
             Accept: 'application/vnd.github.v3+json',
           },
         },
-      );
+      ).then((response) => {
+        if (response.status === 404) {
+          return Promise.reject({ _tag: 'not_found', path: filePath });
+        }
+        if (!response.ok) {
+          return response.text().then((errorText) =>
+            Promise.reject({
+              _tag: 'error',
+              status: response.status,
+              message: `GitHub API error: ${response.status} ${response.statusText}${errorText ? ` - ${errorText}` : ''}`,
+            }),
+          );
+        }
 
-      if (response.status === 404) {
-        return Promise.reject({ _tag: 'not_found', path: filePath });
-      }
-      if (!response.ok) {
-        const errorText = await response.text();
-        return Promise.reject({
-          _tag: 'error',
-          status: response.status,
-          message: `GitHub API error: ${response.status} ${response.statusText}${errorText ? ` - ${errorText}` : ''}`,
+        return response.json().then((data) => {
+          if (data.content && data.sha) {
+            return {
+              content: Buffer.from(data.content, 'base64').toString('utf-8'),
+              sha: data.sha,
+            };
+          }
+          return Promise.reject({
+            _tag: 'error',
+            message: 'Invalid response from GitHub API',
+          });
         });
-      }
-
-      const data = await response.json();
-      if (data.content && data.sha) {
-        return {
-          content: Buffer.from(data.content, 'base64').toString('utf-8'),
-          sha: data.sha,
-        };
-      }
-      return Promise.reject({
-        _tag: 'error',
-        message: 'Invalid response from GitHub API',
-      });
-    },
+      }),
     catch: (error): GitHubFileError | GitHubFileNotFound => {
       if (typeof error === 'object' && error !== null && '_tag' in error) {
         const taggedError = error as {

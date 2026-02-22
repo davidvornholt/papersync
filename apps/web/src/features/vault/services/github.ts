@@ -22,29 +22,33 @@ const GITHUB_ACCESS_TOKEN_URL = 'https://github.com/login/oauth/access_token';
 const createGitHubService = (): GitHubServiceContract => ({
   initiateDeviceFlow: (clientId: string) =>
     Effect.tryPromise({
-      try: async () => {
-        const response = await fetch(GITHUB_DEVICE_CODE_URL, {
+      try: () =>
+        fetch(GITHUB_DEVICE_CODE_URL, {
           method: 'POST',
           headers: {
             Accept: 'application/json',
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({ client_id: clientId, scope: 'repo' }),
-        });
-        if (!response.ok) {
-          return Promise.reject(
-            new Error(`HTTP ${response.status}: ${await response.text()}`),
-          );
-        }
-        const data = await response.json();
-        return {
-          deviceCode: data.device_code,
-          userCode: data.user_code,
-          verificationUri: data.verification_uri,
-          expiresIn: data.expires_in,
-          interval: data.interval,
-        };
-      },
+        })
+          .then((response) =>
+            response.ok
+              ? (response.json() as Promise<Record<string, unknown>>)
+              : response
+                  .text()
+                  .then((text) =>
+                    Promise.reject(
+                      new Error(`HTTP ${response.status}: ${text}`),
+                    ),
+                  ),
+          )
+          .then((data) => ({
+            deviceCode: String(data.device_code),
+            userCode: String(data.user_code),
+            verificationUri: String(data.verification_uri),
+            expiresIn: Number(data.expires_in),
+            interval: Number(data.interval),
+          })),
       catch: (error) =>
         new GitHubAuthError({
           message: 'Failed to initiate device flow',
@@ -62,30 +66,32 @@ const createGitHubService = (): GitHubServiceContract => ({
     ref?: string,
   ) =>
     Effect.tryPromise({
-      try: async () => {
+      try: () => {
         const octokit = new Octokit({ auth: token });
-        try {
-          const response = await octokit.rest.repos.getContent({
+        return octokit.rest.repos
+          .getContent({
             owner,
             repo,
             path,
             ref,
-          });
-          const data = response.data;
-          if ('content' in data && typeof data.content === 'string') {
-            return Buffer.from(data.content, 'base64').toString('utf-8');
-          }
-          return null;
-        } catch (error) {
-          if (
-            error instanceof Error &&
-            'status' in error &&
-            error.status === 404
-          ) {
+          })
+          .then((response) => {
+            const data = response.data;
+            if ('content' in data && typeof data.content === 'string') {
+              return Buffer.from(data.content, 'base64').toString('utf-8');
+            }
             return null;
-          }
-          return Promise.reject(error);
-        }
+          })
+          .catch((error: unknown) => {
+            if (
+              error instanceof Error &&
+              'status' in error &&
+              error.status === 404
+            ) {
+              return null;
+            }
+            return Promise.reject(error);
+          });
       },
       catch: (error) =>
         new GitHubAPIError({
@@ -104,16 +110,18 @@ const createGitHubService = (): GitHubServiceContract => ({
     sha?: string,
   ) =>
     Effect.tryPromise({
-      try: async () => {
+      try: () => {
         const octokit = new Octokit({ auth: token });
-        await octokit.rest.repos.createOrUpdateFileContents({
-          owner,
-          repo,
-          path,
-          message,
-          content: Buffer.from(content).toString('base64'),
-          sha,
-        });
+        return octokit.rest.repos
+          .createOrUpdateFileContents({
+            owner,
+            repo,
+            path,
+            message,
+            content: Buffer.from(content).toString('base64'),
+            sha,
+          })
+          .then(() => undefined);
       },
       catch: (error) =>
         new GitHubAPIError({
@@ -124,17 +132,20 @@ const createGitHubService = (): GitHubServiceContract => ({
 
   listRepositories: (token: string) =>
     Effect.tryPromise({
-      try: async () => {
+      try: () => {
         const octokit = new Octokit({ auth: token });
-        const response = await octokit.rest.repos.listForAuthenticatedUser({
-          sort: 'updated',
-          per_page: 100,
-        });
-        return response.data.map((repo) => ({
-          name: repo.name,
-          owner: repo.owner.login,
-          fullName: repo.full_name,
-        }));
+        return octokit.rest.repos
+          .listForAuthenticatedUser({
+            sort: 'updated',
+            per_page: 100,
+          })
+          .then((response) =>
+            response.data.map((repo) => ({
+              name: repo.name,
+              owner: repo.owner.login,
+              fullName: repo.full_name,
+            })),
+          );
       },
       catch: (error) =>
         new GitHubAPIError({
