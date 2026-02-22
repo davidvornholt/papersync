@@ -3,4 +3,4 @@ export {
   type ScanState,
   type UseScanReturn,
   useScan,
-} from "./use-scan";
+} from './use-scan';

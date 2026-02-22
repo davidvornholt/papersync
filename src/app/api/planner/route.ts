@@ -1,26 +1,26 @@
-import { pdf } from "@react-pdf/renderer";
-import { Data, Effect } from "effect";
-import { NextResponse } from "next/server";
-import { PlannerDocument } from "@/app/features/planner/components/planner-document";
+import { pdf } from '@react-pdf/renderer';
+import { Data, Effect } from 'effect';
+import { NextResponse } from 'next/server';
+import { PlannerDocument } from '@/app/features/planner/components/planner-document';
 import {
   getWeekDateRange,
   getWeekId,
-} from "@/app/features/planner/services/generator";
-import { encodeQRPayload } from "@/app/features/planner/services/qr";
-import type { Subject, WeekId } from "@/app/shared/types";
+} from '@/app/features/planner/services/generator';
+import { encodeQRPayload } from '@/app/features/planner/services/qr';
+import type { Subject, WeekId } from '@/app/shared/types';
 
 // ============================================================================
 // Error Types
 // ============================================================================
 
 class RequestValidationError extends Data.TaggedError(
-  "RequestValidationError",
+  'RequestValidationError',
 )<{
   readonly message: string;
   readonly status: number;
 }> {}
 
-class PdfGenerationError extends Data.TaggedError("PdfGenerationError")<{
+class PdfGenerationError extends Data.TaggedError('PdfGenerationError')<{
   readonly message: string;
   readonly cause?: unknown;
 }> {}
@@ -35,7 +35,7 @@ type TimetableSlot = {
 };
 
 type TimetableDay = {
-  readonly day: "monday" | "tuesday" | "wednesday" | "thursday" | "friday";
+  readonly day: 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday';
   readonly slots: readonly TimetableSlot[];
 };
 
@@ -56,7 +56,7 @@ const parseRequestBody = (
     try: async () => (await request.json()) as GeneratePdfRequest,
     catch: (error) =>
       new RequestValidationError({
-        message: error instanceof Error ? error.message : "Invalid JSON body",
+        message: error instanceof Error ? error.message : 'Invalid JSON body',
         status: 400,
       }),
   });
@@ -68,7 +68,7 @@ const validateRequest = (
     if (!body.subjects || !Array.isArray(body.subjects)) {
       return yield* Effect.fail(
         new RequestValidationError({
-          message: "Subjects must be an array",
+          message: 'Subjects must be an array',
           status: 400,
         }),
       );
@@ -77,7 +77,7 @@ const validateRequest = (
     if (!body.timetable || !Array.isArray(body.timetable)) {
       return yield* Effect.fail(
         new RequestValidationError({
-          message: "Timetable must be an array",
+          message: 'Timetable must be an array',
           status: 400,
         }),
       );
@@ -122,7 +122,7 @@ const generatePdfEffect = (
       catch: (error) =>
         new PdfGenerationError({
           message:
-            error instanceof Error ? error.message : "Failed to generate PDF",
+            error instanceof Error ? error.message : 'Failed to generate PDF',
           cause: error,
         }),
     });
@@ -132,7 +132,7 @@ const generatePdfEffect = (
       try: async () => pdfBlob.arrayBuffer(),
       catch: (error) =>
         new PdfGenerationError({
-          message: "Failed to convert PDF to buffer",
+          message: 'Failed to convert PDF to buffer',
           cause: error,
         }),
     });
@@ -156,7 +156,7 @@ export const POST = async (request: Request): Promise<Response> => {
         Effect.succeed({
           success: false as const,
           error: error.message,
-          status: error._tag === "RequestValidationError" ? error.status : 500,
+          status: error._tag === 'RequestValidationError' ? error.status : 500,
         }),
       ),
     ),
@@ -171,9 +171,9 @@ export const POST = async (request: Request): Promise<Response> => {
 
   return new Response(result.arrayBuffer, {
     headers: {
-      "Content-Type": "application/pdf",
-      "Content-Disposition": `attachment; filename="planner-${result.weekId}.pdf"`,
-      "Content-Length": result.arrayBuffer.byteLength.toString(),
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `attachment; filename="planner-${result.weekId}.pdf"`,
+      'Content-Length': result.arrayBuffer.byteLength.toString(),
     },
   });
 };

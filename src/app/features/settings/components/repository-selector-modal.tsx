@@ -10,8 +10,8 @@ import {
 import { AnimatePresence, motion } from 'motion/react';
 import { useCallback, useEffect, useState } from 'react';
 import { Button, Modal, Spinner } from '@/app/shared/components';
-import type { GitHubRepository } from '../actions/github-oauth-types';
 import { listGitHubRepositories } from '../actions/github-oauth';
+import type { GitHubRepository } from '../actions/github-oauth-types';
 
 // ============================================================================
 // Types

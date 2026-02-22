@@ -1,4 +1,4 @@
-import type { HTMLAttributes, ReactNode } from "react";
+import type { HTMLAttributes, ReactNode } from 'react';
 
 type CardProps = HTMLAttributes<HTMLDivElement> & {
   readonly children: ReactNode;
@@ -8,12 +8,12 @@ type CardProps = HTMLAttributes<HTMLDivElement> & {
 export const Card = ({
   children,
   elevated = false,
-  className = "",
+  className = '',
   ...props
 }: CardProps): React.ReactElement => {
   const baseStyles = elevated
-    ? "bg-surface border border-border rounded-lg shadow-md"
-    : "bg-surface border border-border rounded-lg shadow-sm";
+    ? 'bg-surface border border-border rounded-lg shadow-md'
+    : 'bg-surface border border-border rounded-lg shadow-sm';
 
   return (
     <div className={`${baseStyles} ${className}`} {...props}>
@@ -28,7 +28,7 @@ type CardHeaderProps = HTMLAttributes<HTMLDivElement> & {
 
 export const CardHeader = ({
   children,
-  className = "",
+  className = '',
   ...props
 }: CardHeaderProps): React.ReactElement => (
   <div className={`px-6 py-4 border-b border-border ${className}`} {...props}>
@@ -42,7 +42,7 @@ type CardContentProps = HTMLAttributes<HTMLDivElement> & {
 
 export const CardContent = ({
   children,
-  className = "",
+  className = '',
   ...props
 }: CardContentProps): React.ReactElement => (
   <div className={`px-6 py-4 ${className}`} {...props}>
@@ -56,7 +56,7 @@ type CardFooterProps = HTMLAttributes<HTMLDivElement> & {
 
 export const CardFooter = ({
   children,
-  className = "",
+  className = '',
   ...props
 }: CardFooterProps): React.ReactElement => (
   <div

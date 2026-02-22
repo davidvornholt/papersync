@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect } from 'react';
 
 // ============================================================================
 // Types
@@ -22,12 +22,12 @@ type ShortcutHandler = () => void;
 
 const serializeShortcut = (shortcut: KeyboardShortcut): string => {
   const parts: string[] = [];
-  if (shortcut.ctrl) parts.push("ctrl");
-  if (shortcut.alt) parts.push("alt");
-  if (shortcut.shift) parts.push("shift");
-  if (shortcut.meta) parts.push("meta");
+  if (shortcut.ctrl) parts.push('ctrl');
+  if (shortcut.alt) parts.push('alt');
+  if (shortcut.shift) parts.push('shift');
+  if (shortcut.meta) parts.push('meta');
   parts.push(shortcut.key.toLowerCase());
-  return parts.join("+");
+  return parts.join('+');
 };
 
 // ============================================================================
@@ -54,8 +54,8 @@ export const useKeyboardShortcuts = ({
       // Don't trigger shortcuts when typing in inputs
       const target = event.target as HTMLElement;
       if (
-        target.tagName === "INPUT" ||
-        target.tagName === "TEXTAREA" ||
+        target.tagName === 'INPUT' ||
+        target.tagName === 'TEXTAREA' ||
         target.isContentEditable
       ) {
         return;
@@ -85,8 +85,8 @@ export const useKeyboardShortcuts = ({
   useEffect(() => {
     if (!enabled) return;
 
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
   }, [handleKeyDown, enabled]);
 };
 
@@ -95,9 +95,9 @@ export const useKeyboardShortcuts = ({
 // ============================================================================
 
 export const SHORTCUTS = {
-  GENERATE: { key: "g", ctrl: true } as KeyboardShortcut,
-  SETTINGS: { key: ",", ctrl: true } as KeyboardShortcut,
-  ESCAPE: { key: "Escape" } as KeyboardShortcut,
-  ENTER: { key: "Enter" } as KeyboardShortcut,
-  HOME: { key: "h", ctrl: true } as KeyboardShortcut,
+  GENERATE: { key: 'g', ctrl: true } as KeyboardShortcut,
+  SETTINGS: { key: ',', ctrl: true } as KeyboardShortcut,
+  ESCAPE: { key: 'Escape' } as KeyboardShortcut,
+  ENTER: { key: 'Enter' } as KeyboardShortcut,
+  HOME: { key: 'h', ctrl: true } as KeyboardShortcut,
 } as const;

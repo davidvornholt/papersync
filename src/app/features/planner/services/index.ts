@@ -5,11 +5,11 @@ export {
   getWeekId,
   getWeekStartDate,
   PlannerGenerationError,
-} from "./generator";
+} from './generator';
 export {
   decodeQRFromCanvas,
   decodeQRFromImageData,
   encodeQRPayload,
   QRDecodeError,
   QREncodeError,
-} from "./qr";
+} from './qr';

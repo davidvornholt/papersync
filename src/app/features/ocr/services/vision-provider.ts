@@ -1,20 +1,20 @@
-import { createGoogleGenerativeAI } from "@ai-sdk/google";
-import { JSONSchema, Schema } from "@effect/schema";
-import { generateText, jsonSchema, Output } from "ai";
-import { Context, Data, Effect, Layer } from "effect";
-import type { OCRResponse, WeekId } from "@/app/shared/types";
+import { createGoogleGenerativeAI } from '@ai-sdk/google';
+import { JSONSchema, Schema } from '@effect/schema';
+import { generateText, jsonSchema, Output } from 'ai';
+import { Context, Data, Effect, Layer } from 'effect';
+import type { OCRResponse, WeekId } from '@/app/shared/types';
 
 // ============================================================================
 // Error Types
 // ============================================================================
 
-export class VisionError extends Data.TaggedError("VisionError")<{
+export class VisionError extends Data.TaggedError('VisionError')<{
   readonly message: string;
   readonly cause?: unknown;
 }> {}
 
 export class VisionValidationError extends Data.TaggedError(
-  "VisionValidationError",
+  'VisionValidationError',
 )<{
   readonly message: string;
   readonly raw?: string;
@@ -33,11 +33,11 @@ type GeminiModelConfig = {
 };
 
 const GEMINI_MODELS: readonly GeminiModelConfig[] = [
-  { modelId: "gemini-3-flash-preview", isGemini3: true },
-  { modelId: "gemini-flash-latest", isGemini3: false },
-  { modelId: "gemini-2.5-flash", isGemini3: false },
-  { modelId: "gemini-flash-lite-latest", isGemini3: false },
-  { modelId: "gemini-2.5-flash-lite", isGemini3: false },
+  { modelId: 'gemini-3-flash-preview', isGemini3: true },
+  { modelId: 'gemini-flash-latest', isGemini3: false },
+  { modelId: 'gemini-2.5-flash', isGemini3: false },
+  { modelId: 'gemini-flash-lite-latest', isGemini3: false },
+  { modelId: 'gemini-2.5-flash-lite', isGemini3: false },
 ] as const;
 
 // ============================================================================
@@ -79,7 +79,7 @@ export type VisionProvider = {
 };
 
 export const VisionProvider =
-  Context.GenericTag<VisionProvider>("VisionProvider");
+  Context.GenericTag<VisionProvider>('VisionProvider');
 
 // ============================================================================
 // System Prompt
@@ -98,10 +98,10 @@ const createExtractionSystemPrompt = (
 
 CONTEXT:
 - Week: ${weekId}
-- Today's date for reference: ${new Date().toISOString().split("T")[0]}
+- Today's date for reference: ${new Date().toISOString().split('T')[0]}
 - Existing digital record (Markdown):
 \`\`\`markdown
-${existingContent || "(No existing content)"}
+${existingContent || '(No existing content)'}
 \`\`\`
 
 PLANNER LAYOUT:
@@ -162,13 +162,13 @@ IMPORTANT:
  */
 const normalizeDayName = (day: string): string => {
   const normalizedDays: Record<string, string> = {
-    monday: "Monday",
-    tuesday: "Tuesday",
-    wednesday: "Wednesday",
-    thursday: "Thursday",
-    friday: "Friday",
-    saturday: "Saturday",
-    sunday: "Sunday",
+    monday: 'Monday',
+    tuesday: 'Tuesday',
+    wednesday: 'Wednesday',
+    thursday: 'Thursday',
+    friday: 'Friday',
+    saturday: 'Saturday',
+    sunday: 'Sunday',
   };
   return normalizedDays[day.toLowerCase()] ?? day;
 };
@@ -206,10 +206,10 @@ const createGoogleVisionProvider = (apiKey: string): VisionProvider => ({
               system: systemPrompt,
               messages: [
                 {
-                  role: "user",
+                  role: 'user',
                   content: [
                     {
-                      type: "image",
+                      type: 'image',
                       image: imageBase64,
                     },
                   ],
@@ -217,9 +217,9 @@ const createGoogleVisionProvider = (apiKey: string): VisionProvider => ({
               ],
               providerOptions: {
                 google: {
-                  mediaResolution: "MEDIA_RESOLUTION_HIGH",
+                  mediaResolution: 'MEDIA_RESOLUTION_HIGH',
                   thinkingConfig: modelConfig.isGemini3
-                    ? { thinkingLevel: "medium" as const }
+                    ? { thinkingLevel: 'medium' as const }
                     : { thinkingBudget: 4096 },
                 },
               },
@@ -230,7 +230,7 @@ const createGoogleVisionProvider = (apiKey: string): VisionProvider => ({
           catch: (error) => error,
         }).pipe(Effect.option);
 
-        if (result._tag === "Some") {
+        if (result._tag === 'Some') {
           const validated = result.value.object;
 
           // Transform to canonical format (add defaults for constant fields)
@@ -241,8 +241,8 @@ const createGoogleVisionProvider = (apiKey: string): VisionProvider => ({
               content: e.content,
               isTask: e.is_task,
               isCompleted: false, // Always false - completion tracked digitally
-              action: "add" as const, // Always add - planner only tracks new entries
-              dueDate: e.due_date as OCRResponse["entries"][number]["dueDate"],
+              action: 'add' as const, // Always add - planner only tracks new entries
+              dueDate: e.due_date as OCRResponse['entries'][number]['dueDate'],
             })),
             confidence: validated.confidence,
             notes: validated.notes,
@@ -264,7 +264,7 @@ const createGoogleVisionProvider = (apiKey: string): VisionProvider => ({
       // All models failed
       return yield* Effect.fail(
         new VisionError({
-          message: "All Gemini models failed to process the image",
+          message: 'All Gemini models failed to process the image',
           cause: lastError,
         }),
       );
@@ -285,12 +285,12 @@ const createOllamaVisionProvider = (endpoint: string): VisionProvider => ({
       const response = yield* Effect.tryPromise({
         try: async () => {
           const res = await fetch(`${endpoint}/api/generate`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              model: "qwen3-vl-4b",
+              model: 'qwen3-vl-4b',
               prompt: createExtractionSystemPrompt(weekId, existingContent),
-              images: [imageBase64.replace(/^data:image\/\w+;base64,/, "")],
+              images: [imageBase64.replace(/^data:image\/\w+;base64,/, '')],
               stream: false,
             }),
           });
@@ -304,7 +304,7 @@ const createOllamaVisionProvider = (endpoint: string): VisionProvider => ({
         },
         catch: (error) =>
           new VisionError({
-            message: "Failed to call Ollama Vision API",
+            message: 'Failed to call Ollama Vision API',
             cause: error,
           }),
       });
@@ -313,14 +313,14 @@ const createOllamaVisionProvider = (endpoint: string): VisionProvider => ({
       const parsed = yield* Effect.try({
         try: () => {
           const cleaned = response
-            .replace(/```json\n?/g, "")
-            .replace(/```\n?/g, "")
+            .replace(/```json\n?/g, '')
+            .replace(/```\n?/g, '')
             .trim();
           return JSON.parse(cleaned);
         },
         catch: () =>
           new VisionValidationError({
-            message: "Failed to parse Ollama response as JSON",
+            message: 'Failed to parse Ollama response as JSON',
             raw: response,
           }),
       });
@@ -331,7 +331,7 @@ const createOllamaVisionProvider = (endpoint: string): VisionProvider => ({
         Effect.mapError(
           () =>
             new VisionValidationError({
-              message: "Ollama response failed schema validation",
+              message: 'Ollama response failed schema validation',
               raw: response,
             }),
         ),
@@ -345,13 +345,13 @@ const createOllamaVisionProvider = (endpoint: string): VisionProvider => ({
             content: e.content,
             isTask: e.is_task,
             isCompleted: false, // Always false - completion tracked digitally
-            action: "add" as const, // Always add - planner only tracks new entries
-            dueDate: e.due_date as OCRResponse["entries"][number]["dueDate"],
+            action: 'add' as const, // Always add - planner only tracks new entries
+            dueDate: e.due_date as OCRResponse['entries'][number]['dueDate'],
           })),
           confidence: validated.confidence,
           notes: validated.notes,
         } as OCRResponse,
-        modelUsed: "qwen3-vl-4b",
+        modelUsed: 'qwen3-vl-4b',
       };
     }),
 });
@@ -366,6 +366,6 @@ export const makeGoogleVisionLayer = (
   Layer.succeed(VisionProvider, createGoogleVisionProvider(apiKey));
 
 export const makeOllamaVisionLayer = (
-  endpoint = "http://localhost:11434",
+  endpoint = 'http://localhost:11434',
 ): Layer.Layer<VisionProvider, never, never> =>
   Layer.succeed(VisionProvider, createOllamaVisionProvider(endpoint));

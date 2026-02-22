@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { motion } from "motion/react";
-import { Component, type ErrorInfo, type ReactNode } from "react";
-import { Button, Card, CardContent } from "./index";
+import { motion } from 'motion/react';
+import { Component, type ErrorInfo, type ReactNode } from 'react';
+import { Button, Card, CardContent } from './index';
 
 // ============================================================================
 // Types
@@ -37,7 +37,7 @@ export class ErrorBoundary extends Component<
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
-    console.error("Error caught by boundary:", error, errorInfo);
+    console.error('Error caught by boundary:', error, errorInfo);
   }
 
   handleReset = (): void => {
@@ -83,7 +83,7 @@ const ErrorFallback = ({
         <motion.div
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
-          transition={{ type: "spring", bounce: 0.5 }}
+          transition={{ type: 'spring', bounce: 0.5 }}
           className="w-16 h-16 mx-auto mb-4 rounded-full bg-red-500/10 flex items-center justify-center"
         >
           <svg
@@ -106,7 +106,7 @@ const ErrorFallback = ({
           Something went wrong
         </h2>
         <p className="text-sm text-muted mb-6">
-          {error?.message ?? "An unexpected error occurred"}
+          {error?.message ?? 'An unexpected error occurred'}
         </p>
         <Button onClick={onReset}>
           <svg

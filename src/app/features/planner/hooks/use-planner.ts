@@ -1,13 +1,13 @@
-"use client";
+'use client';
 
-import { Effect } from "effect";
-import { useCallback, useState } from "react";
-import type { Subject, WeekId } from "@/app/shared/types";
+import { Effect } from 'effect';
+import { useCallback, useState } from 'react';
+import type { Subject, WeekId } from '@/app/shared/types';
 import {
   downloadPlannerPdf,
   getWeekDateRange,
   getWeekId,
-} from "../services/generator";
+} from '../services/generator';
 
 // ============================================================================
 // Types
@@ -19,15 +19,15 @@ type TimetableSlot = {
 };
 
 type TimetableDay = {
-  readonly day: "monday" | "tuesday" | "wednesday" | "thursday" | "friday";
+  readonly day: 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday';
   readonly slots: readonly TimetableSlot[];
 };
 
 export type PlannerState =
-  | { readonly status: "idle" }
-  | { readonly status: "generating" }
-  | { readonly status: "generated"; readonly blob: Blob }
-  | { readonly status: "error"; readonly error: string };
+  | { readonly status: 'idle' }
+  | { readonly status: 'generating' }
+  | { readonly status: 'generated'; readonly blob: Blob }
+  | { readonly status: 'error'; readonly error: string };
 
 export type UsePlannerReturn = {
   readonly state: PlannerState;
@@ -53,10 +53,10 @@ const fetchPdfEffect = (
 ): Effect.Effect<Blob, Error> =>
   Effect.tryPromise({
     try: async () => {
-      const response = await fetch("/api/planner", {
-        method: "POST",
+      const response = await fetch('/api/planner', {
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           weekId,
@@ -67,7 +67,7 @@ const fetchPdfEffect = (
 
       if (!response.ok) {
         const errorData = (await response.json()) as { error?: string };
-        throw new Error(errorData.error ?? "Failed to generate PDF");
+        throw new Error(errorData.error ?? 'Failed to generate PDF');
       }
 
       return response.blob();
@@ -75,7 +75,7 @@ const fetchPdfEffect = (
     catch: (error) =>
       error instanceof Error
         ? error
-        : new Error("Failed to generate planner PDF"),
+        : new Error('Failed to generate planner PDF'),
   });
 
 // ============================================================================
@@ -86,14 +86,14 @@ export const usePlanner = (initialWeekId?: WeekId): UsePlannerReturn => {
   const weekId = initialWeekId ?? getWeekId();
   const dateRange = getWeekDateRange(weekId);
 
-  const [state, setState] = useState<PlannerState>({ status: "idle" });
+  const [state, setState] = useState<PlannerState>({ status: 'idle' });
 
   const generate = useCallback(
     async (
       subjects: readonly Subject[],
       timetable: readonly TimetableDay[],
     ): Promise<void> => {
-      setState({ status: "generating" });
+      setState({ status: 'generating' });
 
       const result = await Effect.runPromise(
         fetchPdfEffect(weekId, subjects, timetable).pipe(
@@ -105,30 +105,30 @@ export const usePlanner = (initialWeekId?: WeekId): UsePlannerReturn => {
       );
 
       if (result.success) {
-        setState({ status: "generated", blob: result.blob });
+        setState({ status: 'generated', blob: result.blob });
       } else {
-        console.error("PDF generation error:", result.error);
-        setState({ status: "error", error: result.error });
+        console.error('PDF generation error:', result.error);
+        setState({ status: 'error', error: result.error });
       }
     },
     [weekId],
   );
 
   const download = useCallback((): void => {
-    if (state.status !== "generated") return;
+    if (state.status !== 'generated') return;
 
     Effect.runSync(downloadPlannerPdf(state.blob, weekId));
   }, [state, weekId]);
 
   const openInNewTab = useCallback((): void => {
-    if (state.status !== "generated") return;
+    if (state.status !== 'generated') return;
 
     const url = URL.createObjectURL(state.blob);
-    window.open(url, "_blank");
+    window.open(url, '_blank');
   }, [state]);
 
   const reset = useCallback((): void => {
-    setState({ status: "idle" });
+    setState({ status: 'idle' });
   }, []);
 
   return {

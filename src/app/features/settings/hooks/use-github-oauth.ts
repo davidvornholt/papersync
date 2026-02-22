@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   initiateGitHubDeviceFlow,
   pollGitHubToken,
-} from "../actions/github-oauth";
-import type { OAuthState } from "../components/github-oauth-modal";
+} from '../actions/github-oauth';
+import type { OAuthState } from '../components/github-oauth-modal';
 
 // ============================================================================
 // Configuration
@@ -14,7 +14,7 @@ import type { OAuthState } from "../components/github-oauth-modal";
 // GitHub OAuth App Client ID - this should be configured per deployment
 // For development, you can create your own OAuth App at:
 // https://github.com/settings/developers
-const GITHUB_CLIENT_ID = process.env.NEXT_PUBLIC_GITHUB_CLIENT_ID ?? "";
+const GITHUB_CLIENT_ID = process.env.NEXT_PUBLIC_GITHUB_CLIENT_ID ?? '';
 
 // ============================================================================
 // Hook
@@ -29,7 +29,7 @@ export type UseGitHubOAuthReturn = {
 };
 
 export const useGitHubOAuth = (): UseGitHubOAuthReturn => {
-  const [oauthState, setOAuthState] = useState<OAuthState>({ status: "idle" });
+  const [oauthState, setOAuthState] = useState<OAuthState>({ status: 'idle' });
   const [pollingConfig, setPollingConfig] = useState<{
     deviceCode: string;
     interval: number;
@@ -51,7 +51,7 @@ export const useGitHubOAuth = (): UseGitHubOAuthReturn => {
     const poll = async () => {
       if (!isPollingRef.current) return;
 
-      console.log("[OAuth] Polling for token...");
+      console.log('[OAuth] Polling for token...');
       const result = await pollGitHubToken(
         GITHUB_CLIENT_ID,
         pollingConfig.deviceCode,
@@ -60,22 +60,22 @@ export const useGitHubOAuth = (): UseGitHubOAuthReturn => {
       if (!isPollingRef.current) return;
 
       if (result.success) {
-        console.log("[OAuth] Token received!");
+        console.log('[OAuth] Token received!');
         setPollingConfig(null); // Stop polling
         setOAuthState({
-          status: "success",
+          status: 'success',
           accessToken: result.accessToken,
         });
       } else if (!result.shouldRetry) {
-        console.log("[OAuth] Fatal error:", result.error);
+        console.log('[OAuth] Fatal error:', result.error);
         setPollingConfig(null); // Stop polling
         setOAuthState({
-          status: "error",
+          status: 'error',
           message: result.error,
         });
       } else {
         // Keep polling - schedule next poll
-        console.log("[OAuth] Still waiting, will retry...");
+        console.log('[OAuth] Still waiting, will retry...');
         const pollInterval = Math.max(pollingConfig.interval, 5) * 1000;
         timeoutId = setTimeout(poll, pollInterval);
       }
@@ -99,42 +99,42 @@ export const useGitHubOAuth = (): UseGitHubOAuthReturn => {
   const cancelOAuth = useCallback(() => {
     isPollingRef.current = false;
     setPollingConfig(null);
-    setOAuthState({ status: "idle" });
+    setOAuthState({ status: 'idle' });
   }, []);
 
   const startOAuth = useCallback(async () => {
     if (!isConfigured) {
       setOAuthState({
-        status: "error",
+        status: 'error',
         message:
-          "GitHub OAuth is not configured. Please set NEXT_PUBLIC_GITHUB_CLIENT_ID.",
+          'GitHub OAuth is not configured. Please set NEXT_PUBLIC_GITHUB_CLIENT_ID.',
       });
       return;
     }
 
     // Cancel any existing OAuth flow
     cancelOAuth();
-    setOAuthState({ status: "loading" });
+    setOAuthState({ status: 'loading' });
 
-    console.log("[OAuth] Initiating device flow...");
+    console.log('[OAuth] Initiating device flow...');
     const result = await initiateGitHubDeviceFlow(GITHUB_CLIENT_ID);
 
     if (!result.success) {
-      console.log("[OAuth] Device flow failed:", result.error);
+      console.log('[OAuth] Device flow failed:', result.error);
       setOAuthState({
-        status: "error",
+        status: 'error',
         message: result.error,
       });
       return;
     }
 
-    console.log("[OAuth] Device flow initiated, user code:", result.userCode);
+    console.log('[OAuth] Device flow initiated, user code:', result.userCode);
 
     // Update state with device code info
     const expiresAt = new Date(Date.now() + result.expiresIn * 1000);
 
     setOAuthState({
-      status: "awaiting-authorization",
+      status: 'awaiting-authorization',
       userCode: result.userCode,
       verificationUri: result.verificationUri,
       expiresAt,
@@ -149,7 +149,7 @@ export const useGitHubOAuth = (): UseGitHubOAuthReturn => {
 
   const reset = useCallback(() => {
     cancelOAuth();
-    setOAuthState({ status: "idle" });
+    setOAuthState({ status: 'idle' });
   }, [cancelOAuth]);
 
   return {

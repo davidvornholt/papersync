@@ -1,14 +1,14 @@
-"use client";
+'use client';
 
-import { AnimatePresence, motion } from "motion/react";
-import { useCallback, useEffect, useRef } from "react";
-import { Card } from "./card";
+import { AnimatePresence, motion } from 'motion/react';
+import { useCallback, useEffect, useRef } from 'react';
+import { Card } from './card';
 
 // ============================================================================
 // Modal Types
 // ============================================================================
 
-export type ModalSize = "sm" | "md" | "lg" | "xl" | "full";
+export type ModalSize = 'sm' | 'md' | 'lg' | 'xl' | 'full';
 
 export type ModalProps = {
   readonly isOpen: boolean;
@@ -28,11 +28,11 @@ export type ModalProps = {
 // ============================================================================
 
 const sizeClasses: Record<ModalSize, string> = {
-  sm: "max-w-sm",
-  md: "max-w-md",
-  lg: "max-w-lg",
-  xl: "max-w-xl",
-  full: "max-w-4xl",
+  sm: 'max-w-sm',
+  md: 'max-w-md',
+  lg: 'max-w-lg',
+  xl: 'max-w-xl',
+  full: 'max-w-4xl',
 };
 
 // ============================================================================
@@ -44,7 +44,7 @@ export const Modal = ({
   onClose,
   title,
   description,
-  size = "md",
+  size = 'md',
   showCloseButton = true,
   closeOnOverlayClick = true,
   closeOnEscape = true,
@@ -56,7 +56,7 @@ export const Modal = ({
   // Handle escape key
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
-      if (closeOnEscape && e.key === "Escape") {
+      if (closeOnEscape && e.key === 'Escape') {
         onClose();
       }
     },
@@ -76,14 +76,14 @@ export const Modal = ({
   // Add/remove escape key listener
   useEffect(() => {
     if (isOpen) {
-      document.addEventListener("keydown", handleKeyDown);
+      document.addEventListener('keydown', handleKeyDown);
       // Prevent body scroll when modal is open
-      document.body.style.overflow = "hidden";
+      document.body.style.overflow = 'hidden';
     }
 
     return () => {
-      document.removeEventListener("keydown", handleKeyDown);
-      document.body.style.overflow = "";
+      document.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = '';
     };
   }, [isOpen, handleKeyDown]);
 
@@ -114,14 +114,14 @@ export const Modal = ({
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            transition={{ type: "spring", damping: 25, stiffness: 300 }}
+            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
             className={`hidden md:block fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full ${sizeClasses[size]} px-4`}
             ref={modalRef}
             tabIndex={-1}
             role="dialog"
             aria-modal="true"
-            aria-labelledby={title ? "modal-title" : undefined}
-            aria-describedby={description ? "modal-description" : undefined}
+            aria-labelledby={title ? 'modal-title' : undefined}
+            aria-describedby={description ? 'modal-description' : undefined}
           >
             <Card
               elevated
@@ -188,17 +188,19 @@ export const Modal = ({
 
           {/* Mobile Modal - Bottom Sheet */}
           <motion.div
-            initial={{ y: "100%" }}
+            initial={{ y: '100%' }}
             animate={{ y: 0 }}
-            exit={{ y: "100%" }}
-            transition={{ type: "spring", damping: 30, stiffness: 300 }}
+            exit={{ y: '100%' }}
+            transition={{ type: 'spring', damping: 30, stiffness: 300 }}
             className="md:hidden fixed bottom-0 left-0 right-0 z-50"
             ref={modalRef}
             tabIndex={-1}
             role="dialog"
             aria-modal="true"
-            aria-labelledby={title ? "modal-title-mobile" : undefined}
-            aria-describedby={description ? "modal-description-mobile" : undefined}
+            aria-labelledby={title ? 'modal-title-mobile' : undefined}
+            aria-describedby={
+              description ? 'modal-description-mobile' : undefined
+            }
           >
             <Card
               elevated
@@ -272,4 +274,3 @@ export const Modal = ({
     </AnimatePresence>
   );
 };
-

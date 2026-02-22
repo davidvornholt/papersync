@@ -1,51 +1,51 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from 'vitest';
 
 // Note: This test focuses on the conversion logic that would be extracted for testing
 // The actual server action cannot be tested directly in jsdom
 
-describe("Vault Sync Logic", () => {
-  describe("Week ID generation", () => {
-    it("should generate correct week ID format", () => {
+describe('Vault Sync Logic', () => {
+  describe('Week ID generation', () => {
+    it('should generate correct week ID format', () => {
       // ISO week calculation: YYYY-Www
-      const date = new Date("2026-01-27");
+      const date = new Date('2026-01-27');
       const year = date.getFullYear();
       const startOfYear = new Date(year, 0, 1);
       const days = Math.floor(
         (date.getTime() - startOfYear.getTime()) / (24 * 60 * 60 * 1000),
       );
       const weekNumber = Math.ceil((days + startOfYear.getDay() + 1) / 7);
-      const weekId = `${year}-W${weekNumber.toString().padStart(2, "0")}`;
+      const weekId = `${year}-W${weekNumber.toString().padStart(2, '0')}`;
 
       expect(weekId).toMatch(/^\d{4}-W\d{2}$/);
     });
   });
 
-  describe("Entry to WeeklyNote conversion", () => {
-    it("should group entries by day and subject", () => {
+  describe('Entry to WeeklyNote conversion', () => {
+    it('should group entries by day and subject', () => {
       const entries = [
         {
-          id: "1",
-          day: "Monday",
-          subject: "Math",
-          content: "Homework",
+          id: '1',
+          day: 'Monday',
+          subject: 'Math',
+          content: 'Homework',
           isTask: true,
           isCompleted: false,
           isNew: true,
         },
         {
-          id: "2",
-          day: "Monday",
-          subject: "Math",
-          content: "Study",
+          id: '2',
+          day: 'Monday',
+          subject: 'Math',
+          content: 'Study',
           isTask: true,
           isCompleted: false,
           isNew: true,
         },
         {
-          id: "3",
-          day: "Tuesday",
-          subject: "Physics",
-          content: "Lab",
+          id: '3',
+          day: 'Tuesday',
+          subject: 'Physics',
+          content: 'Lab',
           isTask: true,
           isCompleted: false,
           isNew: true,
@@ -70,15 +70,15 @@ describe("Vault Sync Logic", () => {
       expect(grouped.Tuesday.Physics).toHaveLength(1);
     });
 
-    it("should deduplicate tasks by content", () => {
+    it('should deduplicate tasks by content', () => {
       const existingTasks = [
-        { content: "Homework", done: false },
-        { content: "Review", done: true },
+        { content: 'Homework', done: false },
+        { content: 'Review', done: true },
       ];
 
       const newTasks = [
-        { content: "Homework", done: false }, // Duplicate
-        { content: "Practice", done: false }, // New
+        { content: 'Homework', done: false }, // Duplicate
+        { content: 'Practice', done: false }, // New
       ];
 
       const merged = [...existingTasks];
@@ -90,16 +90,16 @@ describe("Vault Sync Logic", () => {
 
       expect(merged).toHaveLength(3);
       expect(merged.map((t) => t.content)).toEqual([
-        "Homework",
-        "Review",
-        "Practice",
+        'Homework',
+        'Review',
+        'Practice',
       ]);
     });
   });
 
-  describe("Date range calculation", () => {
-    it("should calculate start and end of week", () => {
-      const weekId = "2026-W05";
+  describe('Date range calculation', () => {
+    it('should calculate start and end of week', () => {
+      const weekId = '2026-W05';
       const year = parseInt(weekId.slice(0, 4), 10);
       const week = parseInt(weekId.slice(6), 10);
 

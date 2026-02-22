@@ -1,24 +1,24 @@
-"use client";
+'use client';
 
-import { Effect } from "effect";
-import * as S from "effect/Schema";
-import { useCallback, useEffect, useState } from "react";
+import { Effect } from 'effect';
+import * as S from 'effect/Schema';
+import { useCallback, useEffect, useState } from 'react';
 
 // ============================================================================
 // Settings Schema
 // ============================================================================
 
-const VaultMethodSchema = S.Union(S.Literal("local"), S.Literal("github"));
-const AIProviderSchema = S.Union(S.Literal("google"), S.Literal("ollama"));
+const VaultMethodSchema = S.Union(S.Literal('local'), S.Literal('github'));
+const AIProviderSchema = S.Union(S.Literal('google'), S.Literal('ollama'));
 
 const DayOfWeekSchema = S.Union(
-  S.Literal("monday"),
-  S.Literal("tuesday"),
-  S.Literal("wednesday"),
-  S.Literal("thursday"),
-  S.Literal("friday"),
-  S.Literal("saturday"),
-  S.Literal("sunday"),
+  S.Literal('monday'),
+  S.Literal('tuesday'),
+  S.Literal('wednesday'),
+  S.Literal('thursday'),
+  S.Literal('friday'),
+  S.Literal('saturday'),
+  S.Literal('sunday'),
 );
 
 const SubjectSchema = S.Struct({
@@ -68,13 +68,13 @@ type TimetableDay = S.Schema.Type<typeof TimetableDaySchema>;
 // ============================================================================
 
 const DAYS_OF_WEEK: DayOfWeek[] = [
-  "monday",
-  "tuesday",
-  "wednesday",
-  "thursday",
-  "friday",
-  "saturday",
-  "sunday",
+  'monday',
+  'tuesday',
+  'wednesday',
+  'thursday',
+  'friday',
+  'saturday',
+  'sunday',
 ];
 
 // ============================================================================
@@ -86,21 +86,21 @@ const createDefaultTimetable = (): TimetableDay[] =>
 
 const defaultSettings: Settings = {
   vault: {
-    method: "local",
-    localPath: "",
+    method: 'local',
+    localPath: '',
     githubConnected: false,
-    githubRepo: "",
+    githubRepo: '',
   },
   ai: {
-    provider: "google",
-    googleApiKey: "",
-    ollamaEndpoint: "http://localhost:11434",
+    provider: 'google',
+    googleApiKey: '',
+    ollamaEndpoint: 'http://localhost:11434',
   },
   subjects: [
-    { id: "1", name: "Chemistry" },
-    { id: "2", name: "Literature" },
-    { id: "3", name: "Mathematics" },
-    { id: "4", name: "Physics" },
+    { id: '1', name: 'Chemistry' },
+    { id: '2', name: 'Literature' },
+    { id: '3', name: 'Mathematics' },
+    { id: '4', name: 'Physics' },
   ],
   timetable: createDefaultTimetable(),
 };
@@ -109,7 +109,7 @@ const defaultSettings: Settings = {
 // Storage Key
 // ============================================================================
 
-const STORAGE_KEY = "papersync-settings";
+const STORAGE_KEY = 'papersync-settings';
 
 // ============================================================================
 // Load/Save Functions
@@ -117,7 +117,7 @@ const STORAGE_KEY = "papersync-settings";
 
 const loadSettings = (): Effect.Effect<Settings, never> =>
   Effect.sync(() => {
-    if (typeof window === "undefined") return defaultSettings;
+    if (typeof window === 'undefined') return defaultSettings;
 
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
@@ -137,12 +137,12 @@ const loadSettings = (): Effect.Effect<Settings, never> =>
 
 const saveSettings = (settings: Settings): Effect.Effect<void, never> =>
   Effect.sync(() => {
-    if (typeof window === "undefined") return;
+    if (typeof window === 'undefined') return;
 
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
     } catch {
-      console.error("Failed to save settings to localStorage");
+      console.error('Failed to save settings to localStorage');
     }
   });
 
@@ -153,8 +153,8 @@ const saveSettings = (settings: Settings): Effect.Effect<void, never> =>
 export type UseSettingsReturn = {
   readonly settings: Settings;
   readonly isLoading: boolean;
-  readonly updateVault: (updates: Partial<Settings["vault"]>) => void;
-  readonly updateAI: (updates: Partial<Settings["ai"]>) => void;
+  readonly updateVault: (updates: Partial<Settings['vault']>) => void;
+  readonly updateAI: (updates: Partial<Settings['ai']>) => void;
   // Subject management
   readonly addSubject: (name: string) => void;
   readonly removeSubject: (id: string) => void;
@@ -187,7 +187,7 @@ export const useSettings = (): UseSettingsReturn => {
   }, []);
 
   const updateVault = useCallback(
-    (updates: Partial<Settings["vault"]>): void => {
+    (updates: Partial<Settings['vault']>): void => {
       setSettings((prev) => ({
         ...prev,
         vault: { ...prev.vault, ...updates },
@@ -196,7 +196,7 @@ export const useSettings = (): UseSettingsReturn => {
     [],
   );
 
-  const updateAI = useCallback((updates: Partial<Settings["ai"]>): void => {
+  const updateAI = useCallback((updates: Partial<Settings['ai']>): void => {
     setSettings((prev) => ({
       ...prev,
       ai: { ...prev.ai, ...updates },

@@ -1,12 +1,12 @@
-"use server";
+'use server';
 
-import { Effect } from "effect";
+import { Effect } from 'effect';
 import {
   type DiscoveredScanner,
   ESCLClient,
   ESCLClientLayer,
   type ScanSettings,
-} from "../services";
+} from '../services';
 
 // ============================================================================
 // Types

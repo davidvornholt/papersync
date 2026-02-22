@@ -285,7 +285,7 @@ html {
   :focus-visible {
     outline-offset: 4px;
   }
-  
+
   button,
   [role="button"],
   a {
@@ -313,18 +313,17 @@ html {
     padding: 1rem;
     padding-bottom: 5rem; /* Space for bottom nav */
   }
-  
+
   .page-header {
     margin-bottom: 1.5rem;
     padding-bottom: 1rem;
   }
-  
+
   h1 {
     font-size: 1.75rem;
   }
-  
+
   h2 {
     font-size: 1.25rem;
   }
 }
-

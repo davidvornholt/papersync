@@ -1,20 +1,20 @@
-"use server";
+'use server';
 
-import { Effect } from "effect";
+import { Effect } from 'effect';
 import {
+  type DeviceCodeResponse,
+  type DeviceCodeResult,
   GitHubAPIError,
   GitHubAuthPending,
   GitHubOAuthError,
-  GitHubSlowDown,
-  type DeviceCodeResponse,
-  type DeviceCodeResult,
-  type GitHubReposResult,
   type GitHubRepository,
+  type GitHubReposResult,
+  GitHubSlowDown,
   type GitHubUser,
   type GitHubUserResult,
   type TokenPollResult,
   type TokenResponse,
-} from "./github-oauth-types";
+} from './github-oauth-types';
 
 /**
  * Server Actions for GitHub OAuth Device Flow
@@ -35,15 +35,15 @@ const initiateDeviceFlowEffect = (
 ): Effect.Effect<DeviceCodeResponse, GitHubOAuthError> =>
   Effect.tryPromise({
     try: async () => {
-      const response = await fetch("https://github.com/login/device/code", {
-        method: "POST",
+      const response = await fetch('https://github.com/login/device/code', {
+        method: 'POST',
         headers: {
-          Accept: "application/json",
-          "Content-Type": "application/json",
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           client_id: clientId,
-          scope: "repo",
+          scope: 'repo',
         }),
       });
 
@@ -71,7 +71,7 @@ const initiateDeviceFlowEffect = (
         message:
           error instanceof Error
             ? error.message
-            : "Failed to initiate device flow",
+            : 'Failed to initiate device flow',
         cause: error,
       }),
   });
@@ -86,17 +86,17 @@ const pollTokenEffect = (
   Effect.tryPromise({
     try: async () => {
       const response = await fetch(
-        "https://github.com/login/oauth/access_token",
+        'https://github.com/login/oauth/access_token',
         {
-          method: "POST",
+          method: 'POST',
           headers: {
-            Accept: "application/json",
-            "Content-Type": "application/json",
+            Accept: 'application/json',
+            'Content-Type': 'application/json',
           },
           body: JSON.stringify({
             client_id: clientId,
             device_code: deviceCode,
-            grant_type: "urn:ietf:params:oauth:grant-type:device_code",
+            grant_type: 'urn:ietf:params:oauth:grant-type:device_code',
           }),
         },
       );
@@ -107,12 +107,12 @@ const pollTokenEffect = (
 
       const data = await response.json();
 
-      if (data.error === "authorization_pending") {
-        throw { _tag: "pending" };
+      if (data.error === 'authorization_pending') {
+        throw { _tag: 'pending' };
       }
 
-      if (data.error === "slow_down") {
-        throw { _tag: "slow_down" };
+      if (data.error === 'slow_down') {
+        throw { _tag: 'slow_down' };
       }
 
       if (data.error) {
@@ -120,7 +120,7 @@ const pollTokenEffect = (
       }
 
       if (!data.access_token) {
-        throw new Error("No access token in response");
+        throw new Error('No access token in response');
       }
 
       return {
@@ -130,17 +130,17 @@ const pollTokenEffect = (
       };
     },
     catch: (error) => {
-      if (typeof error === "object" && error !== null && "_tag" in error) {
-        if (error._tag === "pending") {
+      if (typeof error === 'object' && error !== null && '_tag' in error) {
+        if (error._tag === 'pending') {
           return new GitHubAuthPending({ shouldRetry: true });
         }
-        if (error._tag === "slow_down") {
+        if (error._tag === 'slow_down') {
           return new GitHubSlowDown({ shouldRetry: true });
         }
       }
       return new GitHubOAuthError({
         message:
-          error instanceof Error ? error.message : "Failed to poll for token",
+          error instanceof Error ? error.message : 'Failed to poll for token',
         cause: error,
       });
     },
@@ -151,11 +151,11 @@ const getGitHubUserEffect = (
 ): Effect.Effect<GitHubUser, GitHubAPIError> =>
   Effect.tryPromise({
     try: async () => {
-      const response = await fetch("https://api.github.com/user", {
+      const response = await fetch('https://api.github.com/user', {
         headers: {
-          Accept: "application/vnd.github+json",
+          Accept: 'application/vnd.github+json',
           Authorization: `Bearer ${accessToken}`,
-          "X-GitHub-Api-Version": "2022-11-28",
+          'X-GitHub-Api-Version': '2022-11-28',
         },
       });
 
@@ -174,13 +174,13 @@ const getGitHubUserEffect = (
     catch: (error) =>
       new GitHubAPIError({
         message:
-          typeof error === "object" && error !== null && "status" in error
+          typeof error === 'object' && error !== null && 'status' in error
             ? `GitHub API returned ${error.status}`
             : error instanceof Error
               ? error.message
-              : "Failed to fetch GitHub user",
+              : 'Failed to fetch GitHub user',
         status:
-          typeof error === "object" && error !== null && "status" in error
+          typeof error === 'object' && error !== null && 'status' in error
             ? (error.status as number)
             : undefined,
         cause: error,
@@ -193,12 +193,12 @@ const listRepositoriesEffect = (
   Effect.tryPromise({
     try: async () => {
       const response = await fetch(
-        "https://api.github.com/user/repos?sort=updated&per_page=100",
+        'https://api.github.com/user/repos?sort=updated&per_page=100',
         {
           headers: {
-            Accept: "application/vnd.github+json",
+            Accept: 'application/vnd.github+json',
             Authorization: `Bearer ${accessToken}`,
-            "X-GitHub-Api-Version": "2022-11-28",
+            'X-GitHub-Api-Version': '2022-11-28',
           },
         },
       );
@@ -230,13 +230,13 @@ const listRepositoriesEffect = (
     catch: (error) =>
       new GitHubAPIError({
         message:
-          typeof error === "object" && error !== null && "status" in error
+          typeof error === 'object' && error !== null && 'status' in error
             ? `GitHub API returned ${error.status}`
             : error instanceof Error
               ? error.message
-              : "Failed to list repositories",
+              : 'Failed to list repositories',
         status:
-          typeof error === "object" && error !== null && "status" in error
+          typeof error === 'object' && error !== null && 'status' in error
             ? (error.status as number)
             : undefined,
         cause: error,
@@ -267,17 +267,17 @@ export const pollGitHubToken = async (
     pollTokenEffect(clientId, deviceCode).pipe(
       Effect.map((response) => ({ success: true as const, ...response })),
       Effect.catchAll((error) => {
-        if (error._tag === "GitHubAuthPending") {
+        if (error._tag === 'GitHubAuthPending') {
           return Effect.succeed({
             success: false as const,
-            error: "Authorization pending",
+            error: 'Authorization pending',
             shouldRetry: true,
           });
         }
-        if (error._tag === "GitHubSlowDown") {
+        if (error._tag === 'GitHubSlowDown') {
           return Effect.succeed({
             success: false as const,
-            error: "Slow down - polling too fast",
+            error: 'Slow down - polling too fast',
             shouldRetry: true,
           });
         }

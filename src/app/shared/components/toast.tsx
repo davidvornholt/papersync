@@ -1,20 +1,20 @@
-"use client";
+'use client';
 
-import { AnimatePresence, motion } from "motion/react";
-import type { ReactNode } from "react";
+import { AnimatePresence, motion } from 'motion/react';
+import type { ReactNode } from 'react';
 import {
   createContext,
   useCallback,
   useContext,
   useEffect,
   useState,
-} from "react";
+} from 'react';
 
 // ============================================================================
 // Types
 // ============================================================================
 
-type ToastType = "success" | "error" | "info" | "warning";
+type ToastType = 'success' | 'error' | 'info' | 'warning';
 
 type Toast = {
   readonly id: string;
@@ -42,7 +42,7 @@ const ToastContext = createContext<ToastContextType | null>(null);
 export const useToast = (): ToastContextType => {
   const context = useContext(ToastContext);
   if (!context) {
-    throw new Error("useToast must be used within a ToastProvider");
+    throw new Error('useToast must be used within a ToastProvider');
   }
   return context;
 };
@@ -65,7 +65,7 @@ export const ToastProvider = ({
   }, []);
 
   const addToast = useCallback(
-    (message: string, type: ToastType = "info", duration = 4000) => {
+    (message: string, type: ToastType = 'info', duration = 4000) => {
       const id = `toast-${Date.now()}-${Math.random().toString(36).slice(2)}`;
       const toast: Toast = { id, message, type, duration };
       setToasts((prev) => [...prev, toast]);
@@ -117,17 +117,17 @@ type ToastItemProps = {
 };
 
 const toastStyles: Record<ToastType, string> = {
-  success: "bg-accent text-white",
-  error: "bg-red-600 text-white",
-  warning: "bg-amber-500 text-white",
-  info: "bg-foreground text-background",
+  success: 'bg-accent text-white',
+  error: 'bg-red-600 text-white',
+  warning: 'bg-amber-500 text-white',
+  info: 'bg-foreground text-background',
 };
 
 const toastIcons: Record<ToastType, string> = {
-  success: "✓",
-  error: "✕",
-  warning: "⚠",
-  info: "ℹ",
+  success: '✓',
+  error: '✕',
+  warning: '⚠',
+  info: 'ℹ',
 };
 
 const ToastItem = ({
@@ -175,9 +175,9 @@ const ToastItem = ({
         <div className="h-1 bg-white/20">
           <motion.div
             className="h-full bg-white/40"
-            initial={{ width: "100%" }}
+            initial={{ width: '100%' }}
             animate={{ width: `${progress}%` }}
-            transition={{ duration: 0.05, ease: "linear" }}
+            transition={{ duration: 0.05, ease: 'linear' }}
           />
         </div>
       )}

@@ -1,24 +1,24 @@
-"use client";
+'use client';
 
-import { AnimatePresence, motion } from "motion/react";
-import { useCallback, useEffect, useState } from "react";
-import { Button, Modal, Spinner } from "@/app/shared/components";
+import { AnimatePresence, motion } from 'motion/react';
+import { useCallback, useEffect, useState } from 'react';
+import { Button, Modal, Spinner } from '@/app/shared/components';
 
 // ============================================================================
 // Types
 // ============================================================================
 
 export type OAuthState =
-  | { status: "idle" }
-  | { status: "loading" }
+  | { status: 'idle' }
+  | { status: 'loading' }
   | {
-      status: "awaiting-authorization";
+      status: 'awaiting-authorization';
       userCode: string;
       verificationUri: string;
       expiresAt: Date;
     }
-  | { status: "success"; accessToken: string }
-  | { status: "error"; message: string };
+  | { status: 'success'; accessToken: string }
+  | { status: 'error'; message: string };
 
 type GitHubOAuthModalProps = {
   readonly isOpen: boolean;
@@ -37,7 +37,7 @@ const SuccessCheckmark = (): React.ReactElement => (
   <motion.svg
     initial={{ scale: 0 }}
     animate={{ scale: 1 }}
-    transition={{ type: "spring", damping: 15, stiffness: 200, delay: 0.1 }}
+    transition={{ type: 'spring', damping: 15, stiffness: 200, delay: 0.1 }}
     className="w-16 h-16 text-green-500"
     fill="none"
     viewBox="0 0 24 24"
@@ -101,11 +101,11 @@ const CopyButton = ({ text }: { text: string }): React.ReactElement => {
       setTimeout(() => setCopied(false), 2000);
     } catch {
       // Fallback for older browsers
-      const textArea = document.createElement("textarea");
+      const textArea = document.createElement('textarea');
       textArea.value = text;
       document.body.appendChild(textArea);
       textArea.select();
-      document.execCommand("copy");
+      document.execCommand('copy');
       document.body.removeChild(textArea);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
@@ -120,8 +120,8 @@ const CopyButton = ({ text }: { text: string }): React.ReactElement => {
       whileTap={{ scale: 0.95 }}
       className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
         copied
-          ? "bg-green-500 text-white"
-          : "bg-surface hover:bg-border text-foreground"
+          ? 'bg-green-500 text-white'
+          : 'bg-surface hover:bg-border text-foreground'
       }`}
     >
       <span className="flex items-center gap-2">
@@ -197,9 +197,9 @@ const CountdownTimer = ({
 
   return (
     <span
-      className={`font-mono ${timeLeft < 60 ? "text-red-500" : "text-muted"}`}
+      className={`font-mono ${timeLeft < 60 ? 'text-red-500' : 'text-muted'}`}
     >
-      {minutes}:{seconds.toString().padStart(2, "0")}
+      {minutes}:{seconds.toString().padStart(2, '0')}
     </span>
   );
 };
@@ -218,7 +218,7 @@ export const GitHubOAuthModal = ({
 }: GitHubOAuthModalProps): React.ReactElement => {
   // Auto-close on success after a delay
   useEffect(() => {
-    if (oauthState.status === "success") {
+    if (oauthState.status === 'success') {
       const timer = setTimeout(() => {
         onSuccess(oauthState.accessToken);
         onClose();
@@ -229,15 +229,15 @@ export const GitHubOAuthModal = ({
 
   // Start OAuth flow when modal opens
   useEffect(() => {
-    if (isOpen && oauthState.status === "idle") {
+    if (isOpen && oauthState.status === 'idle') {
       onStartOAuth();
     }
   }, [isOpen, oauthState.status, onStartOAuth]);
 
   const handleClose = useCallback(() => {
     if (
-      oauthState.status === "awaiting-authorization" ||
-      oauthState.status === "loading"
+      oauthState.status === 'awaiting-authorization' ||
+      oauthState.status === 'loading'
     ) {
       onCancel();
     }
@@ -251,12 +251,12 @@ export const GitHubOAuthModal = ({
       title="Connect to GitHub"
       description="Authorize PaperSync to access your vault repository"
       size="md"
-      closeOnOverlayClick={oauthState.status !== "loading"}
+      closeOnOverlayClick={oauthState.status !== 'loading'}
     >
       <div className="flex flex-col items-center py-4">
         <AnimatePresence mode="wait">
           {/* Loading State */}
-          {oauthState.status === "loading" && (
+          {oauthState.status === 'loading' && (
             <motion.div
               key="loading"
               initial={{ opacity: 0, y: 10 }}
@@ -270,7 +270,7 @@ export const GitHubOAuthModal = ({
           )}
 
           {/* Awaiting Authorization */}
-          {oauthState.status === "awaiting-authorization" && (
+          {oauthState.status === 'awaiting-authorization' && (
             <motion.div
               key="awaiting"
               initial={{ opacity: 0, y: 10 }}
@@ -353,7 +353,7 @@ export const GitHubOAuthModal = ({
                   <span>Waiting for authorization</span>
                 </div>
                 <div className="text-sm text-muted">
-                  Code expires in{" "}
+                  Code expires in{' '}
                   <CountdownTimer expiresAt={oauthState.expiresAt} />
                 </div>
               </div>
@@ -366,7 +366,7 @@ export const GitHubOAuthModal = ({
           )}
 
           {/* Success State */}
-          {oauthState.status === "success" && (
+          {oauthState.status === 'success' && (
             <motion.div
               key="success"
               initial={{ opacity: 0, scale: 0.9 }}
@@ -387,7 +387,7 @@ export const GitHubOAuthModal = ({
           )}
 
           {/* Error State */}
-          {oauthState.status === "error" && (
+          {oauthState.status === 'error' && (
             <motion.div
               key="error"
               initial={{ opacity: 0, y: 10 }}

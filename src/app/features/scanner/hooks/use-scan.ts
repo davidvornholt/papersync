@@ -1,12 +1,12 @@
-"use client";
+'use client';
 
-import { Effect } from "effect";
-import { useCallback, useState } from "react";
+import { Effect } from 'effect';
+import { useCallback, useState } from 'react';
 import {
   extractHandwriting,
   type VaultSettings,
-} from "@/app/features/ocr/actions";
-import type { WeekId } from "@/app/shared/types";
+} from '@/app/features/ocr/actions';
+import type { WeekId } from '@/app/shared/types';
 
 // ============================================================================
 // Types (local to scanner feature)
@@ -24,19 +24,19 @@ export type ExtractedEntry = {
 };
 
 export type ScanState =
-  | { readonly status: "idle" }
-  | { readonly status: "uploading"; readonly progress: number }
-  | { readonly status: "processing" }
+  | { readonly status: 'idle' }
+  | { readonly status: 'uploading'; readonly progress: number }
+  | { readonly status: 'processing' }
   | {
-      readonly status: "complete";
+      readonly status: 'complete';
       readonly entries: readonly ExtractedEntry[];
       readonly confidence: number;
       readonly modelUsed: string;
     }
-  | { readonly status: "error"; readonly error: string };
+  | { readonly status: 'error'; readonly error: string };
 
 export type AISettings = {
-  readonly provider: "google" | "ollama";
+  readonly provider: 'google' | 'ollama';
   readonly googleApiKey?: string;
   readonly ollamaEndpoint?: string;
 };
@@ -66,7 +66,7 @@ const getCurrentWeekId = (): WeekId => {
     (now.getTime() - startOfYear.getTime()) / (24 * 60 * 60 * 1000),
   );
   const weekNumber = Math.ceil((days + startOfYear.getDay() + 1) / 7);
-  return `${now.getFullYear()}-W${weekNumber.toString().padStart(2, "0")}` as WeekId;
+  return `${now.getFullYear()}-W${weekNumber.toString().padStart(2, '0')}` as WeekId;
 };
 
 // ============================================================================
@@ -93,7 +93,7 @@ const readFileAsDataUrl = (
     };
 
     reader.onerror = () => {
-      resume(Effect.fail(new Error("Failed to read file")));
+      resume(Effect.fail(new Error('Failed to read file')));
     };
 
     reader.readAsDataURL(file);
@@ -118,7 +118,7 @@ const processExtractionEffect = (
     catch: (error): Error =>
       error instanceof Error
         ? error
-        : new Error("Unknown error during extraction"),
+        : new Error('Unknown error during extraction'),
   }).pipe(
     Effect.flatMap((result): Effect.Effect<ScanState, never> => {
       if (result.success) {
@@ -131,13 +131,13 @@ const processExtractionEffect = (
             content: entry.content,
             isTask: entry.isTask,
             isCompleted: entry.isCompleted,
-            isNew: entry.action === "add",
+            isNew: entry.action === 'add',
             dueDate: entry.dueDate,
           }),
         );
 
         return Effect.succeed({
-          status: "complete" as const,
+          status: 'complete' as const,
           entries,
           confidence: result.data.confidence,
           modelUsed: result.modelUsed,
@@ -145,13 +145,13 @@ const processExtractionEffect = (
       }
 
       return Effect.succeed({
-        status: "error" as const,
+        status: 'error' as const,
         error: result.error,
       });
     }),
     Effect.catchAll((error: Error) =>
       Effect.succeed<ScanState>({
-        status: "error" as const,
+        status: 'error' as const,
         error: error.message,
       }),
     ),
@@ -162,18 +162,18 @@ const processExtractionEffect = (
 // ============================================================================
 
 export const useScan = (options: UseScanOptions): UseScanReturn => {
-  const [state, setState] = useState<ScanState>({ status: "idle" });
+  const [state, setState] = useState<ScanState>({ status: 'idle' });
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [imageData, setImageData] = useState<string | null>(null);
 
   const weekId = options.weekId ?? getCurrentWeekId();
 
   const upload = useCallback(async (file: File): Promise<void> => {
-    setState({ status: "uploading", progress: 0 });
+    setState({ status: 'uploading', progress: 0 });
 
     const result = await Effect.runPromise(
       readFileAsDataUrl(file, (progress) => {
-        setState({ status: "uploading", progress });
+        setState({ status: 'uploading', progress });
       }).pipe(
         Effect.map((data) => ({ success: true as const, data })),
         Effect.catchAll((error) =>
@@ -185,23 +185,23 @@ export const useScan = (options: UseScanOptions): UseScanReturn => {
     if (result.success) {
       setImagePreview(result.data);
       setImageData(result.data);
-      setState({ status: "idle" });
+      setState({ status: 'idle' });
     } else {
-      setState({ status: "error", error: result.error });
+      setState({ status: 'error', error: result.error });
     }
   }, []);
 
   const process = useCallback(async (): Promise<ScanState> => {
     if (!imageData) {
       const newState: ScanState = {
-        status: "error",
-        error: "No image to process",
+        status: 'error',
+        error: 'No image to process',
       };
       setState(newState);
       return newState;
     }
 
-    setState({ status: "processing" });
+    setState({ status: 'processing' });
 
     const newState = await Effect.runPromise(
       processExtractionEffect(
@@ -217,7 +217,7 @@ export const useScan = (options: UseScanOptions): UseScanReturn => {
   }, [imageData, weekId, options.aiSettings, options.vaultSettings]);
 
   const clear = useCallback((): void => {
-    setState({ status: "idle" });
+    setState({ status: 'idle' });
     setImagePreview(null);
     setImageData(null);
   }, []);

@@ -1,4 +1,4 @@
-import { PlannerScreen } from "@/app/features/planner/screens";
+import { PlannerScreen } from '@/app/features/planner/screens';
 
 const PlannerPage = (): React.ReactElement => <PlannerScreen />;
 

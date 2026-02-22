@@ -3,4 +3,4 @@ export {
   type ExtractionResult,
   extractHandwriting,
   type VaultSettings,
-} from "./extract";
+} from './extract';

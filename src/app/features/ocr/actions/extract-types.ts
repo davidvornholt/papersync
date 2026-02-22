@@ -1,4 +1,4 @@
-import { Data } from "effect";
+import { Data } from 'effect';
 
 /**
  * Types and Error Classes for OCR Extraction
@@ -12,7 +12,7 @@ import { Data } from "effect";
 // ============================================================================
 
 export class ExtractionValidationError extends Data.TaggedError(
-  "ExtractionValidationError",
+  'ExtractionValidationError',
 )<{
   readonly message: string;
 }> {}
@@ -22,7 +22,7 @@ export class ExtractionValidationError extends Data.TaggedError(
 // ============================================================================
 
 export type VaultSettings = {
-  readonly method: "local" | "github";
+  readonly method: 'local' | 'github';
   readonly localPath?: string;
   readonly githubToken?: string;
   readonly githubRepo?: string;
@@ -30,8 +30,8 @@ export type VaultSettings = {
 
 export type ExtractionOptions = {
   readonly imageBase64: string;
-  readonly weekId: import("@/app/shared/types").WeekId;
-  readonly provider: "google" | "ollama";
+  readonly weekId: import('@/app/shared/types').WeekId;
+  readonly provider: 'google' | 'ollama';
   readonly googleApiKey?: string;
   readonly ollamaEndpoint?: string;
   readonly vaultSettings?: VaultSettings;
@@ -44,7 +44,7 @@ export type ExtractionOptions = {
 export type ExtractionResult =
   | {
       readonly success: true;
-      readonly data: import("@/app/shared/types").OCRResponse;
+      readonly data: import('@/app/shared/types').OCRResponse;
       readonly modelUsed: string;
     }
   | { readonly success: false; readonly error: string };

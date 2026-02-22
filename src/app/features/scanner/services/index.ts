@@ -8,11 +8,11 @@ export {
   type ScanJob,
   type ScannerCapabilities,
   type ScanSettings,
-} from "./escl-client";
+} from './escl-client';
 export {
   type DiscoveredScanner,
   MdnsDiscoveryLayer,
   ScannerDiscoveryError,
   ScannerDiscoveryService,
   type ScannerProtocol,
-} from "./scanner-discovery";
+} from './scanner-discovery';

@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { motion } from "motion/react";
-import Link from "next/link";
+import { motion } from 'motion/react';
+import Link from 'next/link';
 import {
   Button,
   Card,
@@ -11,7 +11,7 @@ import {
   PageTransition,
   StaggerContainer,
   StaggerItem,
-} from "@/app/shared/components";
+} from '@/app/shared/components';
 
 // ============================================================================
 // Icons
@@ -195,35 +195,35 @@ type GettingStartedStep = {
 const GETTING_STARTED_STEPS: GettingStartedStep[] = [
   {
     number: 1,
-    title: "Configure Your Vault",
+    title: 'Configure Your Vault',
     description:
-      "Connect PaperSync to your Obsidian vault for seamless sync. Choose between local filesystem or GitHub.",
-    href: "/settings",
-    linkText: "Open Settings",
+      'Connect PaperSync to your Obsidian vault for seamless sync. Choose between local filesystem or GitHub.',
+    href: '/settings',
+    linkText: 'Open Settings',
   },
   {
     number: 2,
-    title: "Set Up Your Timetable",
+    title: 'Set Up Your Timetable',
     description:
-      "Add your subjects and configure your weekly schedule. This will appear on your printed planner.",
-    href: "/settings",
-    linkText: "Configure Timetable",
+      'Add your subjects and configure your weekly schedule. This will appear on your printed planner.',
+    href: '/settings',
+    linkText: 'Configure Timetable',
   },
   {
     number: 3,
-    title: "Generate a Planner",
+    title: 'Generate a Planner',
     description:
-      "Create a printable weekly planner with QR codes. Write your tasks and notes by hand.",
-    href: "/planner",
-    linkText: "Create Planner",
+      'Create a printable weekly planner with QR codes. Write your tasks and notes by hand.',
+    href: '/planner',
+    linkText: 'Create Planner',
   },
   {
     number: 4,
-    title: "Scan & Sync",
+    title: 'Scan & Sync',
     description:
-      "Scan your completed planner to extract handwritten entries and sync them to your vault.",
-    href: "/scan",
-    linkText: "Start Scanning",
+      'Scan your completed planner to extract handwritten entries and sync them to your vault.',
+    href: '/scan',
+    linkText: 'Start Scanning',
   },
 ];
 
@@ -435,10 +435,10 @@ const WorkflowOverviewCard = (): React.ReactElement => (
       <div className="mt-8 pt-6 border-t border-border">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[
-            "AI-Powered OCR",
-            "Obsidian Sync",
-            "QR Tracking",
-            "Weekly Templates",
+            'AI-Powered OCR',
+            'Obsidian Sync',
+            'QR Tracking',
+            'Weekly Templates',
           ].map((feature, index) => (
             <motion.div
               key={feature}
@@ -463,10 +463,10 @@ const WorkflowOverviewCard = (): React.ReactElement => (
 
 export const DashboardScreen = (): React.ReactElement => {
   const today = new Date();
-  const formattedDate = today.toLocaleDateString("en-US", {
-    weekday: "long",
-    month: "long",
-    day: "numeric",
+  const formattedDate = today.toLocaleDateString('en-US', {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
   });
 
   const weekNumber = Math.ceil(

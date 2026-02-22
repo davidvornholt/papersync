@@ -1,4 +1,4 @@
-import { SettingsScreen } from "@/app/features/settings/screens";
+import { SettingsScreen } from '@/app/features/settings/screens';
 
 const SettingsPage = (): React.ReactElement => <SettingsScreen />;
 

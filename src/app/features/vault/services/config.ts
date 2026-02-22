@@ -1,4 +1,4 @@
-import { Effect } from "effect";
+import { Effect } from 'effect';
 import type {
   AppConfig,
   DayRecord,
@@ -7,24 +7,24 @@ import type {
   SubjectsConfig,
   WeekId,
   WeeklyNote,
-} from "@/app/shared/types";
+} from '@/app/shared/types';
 import {
   type VaultError,
   type VaultFileNotFoundError,
   VaultService,
-} from "./filesystem";
+} from './filesystem';
 
 // ============================================================================
 // Path Constants
 // ============================================================================
 
-const PAPERSYNC_ROOT = "PaperSync";
-const CONFIG_DIR = ".papersync";
-const CONFIG_FILE = "config.json";
-const SUBJECTS_FILE = "subjects.json";
-const TIMETABLE_FILE = "timetable.json";
-const WEEKLY_DIR = "Weekly";
-const OVERVIEW_FILE = "Overview.md";
+const PAPERSYNC_ROOT = 'PaperSync';
+const CONFIG_DIR = '.papersync';
+const CONFIG_FILE = 'config.json';
+const SUBJECTS_FILE = 'subjects.json';
+const TIMETABLE_FILE = 'timetable.json';
+const WEEKLY_DIR = 'Weekly';
+const OVERVIEW_FILE = 'Overview.md';
 
 // ============================================================================
 // Config Operations
@@ -183,16 +183,16 @@ export const parseWeeklyNoteMarkdown = (
   const frontmatter: Record<string, string> = {};
 
   if (frontmatterMatch) {
-    const lines = frontmatterMatch[1].split("\n");
+    const lines = frontmatterMatch[1].split('\n');
     for (const line of lines) {
-      const [key, ...valueParts] = line.split(":");
+      const [key, ...valueParts] = line.split(':');
       if (key && valueParts.length > 0) {
-        frontmatter[key.trim()] = valueParts.join(":").trim();
+        frontmatter[key.trim()] = valueParts.join(':').trim();
       }
     }
   }
 
-  const dateRange = frontmatter.date_range?.split(" to ") ?? [];
+  const dateRange = frontmatter.date_range?.split(' to ') ?? [];
 
   // Parse markdown body for day records
   const bodyContent = frontmatterMatch
@@ -224,7 +224,7 @@ export const parseWeeklyNoteMarkdown = (
   let currentEntryTasks: MutableTask[] = [];
   let isInGeneralTasksSection = false;
 
-  const lines = bodyContent.split("\n");
+  const lines = bodyContent.split('\n');
 
   const flushCurrentSubject = () => {
     if (currentDay && currentSubject && currentEntryTasks.length > 0) {
@@ -263,7 +263,7 @@ export const parseWeeklyNoteMarkdown = (
 
     // Match day headers: ## Monday, January 27
     const dayMatch = line.match(/^## ([A-Za-z]+),?\s*(.*)$/);
-    if (dayMatch && !line.includes("General Tasks")) {
+    if (dayMatch && !line.includes('General Tasks')) {
       flushCurrentDay();
       isInGeneralTasksSection = false;
 
@@ -273,10 +273,10 @@ export const parseWeeklyNoteMarkdown = (
       const dateStr = dayMatch[2]?.trim();
       if (dateStr) {
         // Try to parse date like "January 27" - we need the year from the weekId
-        const year = weekId.split("-W")[0];
+        const year = weekId.split('-W')[0];
         const parsedDate = new Date(`${dateStr}, ${year}`);
         if (!Number.isNaN(parsedDate.getTime())) {
-          date = parsedDate.toISOString().split("T")[0] as ISODate;
+          date = parsedDate.toISOString().split('T')[0] as ISODate;
         } else {
           // Fallback: calculate from week ID
           date = getDayDateFromWeekId(dayName, weekId);
@@ -307,7 +307,7 @@ export const parseWeeklyNoteMarkdown = (
     // Match task lines: - [ ] or - [x] content 📅 2024-01-27
     const taskMatch = line.match(/^- \[([ xX])\]\s*(.+)$/);
     if (taskMatch) {
-      const isCompleted = taskMatch[1].toLowerCase() === "x";
+      const isCompleted = taskMatch[1].toLowerCase() === 'x';
       let taskContent = taskMatch[2].trim();
       let dueDate: ISODate | undefined;
 
@@ -316,7 +316,7 @@ export const parseWeeklyNoteMarkdown = (
       if (dueDateMatch) {
         dueDate = dueDateMatch[1] as ISODate;
         taskContent = taskContent
-          .replace(/\[due::\s*\d{4}-\d{2}-\d{2}\]/, "")
+          .replace(/\[due::\s*\d{4}-\d{2}-\d{2}\]/, '')
           .trim();
       }
 
@@ -341,10 +341,10 @@ export const parseWeeklyNoteMarkdown = (
   return {
     week: weekId,
     dateRange: {
-      start: (dateRange[0] ?? "") as WeeklyNote["dateRange"]["start"],
-      end: (dateRange[1] ?? "") as WeeklyNote["dateRange"]["end"],
+      start: (dateRange[0] ?? '') as WeeklyNote['dateRange']['start'],
+      end: (dateRange[1] ?? '') as WeeklyNote['dateRange']['end'],
     },
-    syncedAt: frontmatter.synced_at as WeeklyNote["syncedAt"],
+    syncedAt: frontmatter.synced_at as WeeklyNote['syncedAt'],
     days,
     generalTasks,
   };
@@ -364,7 +364,7 @@ const getDayDateFromWeekId = (dayName: string, weekId: WeekId): ISODate => {
     Sunday: 6,
   };
 
-  const [yearStr, weekPart] = weekId.split("-W");
+  const [yearStr, weekPart] = weekId.split('-W');
   const year = parseInt(yearStr, 10);
   const weekNumber = parseInt(weekPart, 10);
 
@@ -383,12 +383,12 @@ const getDayDateFromWeekId = (dayName: string, weekId: WeekId): ISODate => {
   const targetDate = new Date(weekStart);
   targetDate.setDate(weekStart.getDate() + (dayMap[dayName] ?? 0));
 
-  return targetDate.toISOString().split("T")[0] as ISODate;
+  return targetDate.toISOString().split('T')[0] as ISODate;
 };
 
 export const serializeWeeklyNoteToMarkdown = (note: WeeklyNote): string => {
   const lines: string[] = [
-    "---",
+    '---',
     `week: ${note.week}`,
     `date_range: ${note.dateRange.start} to ${note.dateRange.end}`,
   ];
@@ -397,7 +397,7 @@ export const serializeWeeklyNoteToMarkdown = (note: WeeklyNote): string => {
     lines.push(`synced_at: ${note.syncedAt}`);
   }
 
-  lines.push("---", "");
+  lines.push('---', '');
 
   // Write all day entries with separators between them
   for (let i = 0; i < note.days.length; i++) {
@@ -405,39 +405,39 @@ export const serializeWeeklyNoteToMarkdown = (note: WeeklyNote): string => {
 
     // Add separator before each day (except the first)
     if (i > 0) {
-      lines.push("---", "");
+      lines.push('---', '');
     }
 
-    lines.push(`## ${day.dayName}, ${formatDate(day.date)}`, "");
+    lines.push(`## ${day.dayName}, ${formatDate(day.date)}`, '');
 
     for (const entry of day.entries) {
       lines.push(`### ${entry.subject}`);
       for (const task of entry.tasks) {
-        const checkbox = task.isCompleted ? "[x]" : "[ ]";
-        const dueDateSuffix = task.dueDate ? ` [due:: ${task.dueDate}]` : "";
+        const checkbox = task.isCompleted ? '[x]' : '[ ]';
+        const dueDateSuffix = task.dueDate ? ` [due:: ${task.dueDate}]` : '';
         lines.push(`- ${checkbox} ${task.content}${dueDateSuffix}`);
       }
-      lines.push("");
+      lines.push('');
     }
   }
 
   // Write week-level general tasks at the end
   if (note.generalTasks.length > 0) {
-    lines.push("---", "", "## General Tasks", "");
+    lines.push('---', '', '## General Tasks', '');
     for (const task of note.generalTasks) {
-      const checkbox = task.isCompleted ? "[x]" : "[ ]";
-      const dueDateSuffix = task.dueDate ? ` [due:: ${task.dueDate}]` : "";
+      const checkbox = task.isCompleted ? '[x]' : '[ ]';
+      const dueDateSuffix = task.dueDate ? ` [due:: ${task.dueDate}]` : '';
       lines.push(`- ${checkbox} ${task.content}${dueDateSuffix}`);
     }
-    lines.push("");
+    lines.push('');
   }
 
-  return lines.join("\n");
+  return lines.join('\n');
 };
 
 export const formatDate = (isoDate: string): string => {
   const date = new Date(isoDate);
-  return date.toLocaleDateString("en-US", { month: "long", day: "numeric" });
+  return date.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
 };
 
 // ============================================================================
@@ -638,9 +638,9 @@ export const initializeVault = (): Effect.Effect<
     const configExists = yield* vault.fileExists(getConfigPath());
     if (!configExists) {
       const defaultConfig: AppConfig = {
-        vaultPath: "",
-        vaultAccessMethod: "local",
-        aiProvider: "google",
+        vaultPath: '',
+        vaultAccessMethod: 'local',
+        aiProvider: 'google',
         subjectsPerDay: 4,
       };
       yield* writeConfig(defaultConfig);
@@ -650,10 +650,10 @@ export const initializeVault = (): Effect.Effect<
     const subjectsExist = yield* vault.fileExists(getSubjectsPath());
     if (!subjectsExist) {
       const defaultSubjects: SubjectsConfig = [
-        { id: "1", name: "Chemistry" },
-        { id: "2", name: "Literature" },
-        { id: "3", name: "Mathematics" },
-        { id: "4", name: "Physics" },
+        { id: '1', name: 'Chemistry' },
+        { id: '2', name: 'Literature' },
+        { id: '3', name: 'Mathematics' },
+        { id: '4', name: 'Physics' },
       ];
       yield* writeSubjects(defaultSubjects);
     }

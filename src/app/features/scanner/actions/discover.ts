@@ -1,6 +1,6 @@
-"use server";
+'use server';
 
-import { Effect } from "effect";
+import { Effect } from 'effect';
 import {
   type DiscoveredScanner,
   ESCLClient,
@@ -8,7 +8,7 @@ import {
   MdnsDiscoveryLayer,
   type ScannerCapabilities,
   ScannerDiscoveryService,
-} from "../services";
+} from '../services';
 
 // ============================================================================
 // Types

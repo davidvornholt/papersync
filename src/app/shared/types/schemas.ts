@@ -1,4 +1,4 @@
-import { Schema } from "@effect/schema";
+import { Schema } from '@effect/schema';
 
 // ============================================================================
 // Week & Date Schemas
@@ -6,19 +6,19 @@ import { Schema } from "@effect/schema";
 
 export const WeekId = Schema.String.pipe(
   Schema.pattern(/^\d{4}-W\d{2}$/),
-  Schema.brand("WeekId"),
+  Schema.brand('WeekId'),
 );
 export type WeekId = typeof WeekId.Type;
 
 export const ISODate = Schema.String.pipe(
   Schema.pattern(/^\d{4}-\d{2}-\d{2}$/),
-  Schema.brand("ISODate"),
+  Schema.brand('ISODate'),
 );
 export type ISODate = typeof ISODate.Type;
 
 export const ISODateTime = Schema.String.pipe(
   Schema.pattern(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/),
-  Schema.brand("ISODateTime"),
+  Schema.brand('ISODateTime'),
 );
 export type ISODateTime = typeof ISODateTime.Type;
 
@@ -41,13 +41,13 @@ export type SubjectsConfig = typeof SubjectsConfig.Type;
 // ============================================================================
 
 export const DayOfWeek = Schema.Literal(
-  "monday",
-  "tuesday",
-  "wednesday",
-  "thursday",
-  "friday",
-  "saturday",
-  "sunday",
+  'monday',
+  'tuesday',
+  'wednesday',
+  'thursday',
+  'friday',
+  'saturday',
+  'sunday',
 );
 export type DayOfWeek = typeof DayOfWeek.Type;
 
@@ -87,7 +87,7 @@ export type Timetable = typeof Timetable.Type;
 // Task Entry Schema
 // ============================================================================
 
-export const TaskAction = Schema.Literal("add", "modify", "complete");
+export const TaskAction = Schema.Literal('add', 'modify', 'complete');
 export type TaskAction = typeof TaskAction.Type;
 
 export const TaskEntry = Schema.Struct({
@@ -172,10 +172,10 @@ export type QRPayload = typeof QRPayload.Type;
 // App Configuration Schema
 // ============================================================================
 
-export const VaultAccessMethod = Schema.Literal("local", "github");
+export const VaultAccessMethod = Schema.Literal('local', 'github');
 export type VaultAccessMethod = typeof VaultAccessMethod.Type;
 
-export const AIProvider = Schema.Literal("google", "ollama");
+export const AIProvider = Schema.Literal('google', 'ollama');
 export type AIProvider = typeof AIProvider.Type;
 
 export const AppConfig = Schema.Struct({

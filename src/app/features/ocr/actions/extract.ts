@@ -1,25 +1,25 @@
-"use server";
+'use server';
 
-import { Effect } from "effect";
-import { getWeeklyNotePath } from "@/app/features/vault/services/config";
+import { Effect } from 'effect';
+import { getWeeklyNotePath } from '@/app/features/vault/services/config';
 import {
   makeLocalVaultLayer,
   VaultService,
-} from "@/app/features/vault/services/filesystem";
-import type { OCRResponse, WeekId } from "@/app/shared/types";
+} from '@/app/features/vault/services/filesystem';
+import type { OCRResponse, WeekId } from '@/app/shared/types';
 import {
   makeGoogleVisionLayer,
   makeOllamaVisionLayer,
   type VisionError,
   VisionProvider,
   type VisionValidationError,
-} from "../services/vision-provider";
+} from '../services/vision-provider';
 import {
-  ExtractionValidationError,
   type ExtractionOptions,
   type ExtractionResult,
+  ExtractionValidationError,
   type VaultSettings,
-} from "./extract-types";
+} from './extract-types';
 
 /**
  * Server Actions for OCR Extraction
@@ -43,11 +43,11 @@ const fetchExistingContentFromLocal = (
     const vault = yield* VaultService;
     const notePath = getWeeklyNotePath(weekId);
     const exists = yield* vault.fileExists(notePath);
-    if (!exists) return "";
+    if (!exists) return '';
     return yield* vault.readFile(notePath);
   }).pipe(
     Effect.provide(makeLocalVaultLayer(localPath)),
-    Effect.catchAll(() => Effect.succeed("")),
+    Effect.catchAll(() => Effect.succeed('')),
   );
 
 const fetchExistingContentFromGitHub = (
@@ -64,7 +64,7 @@ const fetchExistingContentFromGitHub = (
         {
           headers: {
             Authorization: `Bearer ${token}`,
-            Accept: "application/vnd.github.v3+json",
+            Accept: 'application/vnd.github.v3+json',
           },
         },
       );
@@ -72,34 +72,34 @@ const fetchExistingContentFromGitHub = (
       if (response.ok) {
         const data = await response.json();
         if (data.content) {
-          return Buffer.from(data.content, "base64").toString("utf-8");
+          return Buffer.from(data.content, 'base64').toString('utf-8');
         }
       }
-      return "";
+      return '';
     },
-    catch: () => "",
-  }).pipe(Effect.catchAll(() => Effect.succeed("")));
+    catch: () => '',
+  }).pipe(Effect.catchAll(() => Effect.succeed('')));
 
 const fetchExistingContentEffect = (
   weekId: WeekId,
   vaultSettings?: VaultSettings,
 ): Effect.Effect<string, never> => {
   if (!vaultSettings) {
-    return Effect.succeed("");
+    return Effect.succeed('');
   }
 
-  if (vaultSettings.method === "local" && vaultSettings.localPath) {
+  if (vaultSettings.method === 'local' && vaultSettings.localPath) {
     return fetchExistingContentFromLocal(weekId, vaultSettings.localPath);
   }
 
   if (
-    vaultSettings.method === "github" &&
+    vaultSettings.method === 'github' &&
     vaultSettings.githubToken &&
     vaultSettings.githubRepo
   ) {
-    const [owner, repo] = vaultSettings.githubRepo.split("/");
+    const [owner, repo] = vaultSettings.githubRepo.split('/');
     if (!owner || !repo) {
-      return Effect.succeed("");
+      return Effect.succeed('');
     }
     return fetchExistingContentFromGitHub(
       weekId,
@@ -109,7 +109,7 @@ const fetchExistingContentEffect = (
     );
   }
 
-  return Effect.succeed("");
+  return Effect.succeed('');
 };
 
 const extractHandwritingEffect = (
@@ -129,18 +129,18 @@ const extractHandwritingEffect = (
     } = options;
 
     // Validate provider configuration
-    if (provider === "google" && !googleApiKey) {
+    if (provider === 'google' && !googleApiKey) {
       return yield* Effect.fail(
         new ExtractionValidationError({
-          message: "Google API key not configured. Please add it in Settings.",
+          message: 'Google API key not configured. Please add it in Settings.',
         }),
       );
     }
 
-    if (provider === "ollama" && !ollamaEndpoint) {
+    if (provider === 'ollama' && !ollamaEndpoint) {
       return yield* Effect.fail(
         new ExtractionValidationError({
-          message: "Ollama endpoint not configured. Please add it in Settings.",
+          message: 'Ollama endpoint not configured. Please add it in Settings.',
         }),
       );
     }
@@ -153,9 +153,9 @@ const extractHandwritingEffect = (
 
     // Create the appropriate layer based on provider
     const visionLayer =
-      provider === "google"
-        ? makeGoogleVisionLayer(googleApiKey ?? "")
-        : makeOllamaVisionLayer(ollamaEndpoint ?? "http://localhost:11434");
+      provider === 'google'
+        ? makeGoogleVisionLayer(googleApiKey ?? '')
+        : makeOllamaVisionLayer(ollamaEndpoint ?? 'http://localhost:11434');
 
     // Run the extraction with the vision provider
     const vision = yield* Effect.provide(VisionProvider, visionLayer);

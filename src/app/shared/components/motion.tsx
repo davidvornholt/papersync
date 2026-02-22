@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { AnimatePresence, motion } from "motion/react";
-import type { ReactNode } from "react";
+import { AnimatePresence, motion } from 'motion/react';
+import type { ReactNode } from 'react';
 
 // ============================================================================
 // Page Transition Wrapper
@@ -36,7 +36,7 @@ type StaggerContainerProps = {
 
 export const StaggerContainer = ({
   children,
-  className = "",
+  className = '',
   staggerDelay = 0.08,
 }: StaggerContainerProps): React.ReactElement => (
   <motion.div
@@ -68,7 +68,7 @@ type StaggerItemProps = {
 
 export const StaggerItem = ({
   children,
-  className = "",
+  className = '',
 }: StaggerItemProps): React.ReactElement => (
   <motion.div
     className={className}
@@ -100,7 +100,7 @@ type HoverScaleProps = {
 
 export const HoverScale = ({
   children,
-  className = "",
+  className = '',
   scale = 1.02,
 }: HoverScaleProps): React.ReactElement => (
   <motion.div
@@ -128,7 +128,7 @@ type FadeInProps = {
 
 export const FadeIn = ({
   children,
-  className = "",
+  className = '',
   delay = 0,
   duration = 0.4,
 }: FadeInProps): React.ReactElement => (
@@ -146,7 +146,7 @@ export const FadeIn = ({
 // Slide In
 // ============================================================================
 
-type SlideDirection = "up" | "down" | "left" | "right";
+type SlideDirection = 'up' | 'down' | 'left' | 'right';
 
 type SlideInProps = {
   readonly children: ReactNode;
@@ -164,8 +164,8 @@ const slideOffsets: Record<SlideDirection, { x: number; y: number }> = {
 
 export const SlideIn = ({
   children,
-  className = "",
-  direction = "up",
+  className = '',
+  direction = 'up',
   delay = 0,
 }: SlideInProps): React.ReactElement => {
   const offset = slideOffsets[direction];
@@ -217,7 +217,7 @@ type PulseProps = {
   readonly className?: string;
 };
 
-export const Pulse = ({ className = "" }: PulseProps): React.ReactElement => (
+export const Pulse = ({ className = '' }: PulseProps): React.ReactElement => (
   <motion.div
     className={`rounded-full bg-accent ${className}`}
     animate={{
@@ -227,7 +227,7 @@ export const Pulse = ({ className = "" }: PulseProps): React.ReactElement => (
     transition={{
       duration: 1.5,
       repeat: Number.POSITIVE_INFINITY,
-      ease: "easeInOut",
+      ease: 'easeInOut',
     }}
   />
 );
@@ -237,19 +237,19 @@ export const Pulse = ({ className = "" }: PulseProps): React.ReactElement => (
 // ============================================================================
 
 type SpinnerProps = {
-  readonly size?: "sm" | "md" | "lg";
+  readonly size?: 'sm' | 'md' | 'lg';
   readonly className?: string;
 };
 
 const spinnerSizes = {
-  sm: "w-4 h-4 border-2",
-  md: "w-6 h-6 border-2",
-  lg: "w-8 h-8 border-3",
+  sm: 'w-4 h-4 border-2',
+  md: 'w-6 h-6 border-2',
+  lg: 'w-8 h-8 border-3',
 };
 
 export const Spinner = ({
-  size = "md",
-  className = "",
+  size = 'md',
+  className = '',
 }: SpinnerProps): React.ReactElement => (
   <motion.div
     className={`rounded-full border-accent border-t-transparent ${spinnerSizes[size]} ${className}`}
@@ -257,7 +257,7 @@ export const Spinner = ({
     transition={{
       duration: 0.8,
       repeat: Number.POSITIVE_INFINITY,
-      ease: "linear",
+      ease: 'linear',
     }}
   />
 );

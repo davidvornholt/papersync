@@ -1,6 +1,6 @@
-import { Data } from "effect";
-import type { SubjectsConfig } from "@/app/shared/types";
-import type { TimetableConfig } from "../services/config";
+import { Data } from 'effect';
+import type { SubjectsConfig } from '@/app/shared/types';
+import type { TimetableConfig } from '../services/config';
 
 /**
  * Types and Error Classes for Settings Sync
@@ -14,12 +14,12 @@ import type { TimetableConfig } from "../services/config";
 // ============================================================================
 
 export class SyncSettingsValidationError extends Data.TaggedError(
-  "SyncSettingsValidationError",
+  'SyncSettingsValidationError',
 )<{
   readonly message: string;
 }> {}
 
-export class GitHubSyncError extends Data.TaggedError("GitHubSyncError")<{
+export class GitHubSyncError extends Data.TaggedError('GitHubSyncError')<{
   readonly message: string;
   readonly cause?: unknown;
 }> {}
@@ -33,7 +33,7 @@ export type SettingsToSync = {
   readonly timetable: TimetableConfig;
 };
 
-export type VaultMethod = "local" | "github";
+export type VaultMethod = 'local' | 'github';
 
 // ============================================================================
 // Result Types (for server action responses)

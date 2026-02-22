@@ -1,22 +1,22 @@
-import * as fs from "node:fs/promises";
-import * as path from "node:path";
-import { Context, Data, Effect, Layer } from "effect";
+import * as fs from 'node:fs/promises';
+import * as path from 'node:path';
+import { Context, Data, Effect, Layer } from 'effect';
 
 // ============================================================================
 // Error Types
 // ============================================================================
 
-export class VaultError extends Data.TaggedError("VaultError")<{
+export class VaultError extends Data.TaggedError('VaultError')<{
   readonly message: string;
   readonly cause?: unknown;
 }> {}
 
-export class VaultNotFoundError extends Data.TaggedError("VaultNotFoundError")<{
+export class VaultNotFoundError extends Data.TaggedError('VaultNotFoundError')<{
   readonly path: string;
 }> {}
 
 export class VaultFileNotFoundError extends Data.TaggedError(
-  "VaultFileNotFoundError",
+  'VaultFileNotFoundError',
 )<{
   readonly filePath: string;
 }> {}
@@ -49,7 +49,7 @@ export type VaultService = {
   ) => Effect.Effect<void, VaultError>;
 };
 
-export const VaultService = Context.GenericTag<VaultService>("VaultService");
+export const VaultService = Context.GenericTag<VaultService>('VaultService');
 
 // ============================================================================
 // Local Filesystem Implementation
@@ -69,7 +69,7 @@ const createLocalVaultService = (initialPath: string): VaultService => {
         try: async () => {
           const stats = await fs.stat(newPath);
           if (!stats.isDirectory()) {
-            throw new Error("Path is not a directory");
+            throw new Error('Path is not a directory');
           }
           vaultPath = newPath;
         },
@@ -84,13 +84,13 @@ const createLocalVaultService = (initialPath: string): VaultService => {
       Effect.tryPromise({
         try: async () => {
           const fullPath = resolvePath(relativePath);
-          return await fs.readFile(fullPath, "utf-8");
+          return await fs.readFile(fullPath, 'utf-8');
         },
         catch: (error) => {
           if (
             error instanceof Error &&
-            "code" in error &&
-            error.code === "ENOENT"
+            'code' in error &&
+            error.code === 'ENOENT'
           ) {
             return new VaultFileNotFoundError({
               filePath: relativePath,
@@ -109,7 +109,7 @@ const createLocalVaultService = (initialPath: string): VaultService => {
           const fullPath = resolvePath(relativePath);
           const dir = path.dirname(fullPath);
           await fs.mkdir(dir, { recursive: true });
-          await fs.writeFile(fullPath, content, "utf-8");
+          await fs.writeFile(fullPath, content, 'utf-8');
         },
         catch: (error) =>
           new VaultError({

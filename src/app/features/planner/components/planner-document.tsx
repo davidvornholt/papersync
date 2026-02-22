@@ -6,37 +6,37 @@ import {
   StyleSheet,
   Text,
   View,
-} from "@react-pdf/renderer";
-import type React from "react";
-import type { Subject, WeekId } from "@/app/shared/types";
+} from '@react-pdf/renderer';
+import type React from 'react';
+import type { Subject, WeekId } from '@/app/shared/types';
 
 // ============================================================================
 // Font Registration
 // ============================================================================
 
 Font.register({
-  family: "Roboto",
-  src: "https://cdnjs.cloudflare.com/ajax/libs/ink/3.1.10/fonts/Roboto/roboto-regular-webfont.ttf",
+  family: 'Roboto',
+  src: 'https://cdnjs.cloudflare.com/ajax/libs/ink/3.1.10/fonts/Roboto/roboto-regular-webfont.ttf',
   fontWeight: 400,
 });
 
 Font.register({
-  family: "Roboto",
-  src: "https://cdnjs.cloudflare.com/ajax/libs/ink/3.1.10/fonts/Roboto/roboto-medium-webfont.ttf",
+  family: 'Roboto',
+  src: 'https://cdnjs.cloudflare.com/ajax/libs/ink/3.1.10/fonts/Roboto/roboto-medium-webfont.ttf',
   fontWeight: 500,
 });
 
 Font.register({
-  family: "Roboto",
-  src: "https://cdnjs.cloudflare.com/ajax/libs/ink/3.1.10/fonts/Roboto/roboto-bold-webfont.ttf",
+  family: 'Roboto',
+  src: 'https://cdnjs.cloudflare.com/ajax/libs/ink/3.1.10/fonts/Roboto/roboto-bold-webfont.ttf',
   fontWeight: 700,
 });
 
 Font.register({
-  family: "Roboto",
-  src: "https://cdnjs.cloudflare.com/ajax/libs/ink/3.1.10/fonts/Roboto/roboto-italic-webfont.ttf",
+  family: 'Roboto',
+  src: 'https://cdnjs.cloudflare.com/ajax/libs/ink/3.1.10/fonts/Roboto/roboto-italic-webfont.ttf',
   fontWeight: 400,
-  fontStyle: "italic",
+  fontStyle: 'italic',
 });
 
 Font.registerHyphenationCallback((word) => [word]);
@@ -46,12 +46,12 @@ Font.registerHyphenationCallback((word) => [word]);
 // ============================================================================
 
 const colors = {
-  black: "#000000",
-  darkGray: "#444444",
-  mediumGray: "#888888",
-  lightGray: "#BBBBBB",
-  veryLightGray: "#DDDDDD",
-  white: "#FFFFFF",
+  black: '#000000',
+  darkGray: '#444444',
+  mediumGray: '#888888',
+  lightGray: '#BBBBBB',
+  veryLightGray: '#DDDDDD',
+  white: '#FFFFFF',
 } as const;
 
 // ============================================================================
@@ -82,20 +82,20 @@ const LAYOUT = {
 const styles = StyleSheet.create({
   page: {
     padding: LAYOUT.pagePadding,
-    fontFamily: "Roboto",
+    fontFamily: 'Roboto',
     fontSize: 9,
     color: colors.black,
     backgroundColor: colors.white,
   },
   pageContent: {
     flex: 1,
-    flexDirection: "column",
+    flexDirection: 'column',
   },
   // Header - compact
   header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     height: LAYOUT.headerHeight,
     marginBottom: LAYOUT.headerMargin,
     paddingBottom: 4,
@@ -103,8 +103,8 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.darkGray,
   },
   headerLeft: {
-    flexDirection: "row",
-    alignItems: "baseline",
+    flexDirection: 'row',
+    alignItems: 'baseline',
     gap: 8,
   },
   appName: {
@@ -138,8 +138,8 @@ const styles = StyleSheet.create({
   },
   // Day header - cleaner design with left border accent
   dayHeader: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: 3,
     paddingLeft: 5,
     borderLeftWidth: 2,
@@ -149,7 +149,7 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: 700,
     color: colors.black,
-    textTransform: "uppercase",
+    textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   dayDate: {
@@ -172,8 +172,8 @@ const styles = StyleSheet.create({
     marginBottom: 1,
   },
   bulletRow: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     height: LAYOUT.lineHeight,
   },
   bullet: {
@@ -191,14 +191,14 @@ const styles = StyleSheet.create({
   // Empty day
   emptyDay: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: 'center',
+    alignItems: 'center',
     paddingVertical: 6,
   },
   emptyDayText: {
     fontSize: 8,
     color: colors.lightGray,
-    fontStyle: "italic",
+    fontStyle: 'italic',
   },
   // Notes section
   notesSection: {
@@ -206,8 +206,8 @@ const styles = StyleSheet.create({
     paddingBottom: 3,
   },
   notesHeader: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: 3,
     paddingLeft: 5,
     borderLeftWidth: 2,
@@ -217,7 +217,7 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: 700,
     color: colors.black,
-    textTransform: "uppercase",
+    textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   notesContent: {
@@ -236,7 +236,7 @@ type TimetableSlot = {
 };
 
 type TimetableDay = {
-  readonly day: "monday" | "tuesday" | "wednesday" | "thursday" | "friday";
+  readonly day: 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday';
   readonly slots: readonly TimetableSlot[];
 };
 
@@ -255,7 +255,7 @@ type DayInfo = {
   readonly name: string;
   readonly shortName: string;
   readonly date: Date;
-  readonly dayKey: TimetableDay["day"];
+  readonly dayKey: TimetableDay['day'];
 };
 
 type DayData = {
@@ -272,13 +272,13 @@ type DayData = {
 const WEEKDAYS: Array<{
   name: string;
   shortName: string;
-  key: TimetableDay["day"];
+  key: TimetableDay['day'];
 }> = [
-  { name: "Monday", shortName: "Mon", key: "monday" },
-  { name: "Tuesday", shortName: "Tue", key: "tuesday" },
-  { name: "Wednesday", shortName: "Wed", key: "wednesday" },
-  { name: "Thursday", shortName: "Thu", key: "thursday" },
-  { name: "Friday", shortName: "Fri", key: "friday" },
+  { name: 'Monday', shortName: 'Mon', key: 'monday' },
+  { name: 'Tuesday', shortName: 'Tue', key: 'tuesday' },
+  { name: 'Wednesday', shortName: 'Wed', key: 'wednesday' },
+  { name: 'Thursday', shortName: 'Thu', key: 'thursday' },
+  { name: 'Friday', shortName: 'Fri', key: 'friday' },
 ];
 
 const getDaysOfWeek = (startDate: Date): readonly DayInfo[] => {
@@ -295,7 +295,7 @@ const getDaysOfWeek = (startDate: Date): readonly DayInfo[] => {
 };
 
 const formatDate = (date: Date): string =>
-  date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 
 const formatCompactDateRange = (start: Date): string => {
   const friday = new Date(start);
@@ -304,7 +304,7 @@ const formatCompactDateRange = (start: Date): string => {
 };
 
 const getSubjectsForDay = (
-  dayKey: TimetableDay["day"],
+  dayKey: TimetableDay['day'],
   timetable: readonly TimetableDay[],
   subjects: readonly Subject[],
 ): readonly Subject[] => {
@@ -513,7 +513,7 @@ export const PlannerDocument = ({
   qrDataUrl,
 }: PlannerProps): React.ReactElement => {
   const days = getDaysOfWeek(dateRange.start);
-  const weekNumber = weekId.replace(/^\d{4}-W/, "W");
+  const weekNumber = weekId.replace(/^\d{4}-W/, 'W');
   const dateRangeStr = formatCompactDateRange(dateRange.start);
 
   // Split days: Page 1 = Mon, Tue, Wed | Page 2 = Thu, Fri + Notes

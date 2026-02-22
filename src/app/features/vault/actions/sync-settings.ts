@@ -1,8 +1,8 @@
-"use server";
+'use server';
 
-import { Effect } from "effect";
-import type { SubjectsConfig } from "@/app/shared/types";
-import type { TimetableConfig } from "../services/config";
+import { Effect } from 'effect';
+import type { SubjectsConfig } from '@/app/shared/types';
+import type { TimetableConfig } from '../services/config';
 import {
   getSubjectsPath,
   getTimetablePath,
@@ -10,17 +10,17 @@ import {
   readTimetable,
   writeSubjects,
   writeTimetable,
-} from "../services/config";
-import { makeLocalVaultLayer } from "../services/filesystem";
-import { GitHubService, GitHubServiceLive } from "../services/github";
+} from '../services/config';
+import { makeLocalVaultLayer } from '../services/filesystem';
+import { GitHubService, GitHubServiceLive } from '../services/github';
 import {
   GitHubSyncError,
-  SyncSettingsValidationError,
   type LoadSettingsResult,
   type SettingsToSync,
   type SyncSettingsResult,
+  SyncSettingsValidationError,
   type VaultMethod,
-} from "./sync-settings-types";
+} from './sync-settings-types';
 
 /**
  * Server Actions for Settings Sync
@@ -35,7 +35,7 @@ export type {
   SettingsToSync,
   SyncSettingsResult,
   VaultMethod,
-} from "./sync-settings-types";
+} from './sync-settings-types';
 
 // ============================================================================
 // Merge Helpers
@@ -136,7 +136,7 @@ const getFileShaEffect = (
         {
           headers: {
             Authorization: `Bearer ${token}`,
-            Accept: "application/vnd.github.v3+json",
+            Accept: 'application/vnd.github.v3+json',
           },
         },
       );
@@ -157,7 +157,7 @@ const syncToLocalVaultEffect = (
     if (!vaultPath) {
       return yield* Effect.fail(
         new SyncSettingsValidationError({
-          message: "Vault path not configured",
+          message: 'Vault path not configured',
         }),
       );
     }
@@ -243,7 +243,7 @@ const syncToGitHubEffect = (
       repo,
       subjectsPath,
       JSON.stringify(mergedSubjects, null, 2),
-      "Update subjects configuration",
+      'Update subjects configuration',
       subjectsSha,
     );
 
@@ -254,14 +254,14 @@ const syncToGitHubEffect = (
       repo,
       timetablePath,
       JSON.stringify(mergedTimetable, null, 2),
-      "Update timetable configuration",
+      'Update timetable configuration',
       timetableSha,
     );
 
     return [subjectsPath, timetablePath] as const;
   }).pipe(
     Effect.provide(GitHubServiceLive),
-    Effect.catchTag("GitHubAPIError", (error) =>
+    Effect.catchTag('GitHubAPIError', (error) =>
       Effect.fail(
         new GitHubSyncError({ message: error.message, cause: error }),
       ),
@@ -278,7 +278,7 @@ const loadFromLocalVaultEffect = (
     if (!vaultPath) {
       return yield* Effect.fail(
         new SyncSettingsValidationError({
-          message: "Vault path not configured",
+          message: 'Vault path not configured',
         }),
       );
     }
@@ -325,7 +325,7 @@ const loadFromGitHubEffect = (
     return { subjects, timetable };
   }).pipe(
     Effect.provide(GitHubServiceLive),
-    Effect.catchTag("GitHubAPIError", (error) =>
+    Effect.catchTag('GitHubAPIError', (error) =>
       Effect.fail(
         new GitHubSyncError({ message: error.message, cause: error }),
       ),
@@ -345,9 +345,9 @@ export const syncSettingsToVault = async (
     githubRepo?: string;
   },
 ): Promise<SyncSettingsResult> => {
-  if (method === "local") {
+  if (method === 'local') {
     if (!options.localPath) {
-      return { success: false, error: "Vault path not configured" };
+      return { success: false, error: 'Vault path not configured' };
     }
 
     return Effect.runPromise(
@@ -360,17 +360,17 @@ export const syncSettingsToVault = async (
     );
   }
 
-  if (method === "github") {
+  if (method === 'github') {
     if (!options.githubToken) {
-      return { success: false, error: "GitHub not connected" };
+      return { success: false, error: 'GitHub not connected' };
     }
     if (!options.githubRepo) {
-      return { success: false, error: "GitHub repository not selected" };
+      return { success: false, error: 'GitHub repository not selected' };
     }
 
-    const [owner, repo] = options.githubRepo.split("/");
+    const [owner, repo] = options.githubRepo.split('/');
     if (!owner || !repo) {
-      return { success: false, error: "Invalid repository name" };
+      return { success: false, error: 'Invalid repository name' };
     }
 
     return Effect.runPromise(
@@ -383,7 +383,7 @@ export const syncSettingsToVault = async (
     );
   }
 
-  return { success: false, error: "Invalid vault method" };
+  return { success: false, error: 'Invalid vault method' };
 };
 
 // ============================================================================
@@ -398,9 +398,9 @@ export const loadSettingsFromVault = async (
     githubRepo?: string;
   },
 ): Promise<LoadSettingsResult> => {
-  if (method === "local") {
+  if (method === 'local') {
     if (!options.localPath) {
-      return { success: false, error: "Vault path not configured" };
+      return { success: false, error: 'Vault path not configured' };
     }
 
     return Effect.runPromise(
@@ -413,17 +413,17 @@ export const loadSettingsFromVault = async (
     );
   }
 
-  if (method === "github") {
+  if (method === 'github') {
     if (!options.githubToken) {
-      return { success: false, error: "GitHub not connected" };
+      return { success: false, error: 'GitHub not connected' };
     }
     if (!options.githubRepo) {
-      return { success: false, error: "GitHub repository not selected" };
+      return { success: false, error: 'GitHub repository not selected' };
     }
 
-    const [owner, repo] = options.githubRepo.split("/");
+    const [owner, repo] = options.githubRepo.split('/');
     if (!owner || !repo) {
-      return { success: false, error: "Invalid repository name" };
+      return { success: false, error: 'Invalid repository name' };
     }
 
     return Effect.runPromise(
@@ -436,5 +436,5 @@ export const loadSettingsFromVault = async (
     );
   }
 
-  return { success: false, error: "Invalid vault method" };
+  return { success: false, error: 'Invalid vault method' };
 };

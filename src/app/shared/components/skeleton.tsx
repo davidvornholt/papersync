@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { motion } from "motion/react";
+import { motion } from 'motion/react';
 
 // ============================================================================
 // Skeleton Base
@@ -11,7 +11,7 @@ type SkeletonProps = {
 };
 
 export const Skeleton = ({
-  className = "",
+  className = '',
 }: SkeletonProps): React.ReactElement => (
   <motion.div
     className={`bg-border rounded ${className}`}
@@ -21,7 +21,7 @@ export const Skeleton = ({
     transition={{
       duration: 1.5,
       repeat: Number.POSITIVE_INFINITY,
-      ease: "easeInOut",
+      ease: 'easeInOut',
     }}
   />
 );
@@ -37,13 +37,13 @@ type TextSkeletonProps = {
 
 export const TextSkeleton = ({
   lines = 3,
-  className = "",
+  className = '',
 }: TextSkeletonProps): React.ReactElement => (
   <div className={`space-y-2 ${className}`}>
     {Array.from({ length: lines }).map((_, i) => (
       <Skeleton
         key={`text-line-${Math.random().toString(36).slice(2)}`}
-        className={`h-4 ${i === lines - 1 ? "w-3/4" : "w-full"}`}
+        className={`h-4 ${i === lines - 1 ? 'w-3/4' : 'w-full'}`}
       />
     ))}
   </div>

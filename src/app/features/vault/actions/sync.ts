@@ -1,7 +1,7 @@
-"use server";
+'use server';
 
-import { Effect } from "effect";
-import type { WeekId } from "@/app/shared/types";
+import { Effect } from 'effect';
+import type { WeekId } from '@/app/shared/types';
 import {
   generateOverviewContent,
   getOverviewPath,
@@ -10,21 +10,21 @@ import {
   readWeeklyNote,
   serializeWeeklyNoteToMarkdown,
   writeWeeklyNote,
-} from "../services/config";
-import { makeLocalVaultLayer, VaultService } from "../services/filesystem";
-import { GitHubService, GitHubServiceLive } from "../services/github";
+} from '../services/config';
+import { makeLocalVaultLayer, VaultService } from '../services/filesystem';
+import { GitHubService, GitHubServiceLive } from '../services/github';
 import {
   convertEntriesToWeeklyNote,
   type ExtractedEntry,
   getCurrentWeekId,
-} from "./sync-helpers";
+} from './sync-helpers';
 import {
   GitHubFileError,
   GitHubFileNotFound,
-  SyncValidationError,
   type SyncOptions,
   type SyncResult,
-} from "./sync-types";
+  SyncValidationError,
+} from './sync-types';
 
 /**
  * Server Actions for Vault Sync
@@ -34,7 +34,12 @@ import {
  */
 
 // Re-export types from the types file for convenience
-export type { ExtractedEntry, SyncOptions, SyncResult, VaultMethod } from "./sync-types";
+export type {
+  ExtractedEntry,
+  SyncOptions,
+  SyncResult,
+  VaultMethod,
+} from './sync-types';
 
 // ============================================================================
 // Internal Types
@@ -63,7 +68,7 @@ const fetchGitHubFileEffect = (
       const response = await fetch(url, {
         headers: {
           Authorization: `Bearer ${token}`,
-          Accept: "application/vnd.github.v3+json",
+          Accept: 'application/vnd.github.v3+json',
         },
       });
 
@@ -73,9 +78,9 @@ const fetchGitHubFileEffect = (
 
       if (response.status === 404) {
         console.log(
-          "[fetchGitHubFile] File not found (404) - this is OK for new vaults",
+          '[fetchGitHubFile] File not found (404) - this is OK for new vaults',
         );
-        throw { _tag: "not_found", path: filePath };
+        throw { _tag: 'not_found', path: filePath };
       }
 
       if (!response.ok) {
@@ -84,7 +89,7 @@ const fetchGitHubFileEffect = (
           `[fetchGitHubFile] API error: ${response.status} - ${errorText}`,
         );
         throw {
-          _tag: "error",
+          _tag: 'error',
           status: response.status,
           message: `GitHub API error: ${response.status} ${response.statusText}`,
         };
@@ -96,36 +101,36 @@ const fetchGitHubFileEffect = (
           `[fetchGitHubFile] File found, content length: ${data.content.length}, SHA: ${data.sha}`,
         );
         return {
-          content: Buffer.from(data.content, "base64").toString("utf-8"),
+          content: Buffer.from(data.content, 'base64').toString('utf-8'),
           sha: data.sha,
         };
       }
 
       console.error(
-        "[fetchGitHubFile] Invalid response - missing content or sha",
+        '[fetchGitHubFile] Invalid response - missing content or sha',
       );
-      throw { _tag: "error", message: "Invalid response from GitHub API" };
+      throw { _tag: 'error', message: 'Invalid response from GitHub API' };
     },
     catch: (error): GitHubFileError | GitHubFileNotFound => {
-      if (typeof error === "object" && error !== null && "_tag" in error) {
+      if (typeof error === 'object' && error !== null && '_tag' in error) {
         const taggedError = error as {
           _tag: string;
           path?: string;
           message?: string;
           status?: number;
         };
-        if (taggedError._tag === "not_found" && taggedError.path) {
+        if (taggedError._tag === 'not_found' && taggedError.path) {
           return new GitHubFileNotFound({
             path: taggedError.path,
           });
         }
         return new GitHubFileError({
-          message: taggedError.message ?? "Unknown GitHub error",
+          message: taggedError.message ?? 'Unknown GitHub error',
           status: taggedError.status,
         });
       }
       return new GitHubFileError({
-        message: error instanceof Error ? error.message : "Network error",
+        message: error instanceof Error ? error.message : 'Network error',
         cause: error,
       });
     },
@@ -139,13 +144,13 @@ const syncToLocalVaultEffect = (
   Effect.gen(function* () {
     if (entries.length === 0) {
       return yield* Effect.fail(
-        new SyncValidationError({ message: "No entries to sync" }),
+        new SyncValidationError({ message: 'No entries to sync' }),
       );
     }
 
     if (!vaultPath) {
       return yield* Effect.fail(
-        new SyncValidationError({ message: "Vault path not configured" }),
+        new SyncValidationError({ message: 'Vault path not configured' }),
       );
     }
 
@@ -185,7 +190,7 @@ const syncToGitHubEffect = (
   Effect.gen(function* () {
     if (entries.length === 0) {
       return yield* Effect.fail(
-        new SyncValidationError({ message: "No entries to sync" }),
+        new SyncValidationError({ message: 'No entries to sync' }),
       );
     }
 
@@ -202,7 +207,7 @@ const syncToGitHubEffect = (
       notePath,
     ).pipe(
       Effect.map((content) => ({ found: true as const, ...content })),
-      Effect.catchTag("GitHubFileNotFound", () =>
+      Effect.catchTag('GitHubFileNotFound', () =>
         Effect.succeed({
           found: false as const,
           content: null,
@@ -221,7 +226,7 @@ const syncToGitHubEffect = (
           try: () => parseWeeklyNoteMarkdown(fileResult.content, weekId),
           catch: () => {
             console.warn(
-              "[syncToGitHub] Failed to parse existing note, starting fresh",
+              '[syncToGitHub] Failed to parse existing note, starting fresh',
             );
             return null;
           },
@@ -260,7 +265,7 @@ const syncToGitHubEffect = (
       overviewPath,
     ).pipe(
       Effect.map(() => ({ found: true })),
-      Effect.catchTag("GitHubFileNotFound", () =>
+      Effect.catchTag('GitHubFileNotFound', () =>
         Effect.succeed({ found: false }),
       ),
     );
@@ -272,7 +277,7 @@ const syncToGitHubEffect = (
         repo,
         overviewPath,
         generateOverviewContent(),
-        "Create homework overview",
+        'Create homework overview',
         undefined,
       );
     }
@@ -308,27 +313,27 @@ export const syncEntriesToVault = async (
   const effectiveWeekId = options.weekId ?? getCurrentWeekId();
 
   if (entries.length === 0) {
-    return { success: false, error: "No entries to sync" };
+    return { success: false, error: 'No entries to sync' };
   }
 
-  if (options.method === "local") {
+  if (options.method === 'local') {
     if (!options.localPath) {
-      return { success: false, error: "Vault path not configured" };
+      return { success: false, error: 'Vault path not configured' };
     }
     return syncToVault(entries, options.localPath, effectiveWeekId);
   }
 
-  if (options.method === "github") {
+  if (options.method === 'github') {
     if (!options.githubToken) {
-      return { success: false, error: "GitHub not connected" };
+      return { success: false, error: 'GitHub not connected' };
     }
     if (!options.githubRepo) {
-      return { success: false, error: "GitHub repository not selected" };
+      return { success: false, error: 'GitHub repository not selected' };
     }
 
-    const [owner, repo] = options.githubRepo.split("/");
+    const [owner, repo] = options.githubRepo.split('/');
     if (!owner || !repo) {
-      return { success: false, error: "Invalid repository name" };
+      return { success: false, error: 'Invalid repository name' };
     }
 
     return Effect.runPromise(
@@ -347,5 +352,5 @@ export const syncEntriesToVault = async (
     );
   }
 
-  return { success: false, error: "Invalid vault method" };
+  return { success: false, error: 'Invalid vault method' };
 };

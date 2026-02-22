@@ -1,12 +1,12 @@
-import { Data, Effect } from "effect";
-import type { WeekId } from "@/app/shared/types";
+import { Data, Effect } from 'effect';
+import type { WeekId } from '@/app/shared/types';
 
 // ============================================================================
 // Error Types
 // ============================================================================
 
 export class PlannerGenerationError extends Data.TaggedError(
-  "PlannerGenerationError",
+  'PlannerGenerationError',
 )<{
   readonly message: string;
   readonly cause?: unknown;
@@ -24,11 +24,11 @@ export const getWeekId = (date: Date = new Date()): WeekId => {
   const weekNumber = Math.ceil(
     ((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7,
   );
-  return `${d.getFullYear()}-W${weekNumber.toString().padStart(2, "0")}` as WeekId;
+  return `${d.getFullYear()}-W${weekNumber.toString().padStart(2, '0')}` as WeekId;
 };
 
 export const getWeekStartDate = (weekId: WeekId): Date => {
-  const [year, week] = weekId.split("-W").map(Number);
+  const [year, week] = weekId.split('-W').map(Number);
   const jan1 = new Date(year, 0, 1);
   const daysOffset = (week - 1) * 7;
   const dayOfWeek = jan1.getDay();
@@ -64,7 +64,7 @@ export const downloadPlannerPdf = (
 ): Effect.Effect<void, never> =>
   Effect.sync(() => {
     const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
+    const link = document.createElement('a');
     link.href = url;
     link.download = `planner-${weekId}.pdf`;
     document.body.appendChild(link);

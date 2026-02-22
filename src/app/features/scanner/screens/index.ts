@@ -1,1 +1,1 @@
-export { ScanScreen } from "./scan-screen";
+export { ScanScreen } from './scan-screen';

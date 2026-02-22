@@ -57,4 +57,3 @@ const RootLayout = ({ children }: RootLayoutProps): React.ReactElement => {
 };
 
 export default RootLayout;
-

@@ -1,4 +1,4 @@
-import { Data } from "effect";
+import { Data } from 'effect';
 
 /**
  * Types and Error Classes for GitHub OAuth Device Flow
@@ -11,22 +11,22 @@ import { Data } from "effect";
 // Error Types
 // ============================================================================
 
-export class GitHubOAuthError extends Data.TaggedError("GitHubOAuthError")<{
+export class GitHubOAuthError extends Data.TaggedError('GitHubOAuthError')<{
   readonly message: string;
   readonly cause?: unknown;
 }> {}
 
-export class GitHubAPIError extends Data.TaggedError("GitHubAPIError")<{
+export class GitHubAPIError extends Data.TaggedError('GitHubAPIError')<{
   readonly message: string;
   readonly status?: number;
   readonly cause?: unknown;
 }> {}
 
-export class GitHubAuthPending extends Data.TaggedError("GitHubAuthPending")<{
+export class GitHubAuthPending extends Data.TaggedError('GitHubAuthPending')<{
   readonly shouldRetry: true;
 }> {}
 
-export class GitHubSlowDown extends Data.TaggedError("GitHubSlowDown")<{
+export class GitHubSlowDown extends Data.TaggedError('GitHubSlowDown')<{
   readonly shouldRetry: true;
 }> {}
 

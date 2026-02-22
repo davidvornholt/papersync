@@ -1,19 +1,19 @@
-import { Schema } from "@effect/schema";
-import { Data, Effect } from "effect";
-import jsQR from "jsqr";
-import QRCode from "qrcode";
-import type { QRPayload, WeekId } from "@/app/shared/types";
+import { Schema } from '@effect/schema';
+import { Data, Effect } from 'effect';
+import jsQR from 'jsqr';
+import QRCode from 'qrcode';
+import type { QRPayload, WeekId } from '@/app/shared/types';
 
 // ============================================================================
 // Error Types
 // ============================================================================
 
-export class QREncodeError extends Data.TaggedError("QREncodeError")<{
+export class QREncodeError extends Data.TaggedError('QREncodeError')<{
   readonly message: string;
   readonly cause?: unknown;
 }> {}
 
-export class QRDecodeError extends Data.TaggedError("QRDecodeError")<{
+export class QRDecodeError extends Data.TaggedError('QRDecodeError')<{
   readonly message: string;
   readonly cause?: unknown;
 }> {}
@@ -59,12 +59,12 @@ export const encodeQRPayload = (
 
       const jsonString = JSON.stringify(payload);
       const dataUrl = await QRCode.toDataURL(jsonString, {
-        errorCorrectionLevel: "M",
+        errorCorrectionLevel: 'M',
         margin: 1,
         width: 120,
         color: {
-          dark: "#000000",
-          light: "#FFFFFF",
+          dark: '#000000',
+          light: '#FFFFFF',
         },
       });
 
@@ -72,7 +72,7 @@ export const encodeQRPayload = (
     },
     catch: (error) =>
       new QREncodeError({
-        message: "Failed to encode QR payload",
+        message: 'Failed to encode QR payload',
         cause: error,
       }),
   });
@@ -89,20 +89,20 @@ export const decodeQRFromImageData = (
 
     if (!code) {
       return yield* Effect.fail(
-        new QRDecodeError({ message: "No QR code found in image" }),
+        new QRDecodeError({ message: 'No QR code found in image' }),
       );
     }
 
     const parsed = yield* Effect.try({
       try: () => JSON.parse(code.data),
       catch: () =>
-        new QRDecodeError({ message: "QR code does not contain valid JSON" }),
+        new QRDecodeError({ message: 'QR code does not contain valid JSON' }),
     });
 
     const decoded = yield* Schema.decodeUnknown(QRPayloadSchema)(parsed).pipe(
       Effect.mapError(
         () =>
-          new QRDecodeError({ message: "QR payload schema validation failed" }),
+          new QRDecodeError({ message: 'QR payload schema validation failed' }),
       ),
     );
 
@@ -110,7 +110,7 @@ export const decodeQRFromImageData = (
     const expectedChecksum = generateChecksum(decoded.week);
     if (decoded.checksum !== expectedChecksum) {
       return yield* Effect.fail(
-        new QRDecodeError({ message: "QR payload checksum mismatch" }),
+        new QRDecodeError({ message: 'QR payload checksum mismatch' }),
       );
     }
 
@@ -125,10 +125,10 @@ export const decodeQRFromCanvas = (
   canvas: HTMLCanvasElement,
 ): Effect.Effect<QRPayload, QRDecodeError> =>
   Effect.gen(function* () {
-    const ctx = canvas.getContext("2d");
+    const ctx = canvas.getContext('2d');
     if (!ctx) {
       return yield* Effect.fail(
-        new QRDecodeError({ message: "Failed to get canvas context" }),
+        new QRDecodeError({ message: 'Failed to get canvas context' }),
       );
     }
 

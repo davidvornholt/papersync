@@ -1,16 +1,16 @@
-import { Context, Data, Effect, Layer } from "effect";
-import { Octokit } from "octokit";
+import { Context, Data, Effect, Layer } from 'effect';
+import { Octokit } from 'octokit';
 
 // ============================================================================
 // Error Types
 // ============================================================================
 
-export class GitHubAuthError extends Data.TaggedError("GitHubAuthError")<{
+export class GitHubAuthError extends Data.TaggedError('GitHubAuthError')<{
   readonly message: string;
   readonly cause?: unknown;
 }> {}
 
-export class GitHubAPIError extends Data.TaggedError("GitHubAPIError")<{
+export class GitHubAPIError extends Data.TaggedError('GitHubAPIError')<{
   readonly message: string;
   readonly status?: number;
   readonly cause?: unknown;
@@ -75,28 +75,28 @@ export type GitHubService = {
   >;
 };
 
-export const GitHubService = Context.GenericTag<GitHubService>("GitHubService");
+export const GitHubService = Context.GenericTag<GitHubService>('GitHubService');
 
 // ============================================================================
 // Implementation
 // ============================================================================
 
-const GITHUB_DEVICE_CODE_URL = "https://github.com/login/device/code";
-const GITHUB_ACCESS_TOKEN_URL = "https://github.com/login/oauth/access_token";
+const GITHUB_DEVICE_CODE_URL = 'https://github.com/login/device/code';
+const GITHUB_ACCESS_TOKEN_URL = 'https://github.com/login/oauth/access_token';
 
 const createGitHubService = (): GitHubService => ({
   initiateDeviceFlow: (clientId: string) =>
     Effect.tryPromise({
       try: async () => {
         const response = await fetch(GITHUB_DEVICE_CODE_URL, {
-          method: "POST",
+          method: 'POST',
           headers: {
-            Accept: "application/json",
-            "Content-Type": "application/json",
+            Accept: 'application/json',
+            'Content-Type': 'application/json',
           },
           body: JSON.stringify({
             client_id: clientId,
-            scope: "repo",
+            scope: 'repo',
           }),
         });
 
@@ -115,7 +115,7 @@ const createGitHubService = (): GitHubService => ({
       },
       catch: (error) =>
         new GitHubAuthError({
-          message: "Failed to initiate device flow",
+          message: 'Failed to initiate device flow',
           cause: error,
         }),
     }),
@@ -125,26 +125,26 @@ const createGitHubService = (): GitHubService => ({
       const poll = async (): Promise<void> => {
         try {
           const response = await fetch(GITHUB_ACCESS_TOKEN_URL, {
-            method: "POST",
+            method: 'POST',
             headers: {
-              Accept: "application/json",
-              "Content-Type": "application/json",
+              Accept: 'application/json',
+              'Content-Type': 'application/json',
             },
             body: JSON.stringify({
               client_id: clientId,
               device_code: deviceCode,
-              grant_type: "urn:ietf:params:oauth:grant-type:device_code",
+              grant_type: 'urn:ietf:params:oauth:grant-type:device_code',
             }),
           });
 
           const data = await response.json();
 
-          if (data.error === "authorization_pending") {
+          if (data.error === 'authorization_pending') {
             setTimeout(() => void poll(), interval * 1000);
             return;
           }
 
-          if (data.error === "slow_down") {
+          if (data.error === 'slow_down') {
             setTimeout(() => void poll(), (interval + 5) * 1000);
             return;
           }
@@ -171,7 +171,7 @@ const createGitHubService = (): GitHubService => ({
           resume(
             Effect.fail(
               new GitHubAuthError({
-                message: "Failed to poll for token",
+                message: 'Failed to poll for token',
                 cause: error,
               }),
             ),
@@ -202,14 +202,14 @@ const createGitHubService = (): GitHubService => ({
           });
 
           const data = response.data;
-          if ("content" in data && typeof data.content === "string") {
-            return Buffer.from(data.content, "base64").toString("utf-8");
+          if ('content' in data && typeof data.content === 'string') {
+            return Buffer.from(data.content, 'base64').toString('utf-8');
           }
           return null;
         } catch (error) {
           if (
             error instanceof Error &&
-            "status" in error &&
+            'status' in error &&
             error.status === 404
           ) {
             return null;
@@ -242,7 +242,7 @@ const createGitHubService = (): GitHubService => ({
           repo,
           path,
           message,
-          content: Buffer.from(content).toString("base64"),
+          content: Buffer.from(content).toString('base64'),
           sha,
         });
       },
@@ -259,7 +259,7 @@ const createGitHubService = (): GitHubService => ({
         const octokit = new Octokit({ auth: token });
 
         const response = await octokit.rest.repos.listForAuthenticatedUser({
-          sort: "updated",
+          sort: 'updated',
           per_page: 100,
         });
 
@@ -271,7 +271,7 @@ const createGitHubService = (): GitHubService => ({
       },
       catch: (error) =>
         new GitHubAPIError({
-          message: "Failed to list repositories",
+          message: 'Failed to list repositories',
           cause: error,
         }),
     }),

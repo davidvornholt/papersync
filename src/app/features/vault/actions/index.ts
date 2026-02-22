@@ -4,13 +4,13 @@ export {
   type SyncResult,
   syncEntriesToVault,
   syncToVault,
-} from "./sync";
+} from './sync';
 export {
   convertEntriesToWeeklyNote,
   getCurrentWeekId,
   getDayDate,
   getWeekDateRange,
-} from "./sync-helpers";
+} from './sync-helpers';
 export {
   type LoadSettingsResult,
   loadSettingsFromVault,
@@ -18,4 +18,4 @@ export {
   type SyncSettingsResult,
   syncSettingsToVault,
   type VaultMethod,
-} from "./sync-settings";
+} from './sync-settings';

@@ -14,14 +14,14 @@ export {
   writeSubjects,
   writeTimetable,
   writeWeeklyNote,
-} from "./config";
+} from './config';
 export {
   makeLocalVaultLayer,
   VaultError,
   VaultFileNotFoundError,
   VaultNotFoundError,
   VaultService,
-} from "./filesystem";
+} from './filesystem';
 export {
   type DeviceCodeResponse,
   GitHubAPIError,
@@ -29,4 +29,4 @@ export {
   GitHubService,
   GitHubServiceLive,
   type OAuthTokenResponse,
-} from "./github";
+} from './github';

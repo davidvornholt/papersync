@@ -1,11 +1,11 @@
-import Bonjour, { type Service } from "bonjour-service";
-import { Context, Data, Effect, Layer } from "effect";
+import Bonjour, { type Service } from 'bonjour-service';
+import { Context, Data, Effect, Layer } from 'effect';
 
 // ============================================================================
 // Types
 // ============================================================================
 
-export type ScannerProtocol = "http" | "https";
+export type ScannerProtocol = 'http' | 'https';
 
 export type DiscoveredScanner = {
   readonly id: string;
@@ -28,7 +28,7 @@ export type DiscoveredScanner = {
 // ============================================================================
 
 export class ScannerDiscoveryError extends Data.TaggedError(
-  "ScannerDiscoveryError",
+  'ScannerDiscoveryError',
 )<{
   readonly message: string;
   readonly cause?: unknown;
@@ -45,7 +45,7 @@ export type ScannerDiscoveryService = {
 };
 
 export const ScannerDiscoveryService =
-  Context.GenericTag<ScannerDiscoveryService>("ScannerDiscoveryService");
+  Context.GenericTag<ScannerDiscoveryService>('ScannerDiscoveryService');
 
 // ============================================================================
 // mDNS Discovery Implementation
@@ -53,7 +53,7 @@ export const ScannerDiscoveryService =
 
 const parseTxtRecord = (
   txt: Record<string, unknown>,
-): Partial<DiscoveredScanner["capabilities"]> & {
+): Partial<DiscoveredScanner['capabilities']> & {
   model?: string;
   manufacturer?: string;
   uuid?: string;
@@ -71,35 +71,35 @@ const parseTxtRecord = (
   const documentFormats: string[] = [];
 
   const cs = txt.cs || txt.CS;
-  if (typeof cs === "string") {
+  if (typeof cs === 'string') {
     colorModes.push(
       ...cs
-        .split(",")
+        .split(',')
         .map((s) => s.trim())
         .filter(Boolean),
     );
   }
 
   const pdl = txt.pdl || txt.PDL;
-  if (typeof pdl === "string") {
+  if (typeof pdl === 'string') {
     documentFormats.push(
       ...pdl
-        .split(",")
+        .split(',')
         .map((s) => s.trim())
         .filter(Boolean),
     );
   }
 
   return {
-    model: typeof txt.ty === "string" ? txt.ty : undefined,
-    manufacturer: typeof txt.mfg === "string" ? txt.mfg : undefined,
+    model: typeof txt.ty === 'string' ? txt.ty : undefined,
+    manufacturer: typeof txt.mfg === 'string' ? txt.mfg : undefined,
     uuid:
-      typeof txt.UUID === "string"
+      typeof txt.UUID === 'string'
         ? txt.UUID
-        : typeof txt.uuid === "string"
+        : typeof txt.uuid === 'string'
           ? txt.uuid
           : undefined,
-    adminUrl: typeof txt.adminurl === "string" ? txt.adminurl : undefined,
+    adminUrl: typeof txt.adminurl === 'string' ? txt.adminurl : undefined,
     colorModes,
     documentFormats,
   };
@@ -117,8 +117,8 @@ const serviceToScanner = (
 
   return {
     id,
-    name: service.name || "Unknown Scanner",
-    host: service.host || service.addresses?.[0] || "unknown",
+    name: service.name || 'Unknown Scanner',
+    host: service.host || service.addresses?.[0] || 'unknown',
     port: service.port,
     protocol,
     model: parsed.model,
@@ -129,11 +129,11 @@ const serviceToScanner = (
       colorModes:
         parsed.colorModes && parsed.colorModes.length > 0
           ? parsed.colorModes
-          : ["color", "grayscale"],
+          : ['color', 'grayscale'],
       documentFormats:
         parsed.documentFormats && parsed.documentFormats.length > 0
           ? parsed.documentFormats
-          : ["application/pdf", "image/jpeg"],
+          : ['application/pdf', 'image/jpeg'],
     },
   };
 };
@@ -153,7 +153,7 @@ const createMdnsDiscoveryService = (): ScannerDiscoveryService => ({
           const existing = scanners.get(dedupeKey);
 
           // Prefer HTTPS over HTTP when same scanner is found via both
-          if (!existing || scanner.protocol === "https") {
+          if (!existing || scanner.protocol === 'https') {
             scanners.set(dedupeKey, scanner);
           }
         };
@@ -185,17 +185,17 @@ const createMdnsDiscoveryService = (): ScannerDiscoveryService => ({
           };
 
           // Browse for HTTP scanners (_uscan._tcp)
-          const httpBrowser = bonjour.find({ type: "uscan" });
-          httpBrowser.on("up", (service: Service) => {
-            const scanner = serviceToScanner(service, "http");
+          const httpBrowser = bonjour.find({ type: 'uscan' });
+          httpBrowser.on('up', (service: Service) => {
+            const scanner = serviceToScanner(service, 'http');
             addScanner(scanner);
             scheduleEarlyFinish();
           });
 
           // Browse for HTTPS scanners (_uscans._tcp)
-          const httpsBrowser = bonjour.find({ type: "uscans" });
-          httpsBrowser.on("up", (service: Service) => {
-            const scanner = serviceToScanner(service, "https");
+          const httpsBrowser = bonjour.find({ type: 'uscans' });
+          httpsBrowser.on('up', (service: Service) => {
+            const scanner = serviceToScanner(service, 'https');
             addScanner(scanner);
             scheduleEarlyFinish();
           });
@@ -218,7 +218,7 @@ const createMdnsDiscoveryService = (): ScannerDiscoveryService => ({
       },
       catch: (error) =>
         new ScannerDiscoveryError({
-          message: "Failed to discover scanners via mDNS",
+          message: 'Failed to discover scanners via mDNS',
           cause: error,
         }),
     }),

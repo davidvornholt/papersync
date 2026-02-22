@@ -3,5 +3,5 @@ export {
   type DiscoveryResult,
   discoverScanners,
   getScannerCapabilities,
-} from "./discover";
-export { type ScanFromDeviceResult, scanFromDevice } from "./scan-from-device";
+} from './discover';
+export { type ScanFromDeviceResult, scanFromDevice } from './scan-from-device';

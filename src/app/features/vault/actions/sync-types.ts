@@ -1,5 +1,5 @@
-import { Data } from "effect";
-import type { WeekId } from "@/app/shared/types";
+import { Data } from 'effect';
+import type { WeekId } from '@/app/shared/types';
 
 /**
  * Types and Error Classes for Vault Sync
@@ -9,25 +9,25 @@ import type { WeekId } from "@/app/shared/types";
  */
 
 // Re-export ExtractedEntry type for backward compatibility
-export type { ExtractedEntry } from "./sync-helpers";
+export type { ExtractedEntry } from './sync-helpers';
 
 // ============================================================================
 // Error Types
 // ============================================================================
 
 export class SyncValidationError extends Data.TaggedError(
-  "SyncValidationError",
+  'SyncValidationError',
 )<{
   readonly message: string;
 }> {}
 
-export class GitHubFileError extends Data.TaggedError("GitHubFileError")<{
+export class GitHubFileError extends Data.TaggedError('GitHubFileError')<{
   readonly message: string;
   readonly status?: number;
   readonly cause?: unknown;
 }> {}
 
-export class GitHubFileNotFound extends Data.TaggedError("GitHubFileNotFound")<{
+export class GitHubFileNotFound extends Data.TaggedError('GitHubFileNotFound')<{
   readonly path: string;
 }> {}
 
@@ -35,7 +35,7 @@ export class GitHubFileNotFound extends Data.TaggedError("GitHubFileNotFound")<{
 // Types
 // ============================================================================
 
-export type VaultMethod = "local" | "github";
+export type VaultMethod = 'local' | 'github';
 
 export type SyncOptions = {
   readonly method: VaultMethod;

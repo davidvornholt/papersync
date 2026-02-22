@@ -1,11 +1,11 @@
-import { Effect } from "effect";
+import { Effect } from 'effect';
 import type {
   DayEntry,
   DayRecord,
   GeneralTask,
   OCRResponse,
   WeeklyNote,
-} from "@/app/shared/types";
+} from '@/app/shared/types';
 
 // ============================================================================
 // Diff Processing - Merge OCR results into weekly note
@@ -18,10 +18,10 @@ export const mergeOCRIntoWeeklyNote = (
   Effect.sync(() => {
     // Separate general tasks from subject entries
     const generalTaskEntries = ocrResponse.entries.filter(
-      (e) => e.subject === "General Tasks",
+      (e) => e.subject === 'General Tasks',
     );
     const subjectEntries = ocrResponse.entries.filter(
-      (e) => e.subject !== "General Tasks",
+      (e) => e.subject !== 'General Tasks',
     );
 
     // Process day-specific subject entries
@@ -45,7 +45,7 @@ export const mergeOCRIntoWeeklyNote = (
 
     return {
       ...existingNote,
-      syncedAt: new Date().toISOString() as WeeklyNote["syncedAt"],
+      syncedAt: new Date().toISOString() as WeeklyNote['syncedAt'],
       days: updatedDays,
       generalTasks: updatedGeneralTasks,
     };
@@ -53,7 +53,7 @@ export const mergeOCRIntoWeeklyNote = (
 
 const processDayEntries = (
   day: DayRecord,
-  ocrEntries: readonly OCRResponse["entries"][number][],
+  ocrEntries: readonly OCRResponse['entries'][number][],
 ): DayRecord => {
   const updatedEntries: DayEntry[] = [...day.entries];
 
@@ -69,7 +69,7 @@ const processDayEntries = (
 
 const processSubjectEntry = (
   entries: DayEntry[],
-  ocrEntry: OCRResponse["entries"][number],
+  ocrEntry: OCRResponse['entries'][number],
 ): void => {
   const existingSubjectIndex = entries.findIndex(
     (e) => e.subject.toLowerCase() === ocrEntry.subject.toLowerCase(),
@@ -92,7 +92,7 @@ const processSubjectEntry = (
   const existingSubject = entries[existingSubjectIndex];
 
   switch (ocrEntry.action) {
-    case "add":
+    case 'add':
       entries[existingSubjectIndex] = {
         ...existingSubject,
         tasks: [
@@ -105,7 +105,7 @@ const processSubjectEntry = (
       };
       break;
 
-    case "modify": {
+    case 'modify': {
       const taskIndex = existingSubject.tasks.findIndex((t) =>
         t.content
           .toLowerCase()
@@ -125,7 +125,7 @@ const processSubjectEntry = (
       break;
     }
 
-    case "complete": {
+    case 'complete': {
       const taskToComplete = existingSubject.tasks.findIndex((t) =>
         t.content
           .toLowerCase()
@@ -149,18 +149,18 @@ const processSubjectEntry = (
 
 const processGeneralTask = (
   generalTasks: GeneralTask[],
-  ocrEntry: OCRResponse["entries"][number],
+  ocrEntry: OCRResponse['entries'][number],
 ): void => {
   switch (ocrEntry.action) {
-    case "add":
+    case 'add':
       generalTasks.push({
         content: ocrEntry.content,
         isCompleted: ocrEntry.isCompleted,
       });
       break;
 
-    case "modify":
-    case "complete": {
+    case 'modify':
+    case 'complete': {
       const index = generalTasks.findIndex((t) =>
         t.content
           .toLowerCase()
@@ -170,7 +170,7 @@ const processGeneralTask = (
         generalTasks[index] = {
           content: ocrEntry.content,
           isCompleted:
-            ocrEntry.action === "complete" ? true : ocrEntry.isCompleted,
+            ocrEntry.action === 'complete' ? true : ocrEntry.isCompleted,
         };
       }
       break;

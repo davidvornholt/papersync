@@ -9,7 +9,7 @@ import type {
   ISODateTime,
   WeekId,
   WeeklyNote,
-} from "@/app/shared/types";
+} from '@/app/shared/types';
 
 // ============================================================================
 // Types
@@ -40,7 +40,7 @@ export const getCurrentWeekId = (): WeekId => {
     (now.getTime() - startOfYear.getTime()) / (24 * 60 * 60 * 1000),
   );
   const weekNumber = Math.ceil((days + startOfYear.getDay() + 1) / 7);
-  return `${now.getFullYear()}-W${weekNumber.toString().padStart(2, "0")}` as WeekId;
+  return `${now.getFullYear()}-W${weekNumber.toString().padStart(2, '0')}` as WeekId;
 };
 
 /**
@@ -49,7 +49,7 @@ export const getCurrentWeekId = (): WeekId => {
 export const getWeekDateRange = (
   weekId: WeekId,
 ): { start: ISODate; end: ISODate } => {
-  const [year, weekPart] = weekId.split("-W");
+  const [year, weekPart] = weekId.split('-W');
   const weekNumber = parseInt(weekPart, 10);
 
   // Calculate the first day of the year
@@ -67,8 +67,8 @@ export const getWeekDateRange = (
   weekEnd.setDate(weekStart.getDate() + 6);
 
   return {
-    start: weekStart.toISOString().split("T")[0] as ISODate,
-    end: weekEnd.toISOString().split("T")[0] as ISODate,
+    start: weekStart.toISOString().split('T')[0] as ISODate,
+    end: weekEnd.toISOString().split('T')[0] as ISODate,
   };
 };
 
@@ -93,7 +93,7 @@ export const getDayDate = (dayName: string, weekId: WeekId): ISODate => {
   const startDate = new Date(start);
   startDate.setDate(startDate.getDate() + dayOffset);
 
-  return startDate.toISOString().split("T")[0] as ISODate;
+  return startDate.toISOString().split('T')[0] as ISODate;
 };
 
 /**
@@ -112,7 +112,7 @@ export const convertEntriesToWeeklyNote = (
   const newGeneralTasks: ExtractedEntry[] = [];
 
   for (const entry of entries) {
-    if (entry.subject === "General Tasks" || !entry.subject) {
+    if (entry.subject === 'General Tasks' || !entry.subject) {
       newGeneralTasks.push(entry);
     } else {
       subjectEntries.push(entry);
@@ -122,13 +122,13 @@ export const convertEntriesToWeeklyNote = (
   // Helper to normalize day names to proper case
   const normalizeDayName = (day: string): string => {
     const normalizedDays: Record<string, string> = {
-      monday: "Monday",
-      tuesday: "Tuesday",
-      wednesday: "Wednesday",
-      thursday: "Thursday",
-      friday: "Friday",
-      saturday: "Saturday",
-      sunday: "Sunday",
+      monday: 'Monday',
+      tuesday: 'Tuesday',
+      wednesday: 'Wednesday',
+      thursday: 'Thursday',
+      friday: 'Friday',
+      saturday: 'Saturday',
+      sunday: 'Sunday',
     };
     return normalizedDays[day.toLowerCase()] ?? day;
   };
@@ -144,13 +144,13 @@ export const convertEntriesToWeeklyNote = (
 
   // Create or update day records
   const dayNames = [
-    "Monday",
-    "Tuesday",
-    "Wednesday",
-    "Thursday",
-    "Friday",
-    "Saturday",
-    "Sunday",
+    'Monday',
+    'Tuesday',
+    'Wednesday',
+    'Thursday',
+    'Friday',
+    'Saturday',
+    'Sunday',
   ];
   const days: DayRecord[] = [];
 
