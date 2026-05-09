@@ -11,9 +11,7 @@
     "start": "turbo start",
     "lint": "turbo lint",
     "lint:fix": "turbo lint:fix",
-    "check-types": "turbo check-types",
     "test": "turbo test",
-    "test:watch": "turbo test:watch --parallel",
     "check:fix": "turbo check:fix"
   },
   "devDependencies": {
