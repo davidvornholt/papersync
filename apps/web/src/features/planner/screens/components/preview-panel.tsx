@@ -21,7 +21,7 @@ export const PreviewPanel = ({
   weekId,
   errorMessage,
 }: PreviewPanelProps): React.ReactElement => (
-  <Card elevated className="h-full">
+  <Card className="h-full">
     <CardHeader>
       <h2 className="serif text-[20px] tracking-[-0.022em] text-ink">
         Preview

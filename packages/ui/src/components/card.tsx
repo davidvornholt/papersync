@@ -2,14 +2,11 @@ import type { HTMLAttributes, ReactElement, ReactNode } from 'react';
 
 export type CardProps = HTMLAttributes<HTMLDivElement> & {
   readonly children: ReactNode;
-  /** Compatibility-only: editorial cards stay flat even when requested elevated. */
-  readonly elevated?: boolean;
 };
 
 export const Card = ({
   children,
   className = '',
-  elevated: _elevated,
   ...props
 }: CardProps): ReactElement => (
   <div className={`paper-card ${className}`.trim()} {...props}>

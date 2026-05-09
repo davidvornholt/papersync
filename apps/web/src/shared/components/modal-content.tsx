@@ -46,7 +46,7 @@ export const DesktopModalContent = ({
     aria-labelledby={title ? 'modal-title' : undefined}
     aria-describedby={description ? 'modal-description' : undefined}
   >
-    <Card elevated className="p-0 overflow-hidden max-h-[90vh] flex flex-col">
+    <Card className="p-0 overflow-hidden max-h-[90vh] flex flex-col">
       {(title || showCloseButton) && (
         <div className="flex items-start justify-between p-6 pb-0">
           <div className="flex-1">
@@ -101,10 +101,7 @@ export const MobileModalContent = ({
     aria-labelledby={title ? 'modal-title-mobile' : undefined}
     aria-describedby={description ? 'modal-description-mobile' : undefined}
   >
-    <Card
-      elevated
-      className="p-0 overflow-hidden max-h-[92dvh] flex flex-col border-x-0 border-b-0"
-    >
+    <Card className="p-0 overflow-hidden max-h-[92dvh] flex flex-col border-x-0 border-b-0">
       <div className="flex justify-center pt-3 pb-1">
         <div className="w-10 h-[2px] bg-hairline-strong" />
       </div>
