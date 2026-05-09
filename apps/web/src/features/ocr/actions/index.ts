@@ -1,6 +1,6 @@
-export {
-  type ExtractionOptions,
-  type ExtractionResult,
-  extractHandwriting,
-  type VaultSettings,
-} from './extract';
+export { extractHandwriting } from './extract';
+export type {
+  ExtractionOptions,
+  ExtractionResult,
+  VaultSettings,
+} from './extract-types';

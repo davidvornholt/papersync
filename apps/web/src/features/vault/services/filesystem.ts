@@ -1,6 +1,5 @@
 import * as path from 'node:path';
 import { Effect, Layer } from 'effect';
-import { isDirectoryPath, runCommand } from './filesystem-command';
 import type { VaultService } from './filesystem-contract';
 import { VaultService as VaultServiceTag } from './filesystem-contract';
 import {
@@ -11,6 +10,18 @@ import {
 
 export { VaultService } from './filesystem-contract';
 export { VaultError, VaultFileNotFoundError, VaultNotFoundError };
+
+const getErrorMessage = (error: unknown, fallback: string): string =>
+  error instanceof Error && error.message.length > 0 ? error.message : fallback;
+
+const isMissingDirectoryError = (error: unknown): boolean =>
+  error instanceof Error &&
+  (error.message.includes('ENOENT') || error.message.includes('ENOTDIR'));
+
+const assertDirectoryExists = (directoryPath: string): Promise<void> =>
+  Array.fromAsync(new Bun.Glob('*').scan({ cwd: directoryPath })).then(
+    () => undefined,
+  );
 
 // ============================================================================
 // Local Filesystem Implementation
@@ -28,15 +39,16 @@ const createLocalVaultService = (initialPath: string): VaultService => {
     setVaultPath: (newPath: string) =>
       Effect.tryPromise({
         try: () =>
-          isDirectoryPath(newPath).then((isDirectory) => {
-            if (!isDirectory) {
-              return Promise.reject(new Error('Path is not a directory'));
-            }
+          assertDirectoryExists(newPath).then(() => {
             vaultPath = newPath;
           }),
         catch: (error) =>
           new VaultError({
-            message: `Failed to set vault path: ${newPath}`,
+            message: `Failed to set vault path: ${newPath}${
+              error instanceof Error && error.message.length > 0
+                ? ` (${error.message})`
+                : ''
+            }`,
             cause: error,
           }),
       }),
@@ -75,21 +87,14 @@ const createLocalVaultService = (initialPath: string): VaultService => {
       Effect.tryPromise({
         try: () => {
           const fullPath = resolvePath(relativePath);
-          const dir = path.dirname(fullPath);
-          return runCommand(['mkdir', '-p', dir]).then((mkdirResult) => {
-            if (mkdirResult.exitCode !== 0) {
-              return Promise.reject(
-                new Error(
-                  mkdirResult.stderr || `Failed to create directory: ${dir}`,
-                ),
-              );
-            }
-            return Bun.write(fullPath, content).then(() => undefined);
-          });
+          return Bun.write(fullPath, content).then(() => undefined);
         },
         catch: (error) =>
           new VaultError({
-            message: `Failed to write file: ${relativePath}`,
+            message: getErrorMessage(
+              error,
+              `Failed to write file: ${relativePath}`,
+            ),
             cause: error,
           }),
       }),
@@ -111,15 +116,13 @@ const createLocalVaultService = (initialPath: string): VaultService => {
       Effect.tryPromise({
         try: () => {
           const fullPath = resolvePath(relativePath);
-          return isDirectoryPath(fullPath).then((isDirectory) =>
-            isDirectory
-              ? Array.fromAsync(
-                  new Bun.Glob('*').scan({
-                    cwd: fullPath,
-                    onlyFiles: true,
-                  }),
-                )
-              : [],
+          return Array.fromAsync(
+            new Bun.Glob('*').scan({
+              cwd: fullPath,
+              onlyFiles: true,
+            }),
+          ).catch((error) =>
+            isMissingDirectoryError(error) ? [] : Promise.reject(error),
           );
         },
         catch: (error) =>
@@ -133,20 +136,19 @@ const createLocalVaultService = (initialPath: string): VaultService => {
       Effect.tryPromise({
         try: () => {
           const fullPath = resolvePath(relativePath);
-          return runCommand(['mkdir', '-p', fullPath]).then((mkdirResult) => {
-            if (mkdirResult.exitCode !== 0) {
-              return Promise.reject(
-                new Error(
-                  mkdirResult.stderr ||
-                    `Failed to create directory: ${relativePath}`,
-                ),
-              );
-            }
-          });
+          const markerPath = path.join(fullPath, '.papersync-dir-marker');
+          return Bun.write(markerPath, '').then(() =>
+            Bun.file(markerPath)
+              .delete()
+              .then(() => undefined),
+          );
         },
         catch: (error) =>
           new VaultError({
-            message: `Failed to create directory: ${relativePath}`,
+            message: getErrorMessage(
+              error,
+              `Failed to create directory: ${relativePath}`,
+            ),
             cause: error,
           }),
       }),
@@ -163,15 +165,9 @@ const createLocalVaultService = (initialPath: string): VaultService => {
                   new Error(`Failed to delete file: ${fullPath}`),
                 );
               }
-              return runCommand(['rm', fullPath]).then((rmResult) => {
-                if (rmResult.exitCode !== 0) {
-                  return Promise.reject(
-                    new Error(
-                      rmResult.stderr || `Failed to delete file: ${fullPath}`,
-                    ),
-                  );
-                }
-              });
+              return Bun.file(fullPath)
+                .delete()
+                .then(() => undefined);
             });
         },
         catch: (error) =>

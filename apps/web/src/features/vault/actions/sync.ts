@@ -41,10 +41,11 @@ export const syncEntriesToVault = async (
   }
 
   if (options.method === 'local') {
-    if (!options.localPath) {
+    const normalizedPath = options.localPath?.trim();
+    if (!normalizedPath) {
       return { success: false, error: 'Vault path not configured' };
     }
-    return syncToVault(entries, options.localPath, effectiveWeekId);
+    return syncToVault(entries, normalizedPath, effectiveWeekId);
   }
 
   if (options.method === 'github') {

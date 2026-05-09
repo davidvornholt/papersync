@@ -28,9 +28,6 @@ import {
  * "use server" files can only export async functions.
  */
 
-// Re-export types from the types file for convenience
-export type { ExtractionOptions, ExtractionResult, VaultSettings };
-
 // ============================================================================
 // Effect-Based Implementations
 // ============================================================================

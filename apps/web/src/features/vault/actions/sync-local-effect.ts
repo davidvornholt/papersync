@@ -31,6 +31,9 @@ export const syncToLocalVaultEffect = (
       );
     }
 
+    const vault = yield* VaultService;
+    yield* vault.setVaultPath(vaultPath);
+
     const existingNote = yield* readWeeklyNote(weekId).pipe(
       Effect.catchAll(() => Effect.succeed(null)),
     );
@@ -41,7 +44,6 @@ export const syncToLocalVaultEffect = (
     );
     yield* writeWeeklyNote(weeklyNote);
 
-    const vault = yield* VaultService;
     const overviewPath = getOverviewPath();
     const overviewExists = yield* vault.fileExists(overviewPath);
     if (!overviewExists) {

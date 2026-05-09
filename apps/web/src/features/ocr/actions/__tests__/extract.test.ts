@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import type { VaultSettings } from '../extract';
+import type { VaultSettings } from '../extract-types';
 
 describe('OCR Extraction with Vault Context', () => {
   describe('VaultSettings type', () => {
