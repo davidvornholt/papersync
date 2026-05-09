@@ -1,337 +1,151 @@
 # AGENTS.md
 
-## Project Context
+This file is the root operating contract for agents in this repository. Keep root instructions for non-negotiable constraints; put specialized workflows in `.agents/skills/*/SKILL.md`.
+
+## Research First
 
-- **Runtime:** Bun (Latest)
-- **Monorepo:** Turborepo
-- **Linter/Formatter:** Biome
-- **Architecture:** Functional Programming via Effect TS
-- **Validation:** Effect Schema (Native)
+- Understand the request, current code, and relevant constraints before changing files.
+- Check whether the request conflicts with repo architecture or standards.
+- Ask before broad product, UX, architectural, naming, workflow, scope, or business-logic decisions.
+- Do not invent business rules, defaults, thresholds, permissions, states, or domain behavior.
+- For clearly scoped implementation work, proceed once the scope and success criteria are clear.
+- Prefer cleaner architecture when justified. Do not preserve messy code only to avoid churn.
 
-## Core Research & Analysis Protocol (MANDATORY)
+## Skill Routing
 
-To produce high-quality output, you MUST adhere to the **"Research First, Code Second"** methodology. **Guessing is strictly forbidden.**
+Before generating code, inspect the `description` frontmatter for every local skill at `.agents/skills/<name>/SKILL.md`. Follow every matching skill, not just the first match.
 
-### 1. Comprehensive Context Research
+## Package Management
 
-**Before writing or modifying a single line of code**, you MUST:
+- Use Bun only.
+- Add dependencies with `bun add`; do not manually edit dependency versions into `package.json`.
+- Bun loads `.env` automatically. Do not add `dotenv`.
+- Never use or add `@effect/schema`; use `Schema` from `effect`.
+- A workspace must declare every package it imports directly. Do not rely on hoisted, transitive, or sibling-workspace dependencies.
+- Workspaces that rely on Bun runtime or `bun:test` types must declare `@types/bun`. Do not add custom Bun ambient declaration shims when `@types/bun` is sufficient.
 
-- **Explore the Codebase:** Use search tools to identify existing patterns, shared utilities, and Effect Layers. Do not reinvent the wheel.
-- **Trace Dependencies:** Understand *who* calls the function you are editing and *what* downstream services depend on it.
-- **Read Definitions:** strictly check Type/Schema definitions. Do not infer types based on variable names.
+## Monorepo Structure
+
+- App-local code lives in `apps/*`; shared/foundational code lives in `packages/*`.
+- Put code where ownership is clearest. Keep single-app code in the owning app unless there is an intentional shared contract.
+- Package names must use the real project alias: `@<actual-project-name>/<package-name>`.
+- Internal packages use version `"0.0.0"` and internal dependencies use `workspace:*`.
+- Use package aliases for workspace imports. Never import another package through relative paths.
+- Do not use placeholder aliases such as `@repo` or `@my-repository` in real repo files.
+- Extend shared TypeScript config from `packages/typescript-config`; do not create standalone `tsconfig.json` files.
+- Packages must define public APIs with `exports`.
+- Do not add `index.ts` barrel files in apps, features, shared folders, or packages.
 
-### 2. Deep Request Understanding
+## Architecture Boundaries
 
-- **Analyze Intent:** Do not just read the task; understand the *goal*. Why is this change needed?
-- **Identify Conflicts:** Check if the request conflicts with existing architectural constraints (e.g., "Add a `try/catch` block" conflicts with "Use Effect Error Handling").
-- **Ask Before Acting:** If the request is ambiguous, ask clarifying questions instead of making an executive decision.
+- Entrypoints route, parse initial inputs, wire Effect layers, and bridge to runtime/UI.
+- Business logic belongs in app-local `src/features/*` or intentional shared packages.
+- App-local shared infrastructure belongs in `src/shared/*`.
+- Dependency flow is one-way: `entrypoint -> features -> shared -> packages`.
+- Features may depend on `src/shared/*` and packages, but not sibling features.
+- `src/shared/*` must not import from `src/features/*`; `packages/*` must not import from `apps/*`.
+- Prefer colocated tests next to the files they protect.
+- Code files should ideally not exceed 200 lines; split larger files into focused modules instead of combining mixed services, schemas, errors, UI concerns, or unrelated responsibilities.
 
-### 3. The "Zero Assumption" Rule
+## Default Shapes
 
-- **Never Assume State:** Do not assume a database record exists, a file path is correct, or an environment variable is set.
-- **Verify Logic:** If you are unsure how a specific library function behaves, write a small investigation script or test to verify it first.
+- App code defaults to `src/app`, `src/features/<domain>/{schemas,errors,services,ui}`, and `src/shared/<module>`.
+- Package code defaults to `src/<capability>.ts(x)` plus colocated tests, with deeper folders only for complex capabilities.
 
-## Skill Utilization
+## Workspace Scripts
 
-This project uses a specialized knowledge base located in `.agents/skills/`.
-**Before generating code**, you MUST check if a relevant Skill exists for your task.
+- Workspace packages must expose `check-types`, `lint`, `lint:fix`, and `test` with `tsc --noEmit`, `biome check --error-on-warnings`, `biome check --write --error-on-warnings`, and `bun test`.
+- Root scripts must include `check: turbo run lint check-types test` and `check:fix: turbo run lint:fix check-types test`.
+- Operational scripts belong to the owning workspace. Put the real command in that workspace's `package.json`.
+- Root convenience scripts must delegate through Turbo with an explicit package filter, such as `turbo run dev --filter @my-repository/admin`.
+- Keep root `package.json` scripts minimal: cross-workspace quality gates plus narrowly useful filtered convenience aliases only.
 
-### Mandatory Skill Triggers
+## Environment Variables
 
-- **Next.js Data & Caching Strategy**
-  - **Trigger:** When writing Server Components, utilizing `fetch`, implementing caching, or modifying API routes (`route.ts`).
-  - **Action:** You **MUST** consult the **[Next Cache Components Skill][next-cache-components-skill]** to ensure proper memoization, revalidation tags, and hydration compatibility.
-- **UI/UX & Frontend Polish**
-  - **Trigger:** When creating `.tsx` components, modifying CSS/Tailwind classes, or adjusting layout structure.
-  - **Action:** You **MUST** apply the principles from the **[Frontend Design Skill][frontend-design]**. Do not output generic UI; enforce visual hierarchy, consistent spacing, and accessibility compliance.
+Every workspace under `apps/*` or `packages/*` that reads environment variables must maintain a workspace-local `README.md` and `.env.example`. Document every consumed variable in both places, including runtime, build, test, local tooling, OS-provided, and development-only variables. Explain requiredness, behavior, defaults/fallbacks, and provide safe runnable examples.
 
-## Critical Constraints (MUST FOLLOW)
+## TypeScript Standards
 
-### Package Management & Runtime
+- No `any`; use `unknown` plus Schema decoding where validation is needed.
+- Use named exports and prefer inline exports, such as `export const value = ...`.
+- Default exports are allowed only where framework conventions require them, such as Next.js `page.tsx`, `layout.tsx`, `loading.tsx`, `error.tsx`, and `route.ts`.
+- Use `import type` for type-only imports.
+- Use `kebab-case` files/folders, `camelCase` variables/functions, and `PascalCase` types/classes.
+- Prefer `const`, `readonly`, `ReadonlyArray<T>`, and arrow functions assigned to `const`. `function*` is allowed for Effect generators.
 
-- **Strictly use Bun:** `bun install`, `bun add`, `bun run`.
-- **NEVER use:** `npm`, `yarn`, `pnpm`, `node`, `ts-node`.
-- **Scripts:** Use `bunx` instead of `npx`.
-- **Environment:** Bun loads `.env` automatically. Do not use `dotenv`.
-- **Dependency Management (STRICT):**
-  - **ALWAYS** use `bun add <package>` to install new dependencies.
-  - **NEVER** manually edit `package.json` to add/update versions.
+## Effect Standards
 
-### Build & Monorepo
+- Use Effect for application logic, async work, recoverable errors, and validation.
+- Do not `throw` for expected failures; return typed Effect errors.
+- Recoverable Effect errors must be specific `Data.TaggedError` classes with stable `_tag` values and actionable `message` fields.
+- Do not use plain `Error`, strings, `unknown`, or untagged objects in expected Effect error channels.
+- Internal logic should not use `async/await`; use `Effect.gen`.
+- In `Effect.gen`, always use `yield*`, not plain `yield`.
+- Use `Effect.log`, `Effect.logInfo`, or `Effect.logError`; do not add `console.log`.
+- Prefer Effect combinators for Effectful branching when they make control flow clearer.
+- Use `Schema` from `effect`; do not use `zod`, `joi`, or `yup`.
 
-- **Turborepo:** Use topological dependencies (`"dependsOn": ["^build"]`).
-- **Workspace Imports:** ALWAYS use package aliases (e.g., `import { Button } from "@repo/ui"`).
-- **Forbidden:** **NEVER** use relative paths to import from other packages (e.g., `../../packages/ui`).
-- **Linting:** Run `biome check --apply` via Turbo.
+## Next.js Notes
 
-### Bun Native APIs
+- Server Components, Route Handlers, and Server Actions may be `async`; bridge Effect programs with `await Effect.runPromise(program)`.
+- Use Next.js Cache Components patterns. Do not add route segment config (`runtime`, `dynamic`, `revalidate`, etc.). Use `'use cache'` plus `cacheLife`/`cacheTag` for cacheable async data, and Suspense/request-time APIs for genuinely dynamic content.
+- Read relevant docs in `node_modules/next/dist/docs/` before changing behavior that may depend on current framework semantics.
 
-- **Files:** Use `Bun.file()`. **NO** `node:fs`.
-- **Shell:** Use Bun Shell (`` Bun.$`ls` ``). **NO** `execa` or `child_process`.
-- **Testing:** Use `bun:test`. **NO** `jest` or `vitest`.
+## Frontend Standards
 
-## Monorepo Package Standards (STRICT)
+- Use matching frontend skills before UI work.
+- Meet WCAG 2.2 AA with semantic HTML, correct heading hierarchy, keyboard navigation, visible focus states, and non-color-only communication.
+- Use framework metadata/document primitives for SEO and prefer server-rendered/indexable content when SEO matters.
+- Use sentence case where sensible for UI text such as button labels and command-style actions, while preserving proper nouns, acronyms, and domain terms.
+- Use components for repeated visual patterns; use local Tailwind utilities for one-offs when clearer than extraction.
+- Define color tokens and authored CSS colors with `oklch(...)`.
 
-### 1. Structure & Naming
+## State Management
 
-- **Scope:** ALL packages MUST be named `@project-name/<package-name>`.
-- **Versioning:** ALL internal packages MUST be set to version `"0.0.0"`. Do not attempt to version internal packages independently.
-- **Internal Dependencies:** When adding a dependency on another workspace package, you MUST use the `workspace:*` protocol to ensure the local version is always used.
-  - *Correct:* `"@project-name/ui": "workspace:*"`
-  - *Incorrect:* `"@project-name/ui": "^1.0.0"`
+- Keep state as local as practical. Use React local state for component-owned UI state.
+- Use Zustand by default for shared client-side UI/app state in React and Next.js.
+- Do not use Zustand as a server-data cache. If client-side remote data needs caching, refetching, invalidation, pagination, optimistic updates, or mutation coordination, propose TanStack Query before building custom store logic.
 
-### 2. Configuration Inheritance
+## Testing
 
-- **Shared Config:** You MUST create/maintain a `packages/typescript-config` workspace.
-- **No Standalone Configs:** NEVER create a `tsconfig.json` from scratch. ALL packages MUST extend the shared configuration.
+- Add or update tests for meaningful behavior changes.
+- New Effect, Schema, or utility logic needs focused unit coverage for success and failure behavior.
+- UI/page wiring should have a small, meaningful test surface when logic, state, error, or empty-state behavior changes.
+- Prefer tests that protect behavior, state transitions, data contracts, accessibility-relevant states, and regression-prone cases.
+- Do not add tests that only pin trivial copy, labels, static literals, or states the type system already makes unrepresentable.
 
-### 3. Public API Definition (Exports)
+## Definition of Done
 
-- **Encapsulation:** You MUST use the `exports` field in `package.json` to explicitly define the public API.
-- **Deep Imports:** Prevent consumers from importing internal files by only exposing specific entry points.
+Use this as a feedback loop, not a ritual.
 
-## Quality Control & Workflow (MANDATORY)
+1. Verify tests are proportional to the risk:
+   - new or changed logic has meaningful success and failure coverage
+   - UI/page changes cover at least the important success plus empty/error states when behavior changed
+   - no low-signal tests were added just to increase test count
+2. Search for stale references to changed concepts, names, paths, env vars, commands, public APIs, error types, or architectural patterns. Update docs, examples, and `.env.example` files when needed.
+3. Run `bun run check:fix` from the repo root for code changes.
+4. If `bun run check:fix` fails, read the full error, identify the root cause, fix it, and repeat the loop.
 
-### 1. Test-Driven Development
+For documentation-only changes, run a narrower verification when the full check would not add useful signal. State what was run and why.
 
-- **New Logic:** You MUST create a comprehensive Unit Test suite for every new Effect, Schema, or Utility created.
-- **Existing Logic:** If you modify code, you MUST update the corresponding tests.
-- **Coverage:** Tests must cover happy paths **AND** failure paths (`Effect.fail`, schema errors).
-- **Type System Rule:** Do NOT write tests for what the type system already guarantees. If TypeScript or Effect Schema makes an invalid state unrepresentable at compile time, a test for that case is redundant noise.
-- **UI/Page Changes (Minimal Rule):** For UI/page wiring or rendering changes, add a minimal focused test set that covers at least one success path and one failure/empty-state path. This can be satisfied via extracted view-model/helper tests used by the changed UI/page files. Exhaustive UI snapshot/component coverage is optional unless critical behavior changes.
+## Debugging
 
-### 2. The "Definition of Done" Loop
+- Read the full stack trace or error output before changing code.
+- Reproduce the failure with a focused test or minimal command before fixing when practical.
+- Identify the specific file, line, schema, Effect, or boundary involved.
+- Do not guess or try random variations.
+- If a fix attempt fails, re-read the error and architecture before trying again.
+- If two fix attempts fail, stop and reconsider the approach or ask for human input.
 
-You are NOT done until you have successfully executed the following sequence with **Zero Errors** and **Zero Warnings**:
+## Naming
 
-1. **Mandatory Test Verification (before running the check):**
-    - **New Logic:** Verify that *every* new Effect, Schema, or Utility has a corresponding unit test.
-    - **Changed Logic:** Verify that existing tests were updated to reflect behavior changes.
-    - **Rule:** If you have written code but have not written/updated the tests for it, **YOU ARE NOT DONE.** Stop here and write the tests.
-2. **Run Unified Check:** `bun run check:fix` (Runs type checks, Biome auto-fix, and tests. Ensure all pass—**including the new tests you just verified in Step 1**).
+- Network operations: use `fetch`, not `retrieve` or `download`.
+- Getters: use `get`, not `read` or `load`.
+- Setters: use `set`, not `write` or `update`.
+- Booleans: prefix with `is`, `has`, or `can`.
 
-*If any step fails, or if you realize during Step 1 that tests are missing, analyze the gap, write/fix the code, and restart the sequence from the beginning.*
+## Comments
 
-## Debugging Protocol (NO RANDOM FIXES)
-
-If you encounter an error (test failure, build error, or runtime crash), you MUST follow this protocol. **Guessing is FORBIDDEN.**
-
-1. **Read & Analyze:**
-    - Read the *entire* stack trace, not just the last line.
-    - Identify the specific file, line number, and Effect/Schema involved.
-2. **Reproduction:**
-    - Create a minimal reproduction case or a failing test *before* attempting a fix.
-    - If you cannot reproduce it locally, add `Effect.log` instrumentation to trace the data flow.
-3. **Root Cause Identification:**
-    - State the root cause clearly in your thought process.
-    - *Example:* "The Schema expects a string, but the API returns a number."
-    - *Bad:* "Maybe it's the date format, let me try changing it."
-4. **The "Two-Strike" Rule:**
-    - If you attempt a fix and it fails: **STOP.**
-    - Do not try a "quick variation."
-    - Re-read the error. Check the architecture.
-    - If 2 fixes fail, the problem is likely architectural. **Request human intervention** or refactor the approach entirely.
-
-## Project Architecture (MANDATORY)
-
-### 1. Domain-Based Folder Structure
-
-ALL source code MUST live inside a **`src/`** directory at the root of each app/package. The following top-level structure within `src/` is required:
-
-- **`features/`** — All product domain logic. Each feature is a self-contained folder (e.g., `features/auth/`, `features/player/`, `features/feed/`). A feature owns its own components, services, schemas, hooks, and tests.
-- **`shared/`** — Reusable, domain-agnostic code. Only place code here when it is genuinely consumed by two or more features. Organise by concern (e.g., `shared/ui/`).
-- **`app/`** (Next.js / Expo) — Route entrypoints ONLY. No business logic, no data-fetching, no UI components beyond a thin composition of feature components. Its sole responsibility is wiring routes to features.
-
-**Forbidden:**
-
-- Placing business logic directly in the `app/` folder.
-- Importing from one feature into another directly (cross-feature coupling). If shared logic is needed, move it to `shared/`.
-- Flat, type-based structures like a top-level `components/`, `hooks/`, or `utils/` that mixes concerns from multiple domains.
-
-### 2. File Size & Splitting
-
-- **Hard limit:** A single file MUST NOT exceed ~200 lines. If it does, it is a signal to split.
-- **One concern per file:** A file should have a single, clear purpose. A file that contains a service, its schema, and its error types is three files.
-- **Component granularity:** Extract any JSX block that is conditionally rendered, repeated, or logically distinct into its own component file within the relevant feature or `shared/ui/` folder.
-
-### 3. DRY (Don't Repeat Yourself) — Strictly Enforced
-
-- **Before writing new logic**, search the codebase for an existing implementation. Reuse or extend it.
-- **Three-strike rule for duplication:** If you write the same logic a second time, extract it immediately. A third occurrence is never acceptable.
-- **Schemas and error types are not exempt:** Do not redefine a schema or a `Data.TaggedError` that already exists elsewhere. Import and reuse it.
-- **Shared UI patterns:** If a visual pattern (e.g., a loading skeleton, an empty-state view) appears in more than one feature, it belongs in `shared/ui/`.
-
-## Coding Standards
-
-### TypeScript & Biome
-
-- **Strictness:** No `any`. Use `unknown` + Schema decoding.
-- **Exports:** **NO Default Exports**. Use Named Exports only.
-  - *Exception:* Next.js conventions require Default Exports for `page.tsx`, `layout.tsx`, `loading.tsx`, `error.tsx`, and `route.ts`.
-- **Imports:** Use `import type` for types. Group imports: External > Internal.
-- **Naming:** `kebab-case` for files/folders. `camelCase` for variables/functions. `PascalCase` for Types/Classes.
-- **Immutability:** Use `const`, `readonly`, and `ReadonlyArray<T>`.
-
-### Effect TS Architecture (Strict)
-
-This project uses **Effect TS** for all logic, async, error handling, and validation.
-
-1. **No Exceptions:** Never `throw`. Return `Effect<Success, Error>`.
-2. **No Promises (Internal Logic):** Do not use `async/await`. Use `Effect.gen`.
-   - *Exception (Integration Boundary):* Next.js Server Components, Route Handlers and Server Actions **MUST** be `async` functions to bridge the gap. They should call `await Effect.runPromise(program)` to resolve the Effect into data for the UI.
-3. **Generator Syntax:** ALWAYS use `yield*` (delegating yield) for Effects. Never use plain `yield`.
-4. **Logging:** Use `Effect.log`, `Effect.logInfo`, `Effect.logError`. **NO** `console.log`.
-5. **Control Flow:** Use `Effect.match`, `Effect.if`, or `pipe()`. Avoid native `if/else` for flow control.
-6. **Validation:** Use `Schema` from `effect`. **NO** `zod`, `joi`, or `yup`.
-
-## Next.js / React Patterns (Frontend Workspace Only)
-
-When working within Next.js apps (e.g., `apps/web`):
-
-### 1. Server Components & Effect Integration
-
-Next.js Server Components are the **boundary** where Effect logic resolves to UI.
-
-- **Pattern:** Create the logic as an Effect, then run it in the Page.
-
-### 2. Caching Strategy
-
-- **Preferred:** Use Next.js Native Caching (`use cache` directive) for UI data.
-- **Skill Reference:** Refer to the **[Next Cache Components Skill][next-cache-components-skill]** for implementation details.
-- **Do Not:** Do not use `Bun.redis` directly inside UI components. Use Redis only within backend Effect Services/Layers.
-
-### Naming Dictionary
-
-- **Network:** Use `fetch` (not `retrieve`, `download`).
-- **Getters:** Use `get` (not `read`, `load`).
-- **Setters:** Use `set` (not `write`, `update`).
-- **Booleans:** Prefix with `is`, `has`, `can`.
-
-## Comments & Documentation
-
-- **Self-Documenting Code:** Code must be readable without comments.
-- **Allowed Comments:** TODOs, explanations of *complex* regex/math, or "Why" (intent).
-- **Forbidden:** Commented-out code, redundant comments (e.g., `// sets user`).
-
-## Code Patterns (Do This, Not That)
-
-### 1. Error Handling (Tagged Errors)
-
-**BAD (Generic Errors):**
-
-```ts
-class UserError extends Error {}
-// usage
-return Effect.fail(new UserError("oops"));
-```
-
-**GOOD (Data.TaggedError):**
-
-```ts
-import { Data, Effect } from "effect";
-
-// Definition
-class UserNotFound extends Data.TaggedError("UserNotFound")<{
-  id: string;
-}> {}
-
-// Usage
-const getUser = (id: string) =>
-  Effect.gen(function* () {
-    const user = yield* db.select(id);
-    if (!user) {
-      return yield* Effect.fail(new UserNotFound({ id }));
-    }
-    return user;
-  });
-```
-
-### 2. Dependency Injection & Testing
-
-**BAD (Class Constructor):**
-
-```ts
-class UserService {
-  constructor(private db: Database) {}
-}
-```
-
-**GOOD (Context & Layers):**
-
-```ts
-// Service Definition
-class Database extends Context.Tag("Database")<
-  Database,
-  { readonly select: (id: string) => Effect.Effect<User | null> }
->() {}
-
-// Logic
-const program = Effect.gen(function* () {
-  const db = yield* Database;
-  // Note the usage of yield*
-  return yield* db.select("123");
-});
-
-// TEST (Mocking)
-import { test, expect } from "bun:test";
-
-test("returns user from db", async () => {
-  const mockDb = Layer.succeed(Database, {
-    select: () => Effect.succeed({ id: "123" }),
-  });
-
-  // Run the effect with the mock provided
-  const result = await Effect.runPromise(
-    program.pipe(Effect.provide(mockDb))
-  );
-
-  expect(result).toEqual({ id: "123" });
-});
-```
-
-### 3. Validation & Schemas
-
-**BAD (Zod):**
-
-```ts
-import { z } from "zod";
-const User = z.object({ id: z.string() });
-const data = User.parse(input); // Throws!
-```
-
-**GOOD (Effect Schema):**
-
-```ts
-import { Schema } from "effect";
-
-// Definition
-class User extends Schema.Class<User>("User")({
-  id: Schema.String,
-  email: Schema.String,
-}) {}
-
-// Usage (Pipeline)
-const parseUser = (input: unknown) =>
-  Schema.decodeUnknown(User)(input); // Returns Effect<User, ParseError>
-```
-
-## Interaction Protocol (Anti-Hallucination)
-
-### 1. The "Ambiguity Check"
-
-Before writing any code for a non-trivial request (>5 lines of logic), you MUST:
-
-1. **Restate the Goal:** Briefly summarize what you are about to build.
-2. **Identify Ambiguities:** If requirements are vague (e.g., "make it better"), you MUST ask for clarification.
-3. **Propose a Plan:** List the files you will touch and the Effect layers/services you will use.
-4. **Wait for Confirmation:** (Optional, but recommended for architectural changes) "Shall I proceed?"
-
-### 2. Stop & Ask
-
-If you find yourself making an arbitrary decision (e.g., "I'll just default the timeout to 500ms" or "I'll assume the user ID is an integer"), **STOP**.
-
-- Ask the user for the specific constraint.
-- **NEVER** assume business logic constants.
-
-[next-cache-components-skill]: ./.agents/skills/next-cache-components/SKILL.md
-[frontend-design]: ./.agents/skills/frontend-design/SKILL.md
+- Prefer self-documenting code.
+- Add comments only for non-obvious intent, complex regex, or complex math.
+- Do not leave commented-out code or redundant narration.
