@@ -1,7 +1,7 @@
 'use client';
 
+import { Card, CardContent } from '@papersync/ui/card';
 import { AnimatePresence } from 'motion/react';
-import { Card, CardContent, CardHeader } from '@/shared/components/card';
 import type { ExtractedEntry } from '../../hooks/use-scan';
 import type { ResultsPanelState } from '../scan-screen-types';
 import { ResultsPanelComplete } from './results-panel-complete';
@@ -38,10 +38,7 @@ export const ResultsPanel = ({
   onSync,
   isSyncing,
 }: ResultsPanelProps): React.ReactElement => (
-  <Card elevated className="h-full flex flex-col">
-    <CardHeader>
-      <h2 className="text-lg font-semibold font-display">Extraction Results</h2>
-    </CardHeader>
+  <Card className="h-full flex flex-col min-h-[360px] sm:min-h-[420px]">
     <CardContent className="flex-1 flex flex-col min-h-0">
       <AnimatePresence mode="wait">
         {state === 'complete' && entries.length > 0 && (

@@ -1,12 +1,8 @@
 'use client';
 
+import { EditorialHeader } from '@papersync/ui/editorial-header';
 import { motion } from 'motion/react';
-import {
-  PageTransition,
-  Spinner,
-  StaggerContainer,
-  StaggerItem,
-} from '@/shared/components/motion';
+import { PageTransition, Spinner } from '@/shared/components/motion';
 import { AddSubjectModal } from '../components/add-subject-modal';
 import { GitHubOAuthModal } from '../components/github-oauth-modal';
 import { RepositorySelectorModal } from '../components/repository-selector-modal';
@@ -17,13 +13,33 @@ import { SettingsSubjectsCard } from '../components/settings-subjects-card';
 import { SettingsVaultCard } from '../components/settings-vault-card';
 import { useSettingsScreenController } from './hooks/use-settings-screen-controller';
 
+const easeOut = [0.2, 0.6, 0.2, 1] as const;
+
+const SECTIONS = [
+  {
+    number: '01',
+    title: 'Vault',
+    italic: 'where everything lives',
+  },
+  {
+    number: '02',
+    title: 'Vision',
+    italic: 'the model that reads',
+  },
+  {
+    number: '03',
+    title: 'Timetable',
+    italic: 'subjects and slots',
+  },
+] as const;
+
 export const SettingsScreen = (): React.ReactElement => {
   const controller = useSettingsScreenController();
 
   if (controller.isLoading) {
     return (
       <PageTransition>
-        <div className="page-container flex items-center justify-center min-h-[400px]">
+        <div className="shell page-shell flex items-center justify-center min-h-[60vh]">
           <Spinner size="lg" />
         </div>
       </PageTransition>
@@ -32,29 +48,49 @@ export const SettingsScreen = (): React.ReactElement => {
 
   return (
     <PageTransition>
-      <div className="page-container">
-        <header className="page-header">
-          <div>
-            <motion.h1
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="text-foreground"
-            >
-              Settings
-            </motion.h1>
-            <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.1 }}
-              className="text-muted mt-1"
-            >
-              Configure PaperSync preferences
-            </motion.p>
-          </div>
-        </header>
+      <div className="shell page-shell">
+        <EditorialHeader
+          index="Section iv"
+          section="Settings"
+          title="Tune the press"
+          italicSuffix="to your hand."
+          description="Three quiet decisions: where your notes live, which model reads your handwriting, and what your week looks like. Set once, edit rarely. Your keys, your vault, your defaults — never sent anywhere unless you ask."
+          aside={
+            <div className="space-y-5">
+              {SECTIONS.map((section) => (
+                <div
+                  key={section.number}
+                  className="grid grid-cols-[36px_1fr] items-baseline gap-3"
+                >
+                  <span className="mono text-[12px] text-graphite">
+                    {section.number}
+                  </span>
+                  <div>
+                    <p className="serif text-[18px] text-ink leading-tight">
+                      {section.title}
+                    </p>
+                    <p className="serif-italic text-[13px] text-graphite mt-0.5">
+                      {section.italic}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          }
+        />
 
-        <StaggerContainer className="max-w-3xl space-y-8">
-          <StaggerItem>
+        <div className="mt-8 sm:mt-10 md:mt-14 max-w-3xl mx-auto space-y-12 sm:space-y-16">
+          <motion.section
+            initial={{ opacity: 0, y: 16 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: '-60px' }}
+            transition={{ duration: 0.7, ease: easeOut }}
+          >
+            <p className="section-number">01 — Vault</p>
+            <h2 className="mt-3 mb-5 sm:mb-6 text-[24px] sm:text-[28px]">
+              Where the notes <span className="serif-italic">come to rest</span>
+              .
+            </h2>
             <SettingsVaultCard
               settings={controller.settings}
               options={vaultOptions}
@@ -66,9 +102,19 @@ export const SettingsScreen = (): React.ReactElement => {
               onDisconnect={controller.handleDisconnect}
               onOpenRepoSelector={controller.handleOpenRepoSelector}
             />
-          </StaggerItem>
+          </motion.section>
 
-          <StaggerItem>
+          <motion.section
+            initial={{ opacity: 0, y: 16 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: '-60px' }}
+            transition={{ duration: 0.7, ease: easeOut }}
+          >
+            <p className="section-number">02 — Vision</p>
+            <h2 className="mt-3 mb-5 sm:mb-6 text-[24px] sm:text-[28px]">
+              The model that{' '}
+              <span className="serif-italic ink">reads your hand</span>.
+            </h2>
             <SettingsAICard
               settings={controller.settings}
               options={aiOptions}
@@ -76,9 +122,19 @@ export const SettingsScreen = (): React.ReactElement => {
               onChangeGoogleApiKey={controller.handleGoogleApiKeyChange}
               onChangeOllamaEndpoint={controller.handleOllamaEndpointChange}
             />
-          </StaggerItem>
+          </motion.section>
 
-          <StaggerItem>
+          <motion.section
+            initial={{ opacity: 0, y: 16 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: '-60px' }}
+            transition={{ duration: 0.7, ease: easeOut }}
+          >
+            <p className="section-number">03 — Timetable</p>
+            <h2 className="mt-3 mb-5 sm:mb-6 text-[24px] sm:text-[28px]">
+              Subjects, slots, and{' '}
+              <span className="serif-italic">the shape of a week</span>.
+            </h2>
             <SettingsSubjectsCard
               settings={controller.settings}
               isVaultConfigured={controller.isVaultConfigured}
@@ -90,17 +146,23 @@ export const SettingsScreen = (): React.ReactElement => {
               onRemoveTimetableSlot={controller.removeTimetableSlot}
               onUpdateTimetableSlot={controller.updateTimetableSlot}
             />
-          </StaggerItem>
+          </motion.section>
 
-          <StaggerItem>
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: '-60px' }}
+            transition={{ duration: 0.7, ease: easeOut }}
+            className="pt-8 border-t border-hairline"
+          >
             <SettingsSaveAction
               isSaving={controller.isSaving}
               isSyncing={controller.isSyncing}
               isVaultConfigured={controller.isVaultConfigured}
               onSave={() => void controller.handleSave()}
             />
-          </StaggerItem>
-        </StaggerContainer>
+          </motion.div>
+        </div>
       </div>
 
       <AddSubjectModal

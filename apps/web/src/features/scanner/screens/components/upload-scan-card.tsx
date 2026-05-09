@@ -1,4 +1,4 @@
-import { Card, CardContent, CardHeader } from '@/shared/components/card';
+import { Card, CardContent } from '@papersync/ui/card';
 import { DragDropZone } from './drag-drop-zone';
 import { ImagePreview } from './image-preview';
 
@@ -22,9 +22,6 @@ export const UploadScanCard = ({
   onProcess,
 }: UploadScanCardProps): React.ReactElement => (
   <Card>
-    <CardHeader>
-      <h2 className="text-lg font-semibold font-display">Upload Scan</h2>
-    </CardHeader>
     <CardContent>
       {!preview ? (
         <DragDropZone

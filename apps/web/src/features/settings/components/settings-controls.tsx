@@ -1,7 +1,5 @@
 'use client';
 
-import { motion } from 'motion/react';
-
 export type ToggleOption = {
   readonly value: string;
   readonly label: string;
@@ -20,35 +18,52 @@ export const ToggleButtons = ({
   value,
   onChange,
 }: ToggleButtonsProps): React.ReactElement => (
-  <div className="flex flex-col sm:flex-row gap-3">
-    {options.map((option) => (
-      <motion.button
-        key={option.value}
-        type="button"
-        onClick={() => onChange(option.value)}
-        whileHover={{ scale: 1.02 }}
-        whileTap={{ scale: 0.98 }}
-        className={`flex-1 p-3 sm:p-4 rounded-xl border-2 transition-all duration-200 text-left touch-manipulation ${
-          value === option.value
-            ? 'border-accent bg-accent/5'
-            : 'border-border hover:border-muted'
-        }`}
-      >
-        <div className="flex items-center gap-3 mb-2">
-          <div
-            className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${
-              value === option.value
-                ? 'bg-accent text-white'
-                : 'bg-background text-muted'
-            }`}
-          >
-            {option.icon}
+  <div className="grid grid-cols-1 sm:grid-cols-2 gap-px bg-hairline border border-hairline">
+    {options.map((option) => {
+      const isActive = value === option.value;
+      return (
+        <button
+          key={option.value}
+          type="button"
+          aria-pressed={isActive}
+          onClick={() => onChange(option.value)}
+          className={`relative text-left p-4 sm:p-5 transition-colors duration-200 cursor-pointer touch-manipulation ${
+            isActive
+              ? 'bg-paper-deep'
+              : 'bg-paper hover:bg-paper-deep/60 focus-visible:bg-paper-deep/60'
+          }`}
+        >
+          {isActive && (
+            <span
+              aria-hidden
+              className="absolute inset-y-0 left-0 w-[2px] bg-accent"
+            />
+          )}
+          <div className="flex items-start gap-3">
+            <span
+              aria-hidden
+              className={`shrink-0 inline-flex items-center justify-center w-8 h-8 transition-colors ${
+                isActive ? 'text-accent' : 'text-graphite'
+              }`}
+            >
+              {option.icon}
+            </span>
+            <div className="min-w-0 flex-1">
+              <p
+                className={`serif text-[16px] leading-tight tracking-[-0.018em] ${
+                  isActive ? 'text-ink' : 'text-ink'
+                }`}
+              >
+                {option.label}
+              </p>
+              <p className="mt-1 text-[13px] text-graphite leading-snug">
+                {option.description}
+              </p>
+            </div>
           </div>
-          <p className="font-medium text-foreground">{option.label}</p>
-        </div>
-        <p className="text-sm text-muted">{option.description}</p>
-      </motion.button>
-    ))}
+        </button>
+      );
+    })}
   </div>
 );
 
@@ -70,10 +85,7 @@ export const InputField = ({
   placeholder,
 }: InputFieldProps): React.ReactElement => (
   <div>
-    <label
-      htmlFor={id}
-      className="block text-sm font-medium text-foreground mb-2"
-    >
+    <label htmlFor={id} className="field-label">
       {label}
     </label>
     <input
@@ -81,7 +93,7 @@ export const InputField = ({
       type={type}
       value={value}
       onChange={(event) => onChange(event.target.value)}
-      className="w-full px-4 py-3 border border-border rounded-lg bg-background text-foreground placeholder:text-muted-light focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent transition-all"
+      className="field-input placeholder:text-mute"
       placeholder={placeholder}
     />
   </div>

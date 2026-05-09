@@ -1,8 +1,8 @@
 'use client';
 
+import { Button } from '@papersync/ui/button';
+import { Card, CardContent, CardHeader } from '@papersync/ui/card';
 import { useCallback, useState } from 'react';
-import { Button } from '@/shared/components/button';
-import { Card, CardContent, CardHeader } from '@/shared/components/card';
 import { Spinner } from '@/shared/components/motion';
 import { useToast } from '@/shared/components/toast';
 import {
@@ -103,9 +103,9 @@ export const NetworkScannersPanel = ({
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold font-display">
-            Network Scanners
+        <div className="flex flex-wrap items-baseline gap-x-4 gap-y-3 justify-between">
+          <h2 className="serif text-[20px] tracking-[-0.022em] text-ink">
+            Network scanners
           </h2>
           <Button
             variant="secondary"
@@ -119,11 +119,11 @@ export const NetworkScannersPanel = ({
       </CardHeader>
       <CardContent>
         {scanners.length === 0 ? (
-          <p className="text-sm text-muted text-center py-6">
-            Click Discover to find compatible scanners
+          <p className="text-[13px] text-graphite text-center py-6">
+            Click discover to find compatible scanners on your network
           </p>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-5">
             <NetworkScannerList
               scanners={scanners}
               selectedScannerId={selectedScanner?.id}
@@ -131,11 +131,11 @@ export const NetworkScannersPanel = ({
             />
 
             {selectedScanner && (
-              <div className="pt-4 border-t border-border space-y-3">
+              <div className="pt-5 border-t border-hairline space-y-4">
                 {isLoadingCapabilities ? (
                   <div className="flex items-center justify-center py-4">
                     <Spinner size="sm" className="mr-2" />
-                    <span className="text-sm text-muted">
+                    <span className="text-[13px] text-graphite">
                       Loading capabilities...
                     </span>
                   </div>
@@ -182,7 +182,7 @@ export const NetworkScannersPanel = ({
                     }}
                   />
                 ) : (
-                  <p className="text-sm text-muted text-center py-2">
+                  <p className="text-[13px] text-graphite text-center py-2">
                     Failed to load capabilities
                   </p>
                 )}

@@ -1,5 +1,4 @@
-import { motion } from 'motion/react';
-import { Button } from '@/shared/components/button';
+import { Button } from '@papersync/ui/button';
 import { Spinner } from '@/shared/components/motion';
 
 type GeneratePlannerButtonProps = {
@@ -13,21 +12,19 @@ export const GeneratePlannerButton = ({
   isDisabled,
   onGenerate,
 }: GeneratePlannerButtonProps): React.ReactElement => (
-  <motion.div whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}>
-    <Button
-      onClick={onGenerate}
-      disabled={isDisabled}
-      className="w-full"
-      size="lg"
-    >
-      {isGenerating ? (
-        <>
-          <Spinner size="sm" className="mr-2" />
-          Generating...
-        </>
-      ) : (
-        'Generate PDF'
-      )}
-    </Button>
-  </motion.div>
+  <Button
+    onClick={onGenerate}
+    disabled={isDisabled}
+    className="w-full"
+    size="lg"
+  >
+    {isGenerating ? (
+      <>
+        <Spinner size="sm" className="mr-2" />
+        Generating…
+      </>
+    ) : (
+      'Generate PDF'
+    )}
+  </Button>
 );

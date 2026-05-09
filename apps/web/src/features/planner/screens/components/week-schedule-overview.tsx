@@ -1,7 +1,7 @@
 'use client';
 
+import { Button } from '@papersync/ui/button';
 import { motion } from 'motion/react';
-import { Button } from '@/shared/components/button';
 import type { TimetableDay } from '@/shared/hooks/use-settings';
 import type { DayOfWeek, ISODate, Subject } from '@/shared/types/schemas';
 import {
@@ -29,7 +29,7 @@ export const WeekScheduleOverview = ({
     subjects.find((subject) => subject.id === subjectId)?.name ?? 'Unknown';
 
   return (
-    <div className="space-y-2">
+    <ul className="-mx-1">
       {WEEKDAYS.map((day, index) => {
         const daySchedule = timetable.find((entry) => entry.day === day);
         const dayDate = new Date(weekStartDate);
@@ -47,62 +47,69 @@ export const WeekScheduleOverview = ({
         });
 
         return (
-          <motion.div
+          <motion.li
             key={day}
-            initial={{ opacity: 0, y: 10 }}
+            initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.05 }}
-            className={`p-3 rounded-lg border transition-all ${
-              hasException
-                ? 'border-amber-500/50 bg-amber-500/5'
-                : 'border-border bg-background'
+            transition={{ delay: index * 0.04 }}
+            className={`relative px-1 py-3 border-b border-hairline last:border-b-0 ${
+              hasException ? 'bg-warning/5' : ''
             }`}
           >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="text-center min-w-[48px]">
-                  <p className="text-xs text-muted uppercase">
-                    {DAY_SHORT_LABELS[day]}
-                  </p>
-                  <p className="font-semibold text-foreground">{dateStr}</p>
-                </div>
-                <div className="h-8 w-px bg-border" />
-                <div className="flex-1">
-                  {slots.length === 0 ? (
-                    <span className="text-sm text-muted italic">
-                      No classes
-                    </span>
-                  ) : (
-                    <div className="flex flex-wrap gap-1">
-                      {slots.map((slot, slotIndex) => (
-                        <span
-                          key={slot.id}
-                          className="text-xs px-2 py-1 rounded bg-surface text-foreground"
-                        >
-                          {slotIndex + 1}. {getSubjectName(slot.subjectId)}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                  {hasException && exception.reason && (
-                    <p className="text-xs text-amber-600 mt-1">
-                      {exception.reason}
-                    </p>
-                  )}
-                </div>
+            {hasException && (
+              <span
+                aria-hidden
+                className="absolute inset-y-2 left-0 w-[2px] bg-warning"
+              />
+            )}
+            <div className="grid grid-cols-[64px_1fr] gap-3 items-start sm:grid-cols-[72px_1fr_auto] sm:gap-4 sm:items-center">
+              <div className="pt-0.5">
+                <p className="mono text-[10px] uppercase tracking-[0.18em] text-graphite">
+                  {DAY_SHORT_LABELS[day]}
+                </p>
+                <p className="serif text-[15px] text-ink leading-tight mt-0.5">
+                  {dateStr}
+                </p>
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => onEditException(dayDate, day)}
-                className={hasException ? 'text-amber-600' : ''}
-              >
-                {hasException ? 'Edit' : 'Exception'}
-              </Button>
+
+              <div className="min-w-0">
+                {slots.length === 0 ? (
+                  <span className="serif-italic text-[13px] text-graphite">
+                    No classes
+                  </span>
+                ) : (
+                  <div className="flex flex-wrap gap-1">
+                    {slots.map((slot, slotIndex) => (
+                      <span
+                        key={slot.id}
+                        className="text-[12px] px-2 py-0.5 bg-paper-deep text-ink border border-hairline"
+                      >
+                        {slotIndex + 1}. {getSubjectName(slot.subjectId)}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                {hasException && exception.reason && (
+                  <p className="serif-italic text-[12px] text-warning mt-1">
+                    {exception.reason}
+                  </p>
+                )}
+              </div>
+
+              <div className="col-span-2 -mx-1 mt-1 flex justify-end sm:col-span-1 sm:m-0 sm:justify-start">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => onEditException(dayDate, day)}
+                  className={hasException ? 'text-warning' : ''}
+                >
+                  {hasException ? 'Edit' : 'Exception'}
+                </Button>
+              </div>
             </div>
-          </motion.div>
+          </motion.li>
         );
       })}
-    </div>
+    </ul>
   );
 };

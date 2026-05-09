@@ -1,6 +1,6 @@
+import { Button } from '@papersync/ui/button';
+import { Card, CardContent, CardHeader } from '@papersync/ui/card';
 import Link from 'next/link';
-import { Button } from '@/shared/components/button';
-import { Card, CardContent, CardHeader } from '@/shared/components/card';
 import type { TimetableDay } from '@/shared/hooks/use-settings';
 import type { DayOfWeek, Subject } from '@/shared/types/schemas';
 import type { ScheduleException } from '../planner-screen-types';
@@ -28,36 +28,36 @@ export const ScheduleOverviewCard = ({
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-lg font-semibold font-display">
-              Week Schedule
+        <div className="flex flex-wrap items-baseline gap-x-4 gap-y-2 justify-between">
+          <div className="min-w-0">
+            <h2 className="serif text-[20px] tracking-[-0.022em] text-ink">
+              Week schedule
             </h2>
-            <p className="text-sm text-muted">
+            <p className="text-[13px] text-graphite mt-0.5">
               {exceptionsCount > 0
                 ? `${exceptionsCount} exception${exceptionsCount !== 1 ? 's' : ''} for this week`
                 : 'Review and add exceptions if needed'}
             </p>
           </div>
-          <Link href="/settings">
-            <Button variant="ghost" size="sm">
-              Edit Timetable
-            </Button>
-          </Link>
+          <Button asChild variant="ghost" size="sm">
+            <Link href="/settings">Edit timetable</Link>
+          </Button>
         </div>
       </CardHeader>
       <CardContent>
         {!hasTimetableConfigured ? (
-          <div className="text-center py-8 text-muted border-2 border-dashed border-border rounded-lg">
-            <p className="font-medium">No timetable configured</p>
-            <p className="text-sm mt-1">
-              Configure your weekly schedule in Settings first
+          <div className="text-center py-8 px-4 text-graphite border border-dashed border-hairline-strong">
+            <p className="serif text-[16px] text-ink">
+              No timetable configured
             </p>
-            <Link href="/settings">
-              <Button variant="ghost" size="sm" className="mt-3">
-                Go to Settings
+            <p className="text-[13px] mt-1">
+              Set your weekly schedule in settings first
+            </p>
+            <div className="mt-4 flex justify-center">
+              <Button asChild variant="secondary" size="sm">
+                <Link href="/settings">Go to settings</Link>
               </Button>
-            </Link>
+            </div>
           </div>
         ) : (
           <WeekScheduleOverview

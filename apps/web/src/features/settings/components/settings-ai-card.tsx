@@ -1,7 +1,7 @@
 'use client';
 
+import { Card, CardContent, CardHeader } from '@papersync/ui/card';
 import { AnimatePresence, motion } from 'motion/react';
-import { Card, CardContent, CardHeader } from '@/shared/components/card';
 import type { Settings } from '@/shared/hooks/use-settings';
 import {
   InputField,
@@ -26,9 +26,11 @@ export const SettingsAICard = ({
 }: SettingsAICardProps): React.ReactElement => (
   <Card>
     <CardHeader>
-      <h2 className="text-lg font-semibold font-display">AI Provider</h2>
+      <h2 className="serif text-[20px] tracking-[-0.022em] text-ink">
+        AI provider
+      </h2>
     </CardHeader>
-    <CardContent className="space-y-4">
+    <CardContent className="space-y-5">
       <ToggleButtons
         options={options}
         value={settings.ai.provider}
@@ -44,7 +46,7 @@ export const SettingsAICard = ({
           >
             <InputField
               id="api-key"
-              label="API Key"
+              label="API key"
               type="password"
               value={settings.ai.googleApiKey ?? ''}
               onChange={onChangeGoogleApiKey}
@@ -59,7 +61,7 @@ export const SettingsAICard = ({
           >
             <InputField
               id="ollama-endpoint"
-              label="Ollama Endpoint"
+              label="Ollama endpoint"
               value={settings.ai.ollamaEndpoint ?? ''}
               onChange={onChangeOllamaEndpoint}
               placeholder="http://localhost:11434"

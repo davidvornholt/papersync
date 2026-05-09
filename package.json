@@ -1,6 +1,7 @@
 {
   "name": "@papersync/root",
   "private": true,
+  "license": "MIT",
   "workspaces": [
     "apps/*",
     "packages/*"
@@ -11,9 +12,9 @@
     "dev:web": "turbo run dev --filter @papersync/web"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.4.4",
-    "turbo": "^2.8.10",
-    "typescript": "^5.9.3"
+    "@biomejs/biome": "^2.4.14",
+    "turbo": "^2.9.12",
+    "typescript": "^6.0.3"
   },
   "ignoreScripts": [
     "sharp",
@@ -23,5 +24,5 @@
     "sharp",
     "unrs-resolver"
   ],
-  "packageManager": "bun@1.3.9"
+  "packageManager": "bun@1.3.13"
 }

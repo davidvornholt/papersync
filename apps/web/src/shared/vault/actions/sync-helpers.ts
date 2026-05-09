@@ -17,8 +17,8 @@ import {
   getWeekDateRange,
 } from './sync-helpers-week';
 
-export { getCurrentWeekId, getDayDate, getWeekDateRange };
 export type { ExtractedEntry } from './sync-helpers-types';
+export { getCurrentWeekId, getDayDate, getWeekDateRange };
 
 /**
  * Convert ExtractedEntry[] to WeeklyNote format

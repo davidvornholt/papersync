@@ -1,4 +1,4 @@
-import { Button } from '@/shared/components/button';
+import { Button } from '@papersync/ui/button';
 import { Spinner } from '@/shared/components/motion';
 import type {
   ColorMode,
@@ -19,6 +19,9 @@ type NetworkScannerSettingsProps = {
   readonly onScan: () => void;
 };
 
+const selectClass =
+  'w-full bg-transparent border-0 border-b border-hairline-strong px-0 py-2 text-[14px] text-ink focus:outline-none focus:border-ink cursor-pointer';
+
 export const NetworkScannerSettings = ({
   capabilities,
   inputSource,
@@ -32,26 +35,23 @@ export const NetworkScannerSettings = ({
   onScan,
 }: NetworkScannerSettingsProps): React.ReactElement => (
   <>
-    <div className="grid grid-cols-2 gap-3">
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-4">
       {capabilities.inputSources.length > 1 && (
-        <div className="col-span-2">
-          <label
-            htmlFor="inputSource"
-            className="text-sm text-muted block mb-1"
-          >
-            Scanner Source
+        <div className="sm:col-span-2">
+          <label htmlFor="inputSource" className="field-label">
+            Scanner source
           </label>
           <select
             id="inputSource"
             value={inputSource}
             onChange={(e) => onSourceChange(e.target.value as InputSource)}
-            className="w-full px-3 py-2 rounded-lg border border-border bg-surface text-sm"
+            className={selectClass}
           >
             {capabilities.inputSources.map((source) => (
               <option key={source} value={source}>
                 {source === 'Platen'
-                  ? 'Flatbed Glass'
-                  : 'Document Feeder (ADF)'}
+                  ? 'Flatbed glass'
+                  : 'Document feeder (ADF)'}
               </option>
             ))}
           </select>
@@ -59,14 +59,14 @@ export const NetworkScannerSettings = ({
       )}
 
       <div>
-        <label htmlFor="resolution" className="text-sm text-muted block mb-1">
+        <label htmlFor="resolution" className="field-label">
           Resolution
         </label>
         <select
           id="resolution"
           value={resolution}
           onChange={(e) => onResolutionChange(Number(e.target.value))}
-          className="w-full px-3 py-2 rounded-lg border border-border bg-surface text-sm"
+          className={selectClass}
         >
           {capabilities.sourceCapabilities[inputSource].resolutions.map(
             (res) => (
@@ -79,14 +79,14 @@ export const NetworkScannerSettings = ({
       </div>
 
       <div>
-        <label htmlFor="colorMode" className="text-sm text-muted block mb-1">
-          Color Mode
+        <label htmlFor="colorMode" className="field-label">
+          Color mode
         </label>
         <select
           id="colorMode"
           value={colorMode}
           onChange={(e) => onColorModeChange(e.target.value as ColorMode)}
-          className="w-full px-3 py-2 rounded-lg border border-border bg-surface text-sm"
+          className={selectClass}
         >
           {capabilities.sourceCapabilities[inputSource].colorModes.map(
             (mode) => (
@@ -95,7 +95,7 @@ export const NetworkScannerSettings = ({
                   ? 'Color'
                   : mode === 'grayscale'
                     ? 'Grayscale'
-                    : 'Black & White'}
+                    : 'Black & white'}
               </option>
             ),
           )}
@@ -107,7 +107,7 @@ export const NetworkScannerSettings = ({
       variant="primary"
       onClick={onScan}
       disabled={isScanning || isDisabled}
-      className="w-full"
+      className="w-full mt-2"
     >
       {isScanning ? (
         <>
@@ -115,7 +115,7 @@ export const NetworkScannerSettings = ({
           Scanning...
         </>
       ) : (
-        'Scan Document'
+        'Scan document'
       )}
     </Button>
   </>

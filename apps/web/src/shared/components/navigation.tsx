@@ -16,8 +16,8 @@ type MainLayoutProps = {
 export const MainLayout = ({
   children,
 }: MainLayoutProps): React.ReactElement => (
-  <div className="min-h-screen bg-background">
+  <div className="min-h-screen bg-paper text-ink">
     <Navigation />
-    <main className="md:pt-16 pb-20 md:pb-0 min-h-screen">{children}</main>
+    <main className="md:pt-16 pb-16 md:pb-0 min-h-screen">{children}</main>
   </div>
 );

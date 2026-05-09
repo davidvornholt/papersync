@@ -1,6 +1,6 @@
 'use client';
 
-import { Button } from '@/shared/components/button';
+import { Button } from '@papersync/ui/button';
 import { Spinner } from '@/shared/components/motion';
 
 type SettingsSaveActionProps = {
@@ -21,10 +21,10 @@ export const SettingsSaveAction = ({
       {isSaving ? (
         <>
           <Spinner size="sm" className="mr-2" />
-          {isSyncing ? 'Syncing to vault...' : 'Saving...'}
+          {isSyncing ? 'Syncing to vault…' : 'Saving…'}
         </>
       ) : (
-        'Save All Settings'
+        'Save all settings'
       )}
     </Button>
     <p className="text-xs text-muted text-center mt-2">

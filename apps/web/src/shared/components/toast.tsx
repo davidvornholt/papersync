@@ -100,7 +100,7 @@ const ToastContainer = ({
   toasts,
   removeToast,
 }: ToastContainerProps): React.ReactElement => (
-  <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-3 pointer-events-none">
+  <div className="fixed inset-x-4 bottom-[calc(env(safe-area-inset-bottom,0px)+4.5rem)] sm:inset-x-auto sm:right-6 sm:bottom-6 z-50 flex flex-col items-end gap-2 pointer-events-none">
     <AnimatePresence mode="popLayout">
       {toasts.map((toast) => (
         <ToastItem key={toast.id} toast={toast} onDismiss={removeToast} />
@@ -119,10 +119,10 @@ type ToastItemProps = {
 };
 
 const toastStyles: Record<ToastType, string> = {
-  success: 'bg-accent text-white',
-  error: 'bg-red-600 text-white',
-  warning: 'bg-amber-500 text-white',
-  info: 'bg-foreground text-background',
+  success: 'bg-positive text-paper',
+  error: 'bg-accent text-paper',
+  warning: 'bg-warning text-ink',
+  info: 'bg-ink text-paper',
 };
 
 const toastIcons: Record<ToastType, string> = {
@@ -159,7 +159,7 @@ const ToastItem = ({
       animate={{ opacity: 1, x: 0, scale: 1 }}
       exit={{ opacity: 0, x: 50, scale: 0.9 }}
       transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
-      className={`pointer-events-auto min-w-[280px] max-w-[400px] rounded-lg shadow-lg overflow-hidden ${toastStyles[toast.type]}`}
+      className={`pointer-events-auto w-full sm:min-w-[280px] sm:max-w-[400px] shadow-soft overflow-hidden ${toastStyles[toast.type]}`}
     >
       <div className="flex items-center gap-3 px-4 py-3">
         <span className="text-lg font-medium">{toastIcons[toast.type]}</span>
@@ -174,9 +174,9 @@ const ToastItem = ({
         </button>
       </div>
       {toast.duration && toast.duration > 0 && (
-        <div className="h-1 bg-white/20">
+        <div className="h-px bg-paper/20">
           <motion.div
-            className="h-full bg-white/40"
+            className="h-full bg-paper/50"
             initial={{ width: '100%' }}
             animate={{ width: `${progress}%` }}
             transition={{ duration: 0.05, ease: 'linear' }}

@@ -1,5 +1,5 @@
-import { DashboardScreen } from '@/features/dashboard/screens/dashboard-screen';
+import { LandingScreen } from '@/features/landing/screens/landing-screen';
 
-const HomePage = (): React.ReactElement => <DashboardScreen />;
+const HomePage = (): React.ReactElement => <LandingScreen />;
 
 export default HomePage;

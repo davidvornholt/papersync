@@ -1,8 +1,8 @@
 'use client';
 
+import { Button } from '@papersync/ui/button';
+import { Card, CardContent, CardHeader } from '@papersync/ui/card';
 import { AnimatePresence } from 'motion/react';
-import { Button } from '@/shared/components/button';
-import { Card, CardContent, CardHeader } from '@/shared/components/card';
 import type { DayOfWeek, Settings } from '@/shared/hooks/use-settings';
 import { SubjectListItem } from './subject-list-item';
 import { TimetableConfigPanel } from './timetable-config-panel';
@@ -36,31 +36,35 @@ export const SettingsSubjectsCard = ({
 }: SettingsSubjectsCardProps): React.ReactElement => (
   <Card>
     <CardHeader>
-      <h2 className="text-lg font-semibold font-display">
-        Subjects & Timetable
+      <h2 className="serif text-[20px] tracking-[-0.022em] text-ink">
+        Subjects & timetable
       </h2>
-      <p className="text-sm text-muted">
+      <p className="text-[13px] text-graphite mt-0.5">
         {isVaultConfigured
-          ? `${settings.subjects.length} subject(s) • ${configuredDaysCount} day(s) configured`
+          ? `${settings.subjects.length} subject${settings.subjects.length === 1 ? '' : 's'} · ${configuredDaysCount} day${configuredDaysCount === 1 ? '' : 's'} configured`
           : 'Configure vault connection first'}
       </p>
     </CardHeader>
 
-    <CardContent className="space-y-6">
+    <CardContent className="space-y-7">
       {!isVaultConfigured ? (
-        <div className="text-center py-8 text-muted border-2 border-dashed border-border rounded-lg bg-surface/50">
-          Vault connection required before configuring subjects and timetable.
+        <div className="text-center py-8 px-4 text-graphite border border-dashed border-hairline-strong">
+          <p className="serif-italic text-[14px]">
+            Vault connection required before configuring subjects and timetable.
+          </p>
         </div>
       ) : (
         <>
           <div>
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="font-medium text-foreground">Subjects</h3>
+            <div className="flex items-baseline justify-between mb-2">
+              <h3 className="serif text-[16px] tracking-[-0.018em] text-ink">
+                Subjects
+              </h3>
               <Button variant="ghost" size="sm" onClick={onOpenSubjectModal}>
-                Add Subject
+                Add subject
               </Button>
             </div>
-            <ul className="space-y-2">
+            <ul className="-mx-1">
               <AnimatePresence>
                 {[...settings.subjects]
                   .sort((a, b) => a.name.localeCompare(b.name))
@@ -76,11 +80,11 @@ export const SettingsSubjectsCard = ({
             </ul>
           </div>
 
-          <div className="border-t border-border" />
+          <div className="rule" />
 
           <div>
-            <h3 className="font-medium text-foreground mb-3">
-              Weekly Schedule
+            <h3 className="serif text-[16px] tracking-[-0.018em] text-ink mb-3">
+              Weekly schedule
             </h3>
             <TimetableConfigPanel
               subjects={settings.subjects}

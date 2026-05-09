@@ -1,7 +1,7 @@
 'use client';
 
+import { Button } from '@papersync/ui/button';
 import { useCallback, useEffect, useState } from 'react';
-import { Button } from '@/shared/components/button';
 import { Modal } from '@/shared/components/modal';
 import type { Subject } from '@/shared/hooks/use-settings';
 
@@ -51,7 +51,7 @@ export const AddSubjectModal = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={editingSubject ? 'Edit Subject' : 'Add Subject'}
+      title={editingSubject ? 'Edit subject' : 'Add subject'}
       size="sm"
       footer={
         <>
@@ -77,27 +77,31 @@ export const AddSubjectModal = ({
               onClose();
             }}
           >
-            {editingSubject ? 'Save Changes' : 'Add Subject'}
+            {editingSubject ? 'Save changes' : 'Add subject'}
           </Button>
         </>
       }
     >
-      <input
-        type="text"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        placeholder="Subject name"
-        className={`w-full px-4 py-3 border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:border-transparent ${
-          showError
-            ? 'border-red-500 focus:ring-red-500'
-            : 'border-border focus:ring-accent'
-        }`}
-      />
-      {showError && (
-        <p className="mt-2 text-sm text-red-500">
-          A subject named "{name.trim()}" already exists
-        </p>
-      )}
+      <div>
+        <label htmlFor="subject-name" className="field-label">
+          Subject name
+        </label>
+        <input
+          id="subject-name"
+          type="text"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="e.g., Mathematics"
+          className={`field-input placeholder:text-mute ${
+            showError ? 'border-b-accent focus:border-b-accent' : ''
+          }`}
+        />
+        {showError && (
+          <p className="mt-2 text-[13px] text-accent">
+            A subject named “{name.trim()}” already exists
+          </p>
+        )}
+      </div>
     </Modal>
   );
 };

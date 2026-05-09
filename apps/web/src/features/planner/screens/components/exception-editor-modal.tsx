@@ -1,7 +1,7 @@
 'use client';
 
+import { Button } from '@papersync/ui/button';
 import { useEffect, useState } from 'react';
-import { Button } from '@/shared/components/button';
 import { Modal } from '@/shared/components/modal';
 import type { DayOfWeek, ISODate, Subject } from '@/shared/types/schemas';
 import type { ScheduleException } from '../planner-screen-types';
@@ -62,9 +62,9 @@ export const ExceptionEditorModal = ({
                 onRemove();
                 onClose();
               }}
-              className="mr-auto text-red-500 hover:text-red-600"
+              className="sm:mr-auto text-accent"
             >
-              Remove Exception
+              Remove exception
             </Button>
           )}
           <Button variant="secondary" onClick={onClose}>
@@ -82,17 +82,14 @@ export const ExceptionEditorModal = ({
               onClose();
             }}
           >
-            {exception ? 'Save Changes' : 'Add Exception'}
+            {exception ? 'Save changes' : 'Add exception'}
           </Button>
         </>
       }
     >
-      <div className="space-y-4">
+      <div className="space-y-5">
         <div>
-          <label
-            htmlFor="exception-reason"
-            className="block text-sm font-medium text-foreground mb-2"
-          >
+          <label htmlFor="exception-reason" className="field-label">
             Reason (optional)
           </label>
           <input
@@ -101,7 +98,7 @@ export const ExceptionEditorModal = ({
             value={reason}
             onChange={(e) => setReason(e.target.value)}
             placeholder="e.g., Field trip, Guest speaker, Exam"
-            className="w-full px-4 py-3 border border-border rounded-lg bg-background text-foreground placeholder:text-muted-light focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent transition-all"
+            className="field-input placeholder:text-mute"
           />
         </div>
 

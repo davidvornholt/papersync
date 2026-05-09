@@ -1,7 +1,7 @@
 'use client';
 
+import { Card } from '@papersync/ui/card';
 import { motion } from 'motion/react';
-import { Card } from './card';
 import type { ModalSize } from './modal';
 
 type ModalContentProps = {
@@ -53,13 +53,13 @@ export const DesktopModalContent = ({
             {title && (
               <h2
                 id="modal-title"
-                className="text-lg font-semibold font-display text-foreground"
+                className="serif text-[22px] tracking-[-0.025em] text-ink"
               >
                 {title}
               </h2>
             )}
             {description && (
-              <p id="modal-description" className="text-sm text-muted mt-1">
+              <p id="modal-description" className="text-sm text-graphite mt-1">
                 {description}
               </p>
             )}
@@ -71,7 +71,9 @@ export const DesktopModalContent = ({
       )}
       <div className="p-6 overflow-y-auto flex-1">{children}</div>
       {footer && (
-        <div className="px-6 pb-6 pt-0 flex justify-end gap-3">{footer}</div>
+        <div className="px-6 pb-6 pt-0 flex flex-wrap justify-end gap-3">
+          {footer}
+        </div>
       )}
     </Card>
   </motion.div>
@@ -101,18 +103,18 @@ export const MobileModalContent = ({
   >
     <Card
       elevated
-      className="p-0 overflow-hidden rounded-b-none rounded-t-2xl max-h-[90vh] flex flex-col"
+      className="p-0 overflow-hidden max-h-[92dvh] flex flex-col border-x-0 border-b-0"
     >
       <div className="flex justify-center pt-3 pb-1">
-        <div className="w-10 h-1 rounded-full bg-border" />
+        <div className="w-10 h-[2px] bg-hairline-strong" />
       </div>
       {(title || showCloseButton) && (
-        <div className="flex items-start justify-between px-5 py-3 border-b border-border">
+        <div className="flex items-start justify-between px-5 py-4 border-b border-hairline">
           <div className="flex-1">
             {title && (
               <h2
                 id="modal-title-mobile"
-                className="text-base font-semibold font-display text-foreground"
+                className="serif text-[19px] tracking-[-0.022em] text-ink"
               >
                 {title}
               </h2>
@@ -120,7 +122,7 @@ export const MobileModalContent = ({
             {description && (
               <p
                 id="modal-description-mobile"
-                className="text-sm text-muted mt-0.5"
+                className="text-sm text-graphite mt-0.5"
               >
                 {description}
               </p>
@@ -133,7 +135,7 @@ export const MobileModalContent = ({
       )}
       <div className="px-5 py-4 overflow-y-auto flex-1">{children}</div>
       {footer && (
-        <div className="px-5 pb-5 pt-0 flex flex-col-reverse gap-2 safe-area-bottom">
+        <div className="px-5 pb-5 pt-3 border-t border-hairline flex flex-col-reverse gap-2 safe-area-bottom [&>*]:w-full">
           {footer}
         </div>
       )}
@@ -153,7 +155,7 @@ const ModalCloseButton = ({
   <button
     type="button"
     onClick={onClose}
-    className={`${className} text-muted hover:text-foreground transition-colors rounded-lg hover:bg-surface touch-manipulation`}
+    className={`${className} text-graphite hover:text-ink transition-colors touch-manipulation cursor-pointer`}
     aria-label="Close modal"
   >
     <svg

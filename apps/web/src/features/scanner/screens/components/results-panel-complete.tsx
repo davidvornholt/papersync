@@ -1,7 +1,7 @@
 'use client';
 
+import { Button } from '@papersync/ui/button';
 import { AnimatePresence, motion } from 'motion/react';
-import { Button } from '@/shared/components/button';
 import { Spinner } from '@/shared/components/motion';
 import type { ExtractedEntry } from '../../hooks/use-scan';
 import { EditableEntryItem } from './editable-entry-item';
@@ -35,12 +35,13 @@ export const ResultsPanelComplete = ({
     exit={{ opacity: 0 }}
     className="flex-1 flex flex-col min-h-0"
   >
-    <div className="p-4 bg-accent/10 rounded-lg border border-accent/20 mb-4">
-      <p className="text-sm font-medium text-accent">
-        ✓ {entries.length} entr{entries.length === 1 ? 'y' : 'ies'} extracted
+    <div className="flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-1 sm:gap-4 pb-4 mb-4 border-b border-hairline">
+      <p className="serif text-[18px] text-ink">
+        {entries.length} entr{entries.length === 1 ? 'y' : 'ies'}
+        <span className="serif-italic ink"> read</span>
       </p>
-      <p className="text-xs text-muted mt-0.5">
-        Confidence: {Math.round(confidence * 100)}%
+      <p className="mono text-[11px] uppercase tracking-[0.18em] text-graphite">
+        {Math.round(confidence * 100)}% confidence
         {modelUsed && ` · ${modelUsed}`}
       </p>
     </div>
@@ -59,7 +60,7 @@ export const ResultsPanelComplete = ({
       </AnimatePresence>
     </div>
 
-    <div className="pt-4 mt-4 border-t border-border">
+    <div className="pt-4 mt-4 border-t border-hairline">
       <Button
         onClick={onSync}
         disabled={entries.length === 0 || isSyncing}
@@ -68,10 +69,10 @@ export const ResultsPanelComplete = ({
         {isSyncing ? (
           <>
             <Spinner size="sm" className="mr-2" />
-            Syncing to Vault...
+            Syncing to vault...
           </>
         ) : (
-          'Sync to Vault'
+          'Sync to vault'
         )}
       </Button>
     </div>

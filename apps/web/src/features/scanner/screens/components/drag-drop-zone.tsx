@@ -1,5 +1,6 @@
 'use client';
 
+import { Button } from '@papersync/ui/button';
 import { motion } from 'motion/react';
 import { useCallback, useRef } from 'react';
 
@@ -49,8 +50,10 @@ export const DragDropZone = ({
       onDragOver={(event) => event.preventDefault()}
       onDragEnter={() => setIsDragging(true)}
       onDragLeave={() => setIsDragging(false)}
-      className={`w-full border-2 border-dashed rounded-xl p-8 transition-all duration-300 ${
-        isDragging ? 'border-accent bg-accent/5 scale-[1.01]' : 'border-border'
+      className={`w-full border border-dashed py-10 sm:py-12 px-5 sm:px-8 transition-colors duration-300 ${
+        isDragging
+          ? 'border-accent bg-accent-soft/30'
+          : 'border-hairline-strong'
       }`}
     >
       <input
@@ -74,13 +77,13 @@ export const DragDropZone = ({
       <div className="text-center">
         <motion.div
           animate={
-            isDragging ? { scale: 1.1, rotate: 5 } : { scale: 1, rotate: 0 }
+            isDragging ? { scale: 1.05, rotate: 3 } : { scale: 1, rotate: 0 }
           }
-          className="w-16 h-16 mx-auto mb-6 rounded-full bg-accent/10 flex items-center justify-center"
+          className="w-14 h-14 mx-auto mb-5 rounded-full bg-accent-soft/60 flex items-center justify-center"
         >
           <svg
-            className={`w-8 h-8 transition-colors ${
-              isDragging ? 'text-accent' : 'text-muted-light'
+            className={`w-7 h-7 transition-colors ${
+              isDragging ? 'text-accent' : 'text-graphite'
             }`}
             fill="none"
             viewBox="0 0 24 24"
@@ -102,35 +105,29 @@ export const DragDropZone = ({
           </svg>
         </motion.div>
 
-        <p className="text-foreground font-medium mb-2">
+        <p className="serif text-[18px] text-ink mb-1">
           {isDragging ? 'Drop image here' : 'Capture your planner'}
         </p>
         {!isDragging && (
-          <p className="text-sm text-muted mb-6">
+          <p className="text-[13px] text-graphite mb-5">
             Take a photo or upload an existing scan
           </p>
         )}
 
-        <div className="flex flex-col sm:flex-row gap-3 justify-center">
-          <motion.button
-            type="button"
-            onClick={() => cameraInputRef.current?.click()}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-accent text-white font-medium rounded-lg hover:bg-accent/90 transition-colors"
-          >
-            Take Photo
-          </motion.button>
-
-          <motion.button
-            type="button"
+        <div className="flex flex-col-reverse sm:flex-row gap-2 sm:gap-3 sm:justify-center">
+          <Button
+            variant="secondary"
             onClick={() => fileInputRef.current?.click()}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-surface border border-border text-foreground font-medium rounded-lg hover:bg-background hover:border-accent/50 transition-colors"
+            className="sm:min-w-[10rem]"
           >
-            Upload Image
-          </motion.button>
+            Upload image
+          </Button>
+          <Button
+            onClick={() => cameraInputRef.current?.click()}
+            className="sm:min-w-[10rem]"
+          >
+            Take photo
+          </Button>
         </div>
       </div>
     </section>

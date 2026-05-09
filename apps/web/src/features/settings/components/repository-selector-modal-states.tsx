@@ -1,11 +1,11 @@
+import { Button } from '@papersync/ui/button';
 import { AlertTriangle } from 'lucide-react';
-import { Button } from '@/shared/components/button';
 import { Spinner } from '@/shared/components/motion';
 
 export const RepositoryLoadingState = (): React.ReactElement => (
   <div className="flex flex-col items-center justify-center py-12 gap-3">
     <Spinner size="md" />
-    <p className="text-sm text-muted">Loading repositories...</p>
+    <p className="text-[13px] text-graphite">Loading repositories…</p>
   </div>
 );
 
@@ -18,13 +18,13 @@ export const RepositoryErrorState = ({
   error,
   onRetry,
 }: RepositoryErrorStateProps): React.ReactElement => (
-  <div className="flex flex-col items-center justify-center py-12 gap-3">
-    <div className="w-12 h-12 rounded-full bg-error/10 flex items-center justify-center">
-      <AlertTriangle className="w-6 h-6 text-error" />
+  <div className="flex flex-col items-center justify-center py-12 gap-3 text-center px-4">
+    <div className="w-12 h-12 rounded-full bg-accent-soft/60 flex items-center justify-center">
+      <AlertTriangle className="w-5 h-5 text-accent" aria-hidden />
     </div>
-    <p className="text-sm text-error">{error}</p>
+    <p className="text-[13px] text-accent max-w-xs">{error}</p>
     <Button variant="secondary" size="sm" onClick={onRetry}>
-      Try Again
+      Try again
     </Button>
   </div>
 );
@@ -34,8 +34,8 @@ export const RepositoryEmptyState = ({
 }: {
   readonly hasSearchQuery: boolean;
 }): React.ReactElement => (
-  <div className="flex flex-col items-center justify-center py-12 gap-2">
-    <p className="text-muted">
+  <div className="flex flex-col items-center justify-center py-12 gap-2 text-center px-4">
+    <p className="serif-italic text-[14px] text-graphite">
       {hasSearchQuery
         ? 'No repositories match your search'
         : 'No repositories found'}

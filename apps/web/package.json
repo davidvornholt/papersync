@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@ai-sdk/google": "latest",
+    "@papersync/ui": "workspace:*",
     "@react-pdf/renderer": "latest",
     "ai": "latest",
     "bonjour-service": "latest",

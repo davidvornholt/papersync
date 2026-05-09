@@ -1,7 +1,7 @@
 'use client';
 
+import { Button } from '@papersync/ui/button';
 import { useMemo, useState } from 'react';
-import { Button } from '@/shared/components/button';
 import { Modal } from '@/shared/components/modal';
 import type { WeekId } from '@/shared/types/schemas';
 import { getWeekId, getWeekStartDate } from '../../services/generator';
@@ -73,35 +73,49 @@ export const WeekSelectionModal = ({
               onClose();
             }}
           >
-            Select Week
+            Select week
           </Button>
         </>
       }
     >
-      <div className="space-y-2 max-h-96 overflow-y-auto">
-        {availableWeeks.map((week) => (
-          <button
-            key={week.weekId}
-            type="button"
-            onClick={() => setSelectedWeekId(week.weekId)}
-            className={`w-full p-4 rounded-lg border text-left transition-all ${
-              selectedWeekId === week.weekId
-                ? 'border-accent bg-accent/10 ring-2 ring-accent/20'
-                : 'border-border hover:border-accent/50 hover:bg-surface'
-            }`}
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-medium text-foreground">{week.label}</p>
-                <p className="text-sm text-muted">{week.dateRange}</p>
-              </div>
-              <span className="text-xs px-2 py-1 rounded bg-surface text-muted font-mono">
-                {week.weekId}
-              </span>
-            </div>
-          </button>
-        ))}
-      </div>
+      <ul className="-mx-1 max-h-[60vh] overflow-y-auto">
+        {availableWeeks.map((week) => {
+          const isSelected = selectedWeekId === week.weekId;
+          return (
+            <li key={week.weekId}>
+              <button
+                type="button"
+                onClick={() => setSelectedWeekId(week.weekId)}
+                className={`relative w-full px-4 py-4 text-left transition-colors duration-200 cursor-pointer touch-manipulation border-b border-hairline ${
+                  isSelected
+                    ? 'bg-paper-deep'
+                    : 'bg-transparent hover:bg-paper-deep/50 focus-visible:bg-paper-deep/50'
+                }`}
+              >
+                {isSelected && (
+                  <span
+                    aria-hidden
+                    className="absolute inset-y-0 left-0 w-[2px] bg-accent"
+                  />
+                )}
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="serif text-[16px] tracking-[-0.018em] text-ink leading-tight">
+                      {week.label}
+                    </p>
+                    <p className="text-[13px] text-graphite mt-0.5">
+                      {week.dateRange}
+                    </p>
+                  </div>
+                  <span className="mono text-[11px] tracking-[0.06em] text-graphite shrink-0">
+                    {week.weekId}
+                  </span>
+                </div>
+              </button>
+            </li>
+          );
+        })}
+      </ul>
     </Modal>
   );
 };

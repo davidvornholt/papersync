@@ -1,5 +1,6 @@
 'use client';
 
+import { EditorialHeader } from '@papersync/ui/editorial-header';
 import { motion } from 'motion/react';
 import { useMemo, useState } from 'react';
 import { PageTransition, Spinner } from '@/shared/components/motion';
@@ -22,6 +23,8 @@ import {
   upsertException,
 } from './planner-screen-helpers';
 import type { ScheduleException } from './planner-screen-types';
+
+const easeOut = [0.2, 0.6, 0.2, 1] as const;
 
 export const PlannerScreen = (): React.ReactElement => {
   const { settings, isLoading: isSettingsLoading } = useSettings();
@@ -98,7 +101,7 @@ export const PlannerScreen = (): React.ReactElement => {
   if (isSettingsLoading) {
     return (
       <PageTransition>
-        <div className="page-container flex items-center justify-center min-h-[400px]">
+        <div className="shell page-shell flex items-center justify-center min-h-[60vh]">
           <Spinner size="lg" />
         </div>
       </PageTransition>
@@ -107,64 +110,97 @@ export const PlannerScreen = (): React.ReactElement => {
 
   return (
     <PageTransition>
-      <div className="page-container">
-        <header className="page-header">
-          <motion.h1
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-          >
-            Generate Planner
-          </motion.h1>
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.1 }}
-            className="text-muted mt-1"
-          >
-            Create a printable weekly planner with QR sync
-          </motion.p>
-        </header>
+      <div className="shell page-shell">
+        <EditorialHeader
+          index="Section iii"
+          section="Generate planner"
+          title="A week,"
+          italicSuffix="set in ink."
+          description="PaperSync composes a printable PDF for the week ahead — your subjects, your slots, the exceptions you bend in for assemblies and holidays. A small QR code in the corner remembers which week each page belongs to."
+          aside={
+            <dl className="space-y-5">
+              <div>
+                <dt className="mono-tag">This week</dt>
+                <dd className="mt-1 serif text-[20px] text-ink">
+                  {currentWeekId}
+                </dd>
+                <dd className="mt-1 mono text-[12px] text-graphite">
+                  {dateRangeStr}
+                </dd>
+              </div>
+              <div>
+                <dt className="mono-tag">Output</dt>
+                <dd className="mt-1 serif-italic text-[16px] text-ink-soft">
+                  A4 PDF, anchored.
+                </dd>
+              </div>
+            </dl>
+          }
+        />
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <PlannerConfigColumn
-            currentWeekId={currentWeekId}
-            dateRangeStr={dateRangeStr}
-            onOpenWeekModal={() => setIsWeekModalOpen(true)}
-            weekStartDate={weekStartDate}
-            timetable={settings.timetable}
-            exceptions={exceptions}
-            subjects={settings.subjects}
-            hasTimetableConfigured={hasTimetableConfigured}
-            onEditException={(date, dayOfWeek) =>
-              setExceptionEditingDate({ date, dayOfWeek })
-            }
-            onGenerate={handleGenerate}
-            isGenerating={planner.state.status === 'generating'}
-            isGenerateDisabled={
-              planner.state.status === 'generating' ||
-              settings.subjects.length === 0 ||
-              !hasTimetableConfigured
-            }
-          />
+        <div className="mt-8 sm:mt-10 md:mt-14 grid grid-cols-1 lg:grid-cols-12 gap-y-10 sm:gap-y-12 lg:gap-x-12">
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.1, ease: easeOut }}
+            className="lg:col-span-5"
+          >
+            <p className="section-number">01 — Compose</p>
+            <h2 className="mt-3 text-[24px] sm:text-[28px]">
+              Set the week, <span className="serif-italic">bend the rules</span>
+              .
+            </h2>
+            <div className="mt-5 sm:mt-6">
+              <PlannerConfigColumn
+                currentWeekId={currentWeekId}
+                dateRangeStr={dateRangeStr}
+                onOpenWeekModal={() => setIsWeekModalOpen(true)}
+                weekStartDate={weekStartDate}
+                timetable={settings.timetable}
+                exceptions={exceptions}
+                subjects={settings.subjects}
+                hasTimetableConfigured={hasTimetableConfigured}
+                onEditException={(date, dayOfWeek) =>
+                  setExceptionEditingDate({ date, dayOfWeek })
+                }
+                onGenerate={handleGenerate}
+                isGenerating={planner.state.status === 'generating'}
+                isGenerateDisabled={
+                  planner.state.status === 'generating' ||
+                  settings.subjects.length === 0 ||
+                  !hasTimetableConfigured
+                }
+              />
+            </div>
+          </motion.div>
 
           <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.2, ease: easeOut }}
+            className="lg:col-span-7 lg:border-l lg:border-hairline lg:pl-12"
           >
-            <PreviewPanel
-              state={getPreviewState(planner.state)}
-              onDownload={() => {
-                planner.download();
-                addToast('Download started', 'info');
-              }}
-              onOpen={planner.openInNewTab}
-              weekId={currentWeekId}
-              errorMessage={
-                planner.state.status === 'error'
-                  ? planner.state.error
-                  : undefined
-              }
-            />
+            <p className="section-number">02 — Proof</p>
+            <h2 className="mt-3 text-[24px] sm:text-[28px]">
+              The page,{' '}
+              <span className="serif-italic ink">before printing</span>.
+            </h2>
+            <div className="mt-5 sm:mt-6">
+              <PreviewPanel
+                state={getPreviewState(planner.state)}
+                onDownload={() => {
+                  planner.download();
+                  addToast('Download started', 'info');
+                }}
+                onOpen={planner.openInNewTab}
+                weekId={currentWeekId}
+                errorMessage={
+                  planner.state.status === 'error'
+                    ? planner.state.error
+                    : undefined
+                }
+              />
+            </div>
           </motion.div>
         </div>
       </div>

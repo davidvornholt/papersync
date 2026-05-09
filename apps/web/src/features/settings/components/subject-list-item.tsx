@@ -19,21 +19,26 @@ export const SubjectListItem = ({
     initial={{ opacity: 0, x: -10 }}
     animate={{ opacity: 1, x: 0 }}
     exit={{ opacity: 0, x: 10, height: 0 }}
-    className="flex items-center justify-between p-3 bg-background rounded-lg border border-border group hover:border-accent/30 transition-colors"
+    className="flex items-center justify-between gap-3 px-1 py-3 border-b border-hairline last:border-b-0"
   >
-    <span className="text-foreground font-medium">{subject.name}</span>
-    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+    <span className="serif text-[16px] tracking-[-0.018em] text-ink min-w-0 truncate">
+      {subject.name}
+    </span>
+    <div className="flex items-center gap-1 shrink-0">
       <button
         type="button"
         onClick={() => onEdit(subject.id)}
-        className="p-2 text-muted hover:text-accent rounded"
+        className="px-2 py-1 mono text-[10px] uppercase tracking-[0.18em] text-graphite hover:text-ink transition-colors cursor-pointer touch-manipulation"
       >
         Edit
       </button>
+      <span aria-hidden className="text-graphite/40">
+        ·
+      </span>
       <button
         type="button"
         onClick={() => onDelete(subject.id)}
-        className="p-2 text-muted hover:text-red-500 rounded"
+        className="px-2 py-1 mono text-[10px] uppercase tracking-[0.18em] text-graphite hover:text-accent transition-colors cursor-pointer touch-manipulation"
       >
         Delete
       </button>

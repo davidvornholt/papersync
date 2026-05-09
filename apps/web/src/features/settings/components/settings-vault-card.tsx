@@ -1,8 +1,8 @@
 'use client';
 
+import { Button } from '@papersync/ui/button';
+import { Card, CardContent, CardHeader } from '@papersync/ui/card';
 import { AnimatePresence, motion } from 'motion/react';
-import { Button } from '@/shared/components/button';
-import { Card, CardContent, CardHeader } from '@/shared/components/card';
 import { Spinner } from '@/shared/components/motion';
 import type { Settings } from '@/shared/hooks/use-settings';
 import {
@@ -36,9 +36,11 @@ export const SettingsVaultCard = ({
 }: SettingsVaultCardProps): React.ReactElement => (
   <Card>
     <CardHeader>
-      <h2 className="text-lg font-semibold font-display">Obsidian Vault</h2>
+      <h2 className="serif text-[20px] tracking-[-0.022em] text-ink">
+        Obsidian vault
+      </h2>
     </CardHeader>
-    <CardContent className="space-y-4">
+    <CardContent className="space-y-5">
       <ToggleButtons
         options={options}
         value={settings.vault.method}
@@ -54,15 +56,15 @@ export const SettingsVaultCard = ({
           >
             <InputField
               id="vault-path"
-              label="Vault Path"
+              label="Vault path"
               value={settings.vault.localPath ?? ''}
               onChange={onChangeLocalPath}
               placeholder="/path/to/your/vault"
             />
             {isLoadingVaultSettings && (
-              <div className="flex items-center gap-2 text-sm text-muted mt-2">
+              <div className="flex items-center gap-2 text-[13px] text-graphite mt-2">
                 <Spinner size="sm" />
-                <span>Loading settings from vault...</span>
+                <span>Loading settings from vault…</span>
               </div>
             )}
           </motion.div>
@@ -74,31 +76,39 @@ export const SettingsVaultCard = ({
             className="space-y-3"
           >
             {settings.vault.githubConnected ? (
-              <div className="flex items-center justify-between p-4 bg-accent/10 rounded-lg border border-accent/20">
-                <div>
-                  <p className="font-medium text-foreground">
-                    Connected to GitHub
-                  </p>
-                  <p className="text-sm text-muted">
-                    @{settings.vault.githubUsername || 'unknown'}
-                  </p>
-                  {settings.vault.githubRepo && (
-                    <p className="text-xs text-accent mt-1">
-                      {settings.vault.githubRepo}
+              <div className="relative px-4 py-4 bg-paper-deep border border-hairline">
+                <span
+                  aria-hidden
+                  className="absolute inset-y-0 left-0 w-[2px] bg-accent"
+                />
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="min-w-0">
+                    <p className="serif text-[16px] tracking-[-0.018em] text-ink">
+                      Connected to GitHub
                     </p>
-                  )}
-                </div>
-                <div className="flex gap-2">
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={onOpenRepoSelector}
-                  >
-                    {settings.vault.githubRepo ? 'Change Repo' : 'Select Repo'}
-                  </Button>
-                  <Button variant="ghost" size="sm" onClick={onDisconnect}>
-                    Disconnect
-                  </Button>
+                    <p className="text-[13px] text-graphite mt-0.5">
+                      @{settings.vault.githubUsername || 'unknown'}
+                    </p>
+                    {settings.vault.githubRepo && (
+                      <p className="mono text-[12px] text-accent mt-1 truncate">
+                        {settings.vault.githubRepo}
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex flex-wrap gap-2 shrink-0">
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={onOpenRepoSelector}
+                    >
+                      {settings.vault.githubRepo
+                        ? 'Change repo'
+                        : 'Select repo'}
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={onDisconnect}>
+                      Disconnect
+                    </Button>
+                  </div>
                 </div>
               </div>
             ) : (

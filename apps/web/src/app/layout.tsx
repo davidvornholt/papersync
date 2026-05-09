@@ -1,25 +1,25 @@
 import type { Metadata, Viewport } from 'next';
-import { IBM_Plex_Mono, IBM_Plex_Sans, Source_Serif_4 } from 'next/font/google';
+import { DM_Sans, Fraunces, JetBrains_Mono } from 'next/font/google';
 import './globals.css';
 import { MainLayout } from '@/shared/components/navigation';
 import { ToastProvider } from '@/shared/components/toast';
 
-const newsreader = Source_Serif_4({
+const fraunces = Fraunces({
   subsets: ['latin'],
   display: 'swap',
   variable: '--font-display',
-  weight: ['400', '500', '600'],
   style: ['normal', 'italic'],
+  axes: ['SOFT', 'WONK', 'opsz'],
 });
 
-const ibmPlexSans = IBM_Plex_Sans({
+const dmSans = DM_Sans({
   subsets: ['latin'],
   display: 'swap',
   variable: '--font-body',
   weight: ['400', '500', '600'],
 });
 
-const ibmPlexMono = IBM_Plex_Mono({
+const jetbrainsMono = JetBrains_Mono({
   subsets: ['latin'],
   display: 'swap',
   variable: '--font-mono',
@@ -27,9 +27,9 @@ const ibmPlexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'PaperSync',
+  title: 'PaperSync — paper meets your second brain',
   description:
-    'Bridge between physical handwriting and digital knowledge management',
+    'A free, open source, self-hosted bridge between handwritten paper and your local vault. Bring your own keys. No subscriptions.',
 };
 
 export const viewport: Viewport = {
@@ -42,19 +42,18 @@ type RootLayoutProps = {
   readonly children: React.ReactNode;
 };
 
-const RootLayout = ({ children }: RootLayoutProps): React.ReactElement => {
-  return (
-    <html
-      lang="en"
-      className={`${newsreader.variable} ${ibmPlexSans.variable} ${ibmPlexMono.variable}`}
-    >
-      <body>
-        <ToastProvider>
-          <MainLayout>{children}</MainLayout>
-        </ToastProvider>
-      </body>
-    </html>
-  );
-};
+const RootLayout = ({ children }: RootLayoutProps): React.ReactElement => (
+  <html
+    lang="en"
+    data-scroll-behavior="smooth"
+    className={`${fraunces.variable} ${dmSans.variable} ${jetbrainsMono.variable}`}
+  >
+    <body>
+      <ToastProvider>
+        <MainLayout>{children}</MainLayout>
+      </ToastProvider>
+    </body>
+  </html>
+);
 
 export default RootLayout;

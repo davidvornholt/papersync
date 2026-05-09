@@ -6,6 +6,7 @@ Goal: codify the proven vibe into shared design intent and reusable theme primit
 - `DESIGN.md` should describe how the design should feel, not list raw token values, exact component inventories, or CSS implementation details.
 - Create `packages/ui` if it does not already exist.
 - Create or update `packages/ui/src/theme.css`.
+- Encode global interaction affordances in `packages/ui/src/theme.css`, including `cursor: pointer` for enabled clickable controls while preserving appropriate cursors for disabled, text-entry, drag, resize, and specialized interactions.
 - Turn the successful prototype into a reusable theme system instead of copying page-specific styling verbatim.
 - Keep `DESIGN.md` and `theme.css` aligned.
 

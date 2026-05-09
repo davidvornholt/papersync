@@ -8,7 +8,7 @@ export const SuccessCheckmark = (): React.ReactElement => (
     initial={{ scale: 0 }}
     animate={{ scale: 1 }}
     transition={{ type: 'spring', damping: 15, stiffness: 200, delay: 0.1 }}
-    className="w-16 h-16 text-green-500"
+    className="w-14 h-14 text-positive"
     fill="none"
     viewBox="0 0 24 24"
     stroke="currentColor"
@@ -22,7 +22,7 @@ export const SuccessCheckmark = (): React.ReactElement => (
       cy="12"
       r="10"
       strokeWidth={1.5}
-      className="stroke-green-500/30"
+      className="stroke-positive/30"
     />
     <motion.path
       initial={{ pathLength: 0 }}
@@ -124,31 +124,30 @@ export const CopyButton = ({ text }: { text: string }): React.ReactElement => {
   );
 
   return (
-    <motion.button
+    <button
       type="button"
       onClick={handleCopy}
-      whileHover={{ scale: 1.05 }}
-      whileTap={{ scale: 0.95 }}
-      className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
+      className={`px-3 py-2 mono text-[11px] uppercase tracking-[0.18em] border transition-colors cursor-pointer touch-manipulation ${
         copied
-          ? 'bg-green-500 text-white'
-          : 'bg-surface hover:bg-border text-foreground'
+          ? 'border-positive text-positive'
+          : 'border-hairline-strong text-graphite hover:text-ink hover:border-ink'
       }`}
+      aria-live="polite"
     >
       <span className="flex items-center gap-2">
         {copied ? (
           <>
             {renderCopiedIcon}
-            Copied!
+            Copied
           </>
         ) : (
           <>
             {renderCopyIcon}
-            Copy Code
+            Copy code
           </>
         )}
       </span>
-    </motion.button>
+    </button>
   );
 };
 
@@ -177,9 +176,7 @@ export const CountdownTimer = ({
   const seconds = timeLeft % 60;
 
   return (
-    <span
-      className={`font-mono ${timeLeft < 60 ? 'text-red-500' : 'text-muted'}`}
-    >
+    <span className={`mono ${timeLeft < 60 ? 'text-accent' : 'text-graphite'}`}>
       {minutes}:{seconds.toString().padStart(2, '0')}
     </span>
   );

@@ -7,6 +7,7 @@ PaperSync is bring-your-own-key only: you provide any third-party API keys or lo
 ## Workspace layout
 
 - `apps/web`: Next.js application
+- `packages/ui`: Shared editorial design system and UI primitives
 - `packages/typescript-config`: Shared TypeScript configuration
 
 ## Getting started
@@ -34,3 +35,7 @@ Apply safe formatting/import fixes, then type-check and test:
 ```bash
 bun run check:fix
 ```
+
+## License
+
+PaperSync is licensed under the [MIT License](./LICENSE).

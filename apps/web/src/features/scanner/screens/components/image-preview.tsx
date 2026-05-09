@@ -1,8 +1,8 @@
 'use client';
 
+import { Button } from '@papersync/ui/button';
 import { motion } from 'motion/react';
 import Image from 'next/image';
-import { Button } from '@/shared/components/button';
 import { Spinner } from '@/shared/components/motion';
 
 type ImagePreviewProps = {
@@ -23,7 +23,7 @@ export const ImagePreview = ({
     animate={{ opacity: 1, y: 0 }}
     className="space-y-4"
   >
-    <div className="relative rounded-xl overflow-hidden border border-border group">
+    <div className="relative overflow-hidden border border-hairline">
       <Image
         src={preview}
         alt="Scanned planner preview"
@@ -32,26 +32,25 @@ export const ImagePreview = ({
         height={600}
         unoptimized
       />
-      <div className="absolute inset-0 bg-gradient-to-t from-foreground/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-center pb-4">
-        <Button variant="secondary" size="sm" onClick={onClear}>
-          Change Image
-        </Button>
-      </div>
     </div>
-    <Button
-      onClick={onProcess}
-      disabled={isProcessing}
-      className="w-full"
-      size="lg"
-    >
-      {isProcessing ? (
-        <>
-          <Spinner size="sm" className="mr-2" />
-          Analyzing...
-        </>
-      ) : (
-        'Process Scan'
-      )}
-    </Button>
+    <div className="flex flex-col-reverse sm:flex-row gap-2 sm:gap-3">
+      <Button variant="secondary" onClick={onClear} className="sm:flex-1">
+        Change image
+      </Button>
+      <Button
+        onClick={onProcess}
+        disabled={isProcessing}
+        className="sm:flex-[2]"
+      >
+        {isProcessing ? (
+          <>
+            <Spinner size="sm" className="mr-2" />
+            Analyzing...
+          </>
+        ) : (
+          'Process scan'
+        )}
+      </Button>
+    </div>
   </motion.div>
 );
