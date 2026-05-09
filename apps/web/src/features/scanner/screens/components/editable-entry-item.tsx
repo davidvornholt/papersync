@@ -2,8 +2,8 @@
 
 import { motion } from 'motion/react';
 import { useState } from 'react';
-import { Button } from '@/shared/components';
-import type { ExtractedEntry } from '../../hooks';
+import { Button } from '@/shared/components/button';
+import type { ExtractedEntry } from '../../hooks/use-scan';
 import { SCAN_DAY_OPTIONS } from '../scan-screen-types';
 
 type EditableEntryItemProps = {

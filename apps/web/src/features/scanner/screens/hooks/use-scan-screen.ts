@@ -1,10 +1,10 @@
 'use client';
 
 import { useCallback, useState } from 'react';
-import { useToast } from '@/shared/components';
-import { useSettings } from '@/shared/hooks';
-import { syncEntriesToVault } from '@/shared/services/vault-actions';
-import { type ExtractedEntry, useScan } from '../../hooks';
+import { useToast } from '@/shared/components/toast';
+import { useSettings } from '@/shared/hooks/use-settings';
+import { syncEntriesToVault } from '@/shared/vault/actions/sync';
+import { type ExtractedEntry, useScan } from '../../hooks/use-scan';
 import type { ResultsPanelState } from '../scan-screen-types';
 
 type UseScanScreenReturn = {

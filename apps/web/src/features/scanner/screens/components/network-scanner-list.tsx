@@ -1,5 +1,5 @@
 import { motion } from 'motion/react';
-import type { DiscoveredScanner } from '../../services';
+import type { DiscoveredScanner } from '../../services/scanner-discovery';
 
 type NetworkScannerListProps = {
   readonly scanners: readonly DiscoveredScanner[];

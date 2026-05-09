@@ -2,13 +2,15 @@
 
 import { Effect } from 'effect';
 import {
-  type DiscoveredScanner,
   ESCLClient,
   ESCLClientLayer,
-  MdnsDiscoveryLayer,
   type ScannerCapabilities,
+} from '../services/escl-client';
+import {
+  type DiscoveredScanner,
+  MdnsDiscoveryLayer,
   ScannerDiscoveryService,
-} from '../services';
+} from '../services/scanner-discovery';
 
 // ============================================================================
 // Types

@@ -1,7 +1,7 @@
 {
   "extends": "@papersync/typescript-config/nextjs.json",
   "compilerOptions": {
-    "types": ["bun-types"],
+    "types": ["bun"],
     "paths": {
       "@/*": ["./src/*"]
     }

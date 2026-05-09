@@ -1,7 +1,7 @@
 'use client';
 
 import { AnimatePresence, motion } from 'motion/react';
-import { Card, CardContent, CardHeader } from '@/shared/components';
+import { Card, CardContent, CardHeader } from '@/shared/components/card';
 import type { Settings } from '@/shared/hooks/use-settings';
 import {
   InputField,

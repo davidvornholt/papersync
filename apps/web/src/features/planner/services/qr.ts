@@ -1,7 +1,7 @@
 import { Data, Effect, Schema } from 'effect';
 import jsQR from 'jsqr';
 import QRCode from 'qrcode';
-import type { QRPayload, WeekId } from '@/shared/types';
+import type { QRPayload, WeekId } from '@/shared/types/schemas';
 
 // ============================================================================
 // Error Types

@@ -1,6 +1,6 @@
-import { StaggerContainer, StaggerItem } from '@/shared/components';
+import { StaggerContainer, StaggerItem } from '@/shared/components/motion';
 import type { TimetableDay } from '@/shared/hooks/use-settings';
-import type { DayOfWeek, Subject } from '@/shared/types';
+import type { DayOfWeek, Subject } from '@/shared/types/schemas';
 import type { ScheduleException } from '../planner-screen-types';
 import { GeneratePlannerButton } from './generate-planner-button';
 import { ScheduleOverviewCard } from './schedule-overview-card';

@@ -1,13 +1,9 @@
 'use client';
 
 import { AnimatePresence, motion } from 'motion/react';
-import {
-  Button,
-  Card,
-  CardContent,
-  CardHeader,
-  Spinner,
-} from '@/shared/components';
+import { Button } from '@/shared/components/button';
+import { Card, CardContent, CardHeader } from '@/shared/components/card';
+import { Spinner } from '@/shared/components/motion';
 import type { PreviewPanelState } from '../planner-screen-types';
 
 type PreviewPanelProps = {

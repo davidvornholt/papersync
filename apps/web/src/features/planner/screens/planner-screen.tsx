@@ -2,10 +2,11 @@
 
 import { motion } from 'motion/react';
 import { useMemo, useState } from 'react';
-import { PageTransition, Spinner, useToast } from '@/shared/components';
+import { PageTransition, Spinner } from '@/shared/components/motion';
+import { useToast } from '@/shared/components/toast';
 import { useSettings } from '@/shared/hooks/use-settings';
-import type { DayOfWeek, ISODate, WeekId } from '@/shared/types';
-import { usePlanner } from '../hooks';
+import type { DayOfWeek, ISODate, WeekId } from '@/shared/types/schemas';
+import { usePlanner } from '../hooks/use-planner';
 import { getWeekId, getWeekStartDate } from '../services/generator';
 import { ExceptionEditorModal } from './components/exception-editor-modal';
 import { PlannerConfigColumn } from './components/planner-config-column';

@@ -1,4 +1,4 @@
-import type { UseSettingsReturn } from '@/shared/hooks';
+import type { UseSettingsReturn } from '@/shared/hooks/use-settings';
 
 export type UseSettingsScreenVaultProps = {
   readonly settings: UseSettingsReturn['settings'];

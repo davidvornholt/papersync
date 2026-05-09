@@ -1,5 +1,6 @@
 import { AlertTriangle } from 'lucide-react';
-import { Button, Spinner } from '@/shared/components';
+import { Button } from '@/shared/components/button';
+import { Spinner } from '@/shared/components/motion';
 
 export const RepositoryLoadingState = (): React.ReactElement => (
   <div className="flex flex-col items-center justify-center py-12 gap-3">

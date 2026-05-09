@@ -1,8 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Button, Modal } from '@/shared/components';
-import type { DayOfWeek, ISODate, Subject } from '@/shared/types';
+import { Button } from '@/shared/components/button';
+import { Modal } from '@/shared/components/modal';
+import type { DayOfWeek, ISODate, Subject } from '@/shared/types/schemas';
 import type { ScheduleException } from '../planner-screen-types';
 import { ExceptionSlotEditor } from './exception-slot-editor';
 

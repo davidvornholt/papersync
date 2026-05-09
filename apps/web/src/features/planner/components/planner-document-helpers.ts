@@ -1,4 +1,4 @@
-import type { Subject } from '@/shared/types';
+import type { Subject } from '@/shared/types/schemas';
 import { LAYOUT, WEEKDAYS } from './planner-document-constants';
 import type { DayData, DayInfo, TimetableDay } from './planner-document-types';
 

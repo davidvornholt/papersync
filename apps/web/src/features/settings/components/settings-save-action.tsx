@@ -1,6 +1,7 @@
 'use client';
 
-import { Button, Spinner } from '@/shared/components';
+import { Button } from '@/shared/components/button';
+import { Spinner } from '@/shared/components/motion';
 
 type SettingsSaveActionProps = {
   readonly isSaving: boolean;

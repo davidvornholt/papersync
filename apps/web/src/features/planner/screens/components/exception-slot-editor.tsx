@@ -1,5 +1,5 @@
-import { Button } from '@/shared/components';
-import type { Subject } from '@/shared/types';
+import { Button } from '@/shared/components/button';
+import type { Subject } from '@/shared/types/schemas';
 
 type ExceptionSlotEditorProps = {
   readonly slots: Array<{ id: string; subjectId: string }>;

@@ -1,8 +1,9 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { Button, Modal } from '@/shared/components';
-import type { WeekId } from '@/shared/types';
+import { Button } from '@/shared/components/button';
+import { Modal } from '@/shared/components/modal';
+import type { WeekId } from '@/shared/types/schemas';
 import { getWeekId, getWeekStartDate } from '../../services/generator';
 
 type WeekSelectionModalProps = {

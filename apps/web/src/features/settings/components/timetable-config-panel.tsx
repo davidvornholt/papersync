@@ -2,7 +2,7 @@
 
 import { AnimatePresence, motion } from 'motion/react';
 import { useState } from 'react';
-import { Button } from '@/shared/components';
+import { Button } from '@/shared/components/button';
 import type {
   DayOfWeek,
   Subject,

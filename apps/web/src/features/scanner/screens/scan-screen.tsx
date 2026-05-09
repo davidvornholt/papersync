@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'motion/react';
-import { PageTransition } from '@/shared/components';
+import { PageTransition } from '@/shared/components/motion';
 import { NetworkScannersPanel } from './components/network-scanners-panel';
 import { ResultsPanel } from './components/results-panel';
 import { UploadScanCard } from './components/upload-scan-card';

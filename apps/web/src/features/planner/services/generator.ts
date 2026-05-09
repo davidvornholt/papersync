@@ -1,5 +1,5 @@
 import { Data, Effect } from 'effect';
-import type { WeekId } from '@/shared/types';
+import type { WeekId } from '@/shared/types/schemas';
 
 // ============================================================================
 // Error Types

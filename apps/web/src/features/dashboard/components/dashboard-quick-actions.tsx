@@ -2,12 +2,12 @@
 
 import { motion } from 'motion/react';
 import Link from 'next/link';
+import { Card } from '@/shared/components/card';
 import {
-  Card,
   HoverScale,
   StaggerContainer,
   StaggerItem,
-} from '@/shared/components';
+} from '@/shared/components/motion';
 
 type QuickActionItem = {
   readonly href: string;

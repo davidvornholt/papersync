@@ -2,7 +2,7 @@
 
 import { AnimatePresence } from 'motion/react';
 import { useCallback, useEffect } from 'react';
-import { Modal } from '@/shared/components';
+import { Modal } from '@/shared/components/modal';
 import {
   OAuthAwaitingState,
   OAuthErrorState,

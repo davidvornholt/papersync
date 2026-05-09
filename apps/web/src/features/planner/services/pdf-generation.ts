@@ -1,6 +1,6 @@
 import { pdf } from '@react-pdf/renderer';
 import { Data, Effect } from 'effect';
-import type { Subject, WeekId } from '@/shared/types';
+import type { Subject, WeekId } from '@/shared/types/schemas';
 import { PlannerDocument } from '../components/planner-document';
 import { getWeekDateRange, getWeekId } from './generator';
 import { encodeQRPayload } from './qr';

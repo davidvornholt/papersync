@@ -1,8 +1,9 @@
 'use client';
 
 import { motion } from 'motion/react';
-import { Component, type ErrorInfo, type ReactNode } from 'react';
-import { Button, Card, CardContent } from './index';
+import { Component, type ReactNode } from 'react';
+import { Button } from './button';
+import { Card, CardContent } from './card';
 
 // ============================================================================
 // Types
@@ -35,8 +36,6 @@ export class ErrorBoundary extends Component<
   static getDerivedStateFromError(error: Error): ErrorBoundaryState {
     return { hasError: true, error };
   }
-
-  componentDidCatch(_error: Error, _errorInfo: ErrorInfo): void {}
 
   handleReset = (): void => {
     this.setState({ hasError: false, error: null });

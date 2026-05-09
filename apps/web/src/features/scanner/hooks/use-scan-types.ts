@@ -1,5 +1,5 @@
-import type { VaultSettings } from '@/shared/services/ocr-actions';
-import type { WeekId } from '@/shared/types';
+import type { VaultSettings } from '@/shared/ocr/actions/extract-types';
+import type { WeekId } from '@/shared/types/schemas';
 
 export type ExtractedEntry = {
   readonly id: string;

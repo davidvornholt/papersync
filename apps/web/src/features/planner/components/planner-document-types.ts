@@ -1,4 +1,4 @@
-import type { Subject, WeekId } from '@/shared/types';
+import type { Subject, WeekId } from '@/shared/types/schemas';
 
 type TimetableSlot = {
   readonly id: string;

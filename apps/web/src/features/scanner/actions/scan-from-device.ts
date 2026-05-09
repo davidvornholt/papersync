@@ -2,11 +2,11 @@
 
 import { Effect } from 'effect';
 import {
-  type DiscoveredScanner,
   ESCLClient,
   ESCLClientLayer,
   type ScanSettings,
-} from '../services';
+} from '../services/escl-client';
+import type { DiscoveredScanner } from '../services/scanner-discovery';
 
 // ============================================================================
 // Types

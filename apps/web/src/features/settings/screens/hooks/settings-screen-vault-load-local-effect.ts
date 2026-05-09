@@ -1,6 +1,12 @@
-import { Effect } from 'effect';
+import { Data, Effect } from 'effect';
 import type { Subject, TimetableDay } from '@/shared/hooks/use-settings';
-import { loadSettingsFromVault } from '@/shared/services/vault-actions';
+import { loadSettingsFromVault } from '@/shared/vault/actions/sync-settings';
+
+class LocalVaultSettingsLoadError extends Data.TaggedError(
+  'LocalVaultSettingsLoadError',
+)<{
+  readonly message: string;
+}> {}
 
 type AddToast = (
   message: string,
@@ -23,7 +29,10 @@ export const createLoadLocalVaultEffect = ({
 }) =>
   Effect.tryPromise({
     try: () => loadSettingsFromVault('local', { localPath }),
-    catch: () => new Error('Failed to load local vault settings'),
+    catch: () =>
+      new LocalVaultSettingsLoadError({
+        message: 'Failed to load local vault settings',
+      }),
   }).pipe(
     Effect.tap((result) =>
       Effect.sync(() => {

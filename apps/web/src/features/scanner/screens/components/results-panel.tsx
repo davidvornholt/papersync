@@ -1,8 +1,8 @@
 'use client';
 
 import { AnimatePresence } from 'motion/react';
-import { Card, CardContent, CardHeader } from '@/shared/components';
-import type { ExtractedEntry } from '../../hooks';
+import { Card, CardContent, CardHeader } from '@/shared/components/card';
+import type { ExtractedEntry } from '../../hooks/use-scan';
 import type { ResultsPanelState } from '../scan-screen-types';
 import { ResultsPanelComplete } from './results-panel-complete';
 import {

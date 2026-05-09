@@ -1,9 +1,10 @@
-import { Button, Spinner } from '@/shared/components';
+import { Button } from '@/shared/components/button';
+import { Spinner } from '@/shared/components/motion';
 import type {
   ColorMode,
   InputSource,
   ScannerCapabilities,
-} from '../../services';
+} from '../../services/escl-client';
 
 type NetworkScannerSettingsProps = {
   readonly capabilities: ScannerCapabilities;

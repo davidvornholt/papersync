@@ -1,7 +1,8 @@
 'use client';
 
 import { AnimatePresence } from 'motion/react';
-import { Button, Card, CardContent, CardHeader } from '@/shared/components';
+import { Button } from '@/shared/components/button';
+import { Card, CardContent, CardHeader } from '@/shared/components/card';
 import type { DayOfWeek, Settings } from '@/shared/hooks/use-settings';
 import { SubjectListItem } from './subject-list-item';
 import { TimetableConfigPanel } from './timetable-config-panel';

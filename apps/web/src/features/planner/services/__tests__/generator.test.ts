@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import type { WeekId } from '@/shared/types';
+import type { WeekId } from '@/shared/types/schemas';
 import {
   getWeekDateRange,
   getWeekEndDate,

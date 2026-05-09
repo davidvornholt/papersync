@@ -3,7 +3,8 @@
 import { ChevronRight, Loader2, RefreshCw, Search } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Button, Modal } from '@/shared/components';
+import { Button } from '@/shared/components/button';
+import { Modal } from '@/shared/components/modal';
 import { listGitHubRepositories } from '../actions/github-oauth';
 import type { GitHubRepository } from '../actions/github-oauth-types';
 import {

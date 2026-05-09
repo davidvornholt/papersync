@@ -1,4 +1,4 @@
-import type { DayOfWeek, ISODate } from '@/shared/types';
+import type { DayOfWeek, ISODate } from '@/shared/types/schemas';
 
 export type ScheduleException = {
   id: string;

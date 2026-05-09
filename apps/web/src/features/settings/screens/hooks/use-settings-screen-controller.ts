@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useToast } from '@/shared/components';
+import { useToast } from '@/shared/components/toast';
 import type { Subject } from '@/shared/hooks/use-settings';
 import { useSettings } from '@/shared/hooks/use-settings';
 import {

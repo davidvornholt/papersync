@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'motion/react';
-import { Spinner } from '@/shared/components';
+import { Spinner } from '@/shared/components/motion';
 
 export const ResultsEmptyState = (): React.ReactElement => (
   <motion.div

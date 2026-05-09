@@ -2,7 +2,8 @@
 
 import { motion } from 'motion/react';
 import Image from 'next/image';
-import { Button, Spinner } from '@/shared/components';
+import { Button } from '@/shared/components/button';
+import { Spinner } from '@/shared/components/motion';
 
 type ImagePreviewProps = {
   readonly preview: string;

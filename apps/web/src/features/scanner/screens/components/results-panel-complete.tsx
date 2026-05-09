@@ -1,8 +1,9 @@
 'use client';
 
 import { AnimatePresence, motion } from 'motion/react';
-import { Button, Spinner } from '@/shared/components';
-import type { ExtractedEntry } from '../../hooks';
+import { Button } from '@/shared/components/button';
+import { Spinner } from '@/shared/components/motion';
+import type { ExtractedEntry } from '../../hooks/use-scan';
 import { EditableEntryItem } from './editable-entry-item';
 
 type ResultsPanelCompleteProps = {

@@ -1,4 +1,4 @@
-import { ScanScreen } from '@/features/scanner/screens';
+import { ScanScreen } from '@/features/scanner/screens/scan-screen';
 
 const ScanPage = (): React.ReactElement => <ScanScreen />;
 

@@ -2,6 +2,16 @@
   "name": "@papersync/typescript-config",
   "version": "0.0.0",
   "private": true,
+  "scripts": {
+    "check-types": "tsc --noEmit",
+    "lint": "biome check --error-on-warnings .",
+    "lint:fix": "biome check --write --error-on-warnings .",
+    "test": "bun test"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.3.13",
+    "typescript": "^5.9.3"
+  },
   "exports": {
     "./base.json": "./base.json",
     "./nextjs.json": "./nextjs.json"

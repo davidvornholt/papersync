@@ -1,25 +1,21 @@
 'use client';
 
 import { useCallback, useState } from 'react';
-import {
-  Button,
-  Card,
-  CardContent,
-  CardHeader,
-  Spinner,
-  useToast,
-} from '@/shared/components';
+import { Button } from '@/shared/components/button';
+import { Card, CardContent, CardHeader } from '@/shared/components/card';
+import { Spinner } from '@/shared/components/motion';
+import { useToast } from '@/shared/components/toast';
 import {
   discoverScanners,
   getScannerCapabilities,
-  scanFromDevice,
-} from '../../actions';
+} from '../../actions/discover';
+import { scanFromDevice } from '../../actions/scan-from-device';
 import type {
   ColorMode,
-  DiscoveredScanner,
   InputSource,
   ScannerCapabilities,
-} from '../../services';
+} from '../../services/escl-client';
+import type { DiscoveredScanner } from '../../services/scanner-discovery';
 import { NetworkScannerList } from './network-scanner-list';
 import { NetworkScannerSettings } from './network-scanner-settings';
 

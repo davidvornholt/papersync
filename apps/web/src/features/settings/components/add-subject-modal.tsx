@@ -1,7 +1,8 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { Button, Modal } from '@/shared/components';
+import { Button } from '@/shared/components/button';
+import { Modal } from '@/shared/components/modal';
 import type { Subject } from '@/shared/hooks/use-settings';
 
 type AddSubjectModalProps = {

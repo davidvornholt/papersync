@@ -1,12 +1,12 @@
 'use client';
 
 import { motion } from 'motion/react';
+import { Button } from '@/shared/components/button';
 import {
-  Button,
   PageTransition,
   StaggerContainer,
   StaggerItem,
-} from '@/shared/components';
+} from '@/shared/components/motion';
 import { DashboardQuickActions } from '../components/dashboard-quick-actions';
 import { GettingStartedCard } from '../components/getting-started-card';
 import { WorkflowOverviewCard } from '../components/workflow-overview-card';

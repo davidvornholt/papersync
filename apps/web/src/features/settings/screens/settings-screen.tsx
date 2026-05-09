@@ -6,7 +6,7 @@ import {
   Spinner,
   StaggerContainer,
   StaggerItem,
-} from '@/shared/components';
+} from '@/shared/components/motion';
 import { AddSubjectModal } from '../components/add-subject-modal';
 import { GitHubOAuthModal } from '../components/github-oauth-modal';
 import { RepositorySelectorModal } from '../components/repository-selector-modal';

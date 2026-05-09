@@ -1,4 +1,5 @@
-import { Button, Card, CardContent, CardHeader } from '@/shared/components';
+import { Button } from '@/shared/components/button';
+import { Card, CardContent, CardHeader } from '@/shared/components/card';
 
 type WeekSelectionCardProps = {
   readonly currentWeekId: string;

@@ -1,7 +1,8 @@
 'use client';
 
 import { motion } from 'motion/react';
-import { Button, Spinner } from '@/shared/components';
+import { Button } from '@/shared/components/button';
+import { Spinner } from '@/shared/components/motion';
 import {
   CopyButton,
   CountdownTimer,

@@ -1,5 +1,5 @@
 import type { TimetableDay } from '@/shared/hooks/use-settings';
-import type { DayOfWeek, ISODate, Subject } from '@/shared/types';
+import type { DayOfWeek, ISODate, Subject } from '@/shared/types/schemas';
 import type { PlannerState } from '../hooks/use-planner';
 import type {
   PreviewPanelState,

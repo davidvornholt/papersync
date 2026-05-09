@@ -8,9 +8,9 @@ import { useGitHubOAuth } from '../../hooks/use-github-oauth';
 import {
   createOAuthSuccessEffect,
   createRepoSelectEffect,
-  createSaveSettingsEffect,
 } from './settings-screen-vault-effects';
 import { createLoadLocalVaultEffect } from './settings-screen-vault-load-local-effect';
+import { createSaveSettingsEffect } from './settings-screen-vault-save-effect';
 import type { UseSettingsScreenVaultProps } from './use-settings-screen-vault-types';
 
 const runEffect = (program: Effect.Effect<unknown, never, never>): void => {

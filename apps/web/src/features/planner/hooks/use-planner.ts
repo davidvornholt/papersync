@@ -1,8 +1,8 @@
 'use client';
 
-import { Effect } from 'effect';
+import { Data, Effect } from 'effect';
 import { useCallback, useState } from 'react';
-import type { Subject, WeekId } from '@/shared/types';
+import type { Subject, WeekId } from '@/shared/types/schemas';
 import {
   downloadPlannerPdf,
   getWeekDateRange,
@@ -46,11 +46,16 @@ export type UsePlannerReturn = {
 // Effect-Based Helpers
 // ============================================================================
 
+class PlannerPdfFetchError extends Data.TaggedError('PlannerPdfFetchError')<{
+  readonly message: string;
+  readonly cause?: unknown;
+}> {}
+
 const fetchPdfEffect = (
   weekId: WeekId,
   subjects: readonly Subject[],
   timetable: readonly TimetableDay[],
-): Effect.Effect<Blob, Error> =>
+): Effect.Effect<Blob, PlannerPdfFetchError> =>
   Effect.tryPromise({
     try: () =>
       fetch('/api/planner', {
@@ -64,18 +69,29 @@ const fetchPdfEffect = (
             .then((errorData) => {
               const parsed = errorData as { error?: string };
               return Promise.reject(
-                new Error(parsed.error ?? 'Failed to generate PDF'),
+                new PlannerPdfFetchError({
+                  message: parsed.error ?? 'Failed to generate PDF',
+                }),
               );
             })
-            .catch(() => Promise.reject(new Error('Failed to generate PDF')));
+            .catch(() =>
+              Promise.reject(
+                new PlannerPdfFetchError({
+                  message: 'Failed to generate PDF',
+                }),
+              ),
+            );
         }
 
         return response.blob();
       }),
     catch: (error) =>
-      error instanceof Error
+      error instanceof PlannerPdfFetchError
         ? error
-        : new Error('Failed to generate planner PDF'),
+        : new PlannerPdfFetchError({
+            message: 'Failed to generate planner PDF',
+            cause: error,
+          }),
   });
 
 // ============================================================================

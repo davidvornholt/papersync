@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'motion/react';
-import { Card, CardContent, CardHeader } from '@/shared/components';
+import { Card, CardContent, CardHeader } from '@/shared/components/card';
 
 type WorkflowStep = {
   readonly title: string;

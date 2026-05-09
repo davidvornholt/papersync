@@ -1,16 +1,17 @@
-import { Effect } from 'effect';
+import { Data, Effect } from 'effect';
 import type {
   Settings,
   Subject,
   TimetableDay,
 } from '@/shared/hooks/use-settings';
-import { loadSettings } from '@/shared/hooks/use-settings-storage';
-import {
-  loadSettingsFromVault,
-  syncSettingsToVault,
-} from '@/shared/services/vault-actions';
+import { loadSettingsFromVault } from '@/shared/vault/actions/sync-settings';
 import type { GitHubRepository } from '../../actions/github-oauth-types';
-import { hasVaultSyncChanges } from './settings-screen-vault-sync-helpers';
+
+class SettingsVaultEffectError extends Data.TaggedError(
+  'SettingsVaultEffectError',
+)<{
+  readonly message: string;
+}> {}
 
 type AddToast = (
   message: string,
@@ -37,12 +38,18 @@ export const createOAuthSuccessEffect = ({
 }) =>
   Effect.tryPromise({
     try: () => import('../../actions/github-oauth'),
-    catch: () => new Error('Failed to load GitHub OAuth actions'),
+    catch: () =>
+      new SettingsVaultEffectError({
+        message: 'Failed to load GitHub OAuth actions',
+      }),
   }).pipe(
     Effect.flatMap((module) =>
       Effect.tryPromise({
         try: () => module.getGitHubUser(accessToken),
-        catch: () => new Error('Failed to fetch GitHub user'),
+        catch: () =>
+          new SettingsVaultEffectError({
+            message: 'Failed to fetch GitHub user',
+          }),
       }),
     ),
     Effect.tap((userResult) =>
@@ -98,7 +105,10 @@ export const createRepoSelectEffect = ({
         githubToken,
         githubRepo: repo.fullName,
       }),
-    catch: () => new Error('Failed to load settings from GitHub vault'),
+    catch: () =>
+      new SettingsVaultEffectError({
+        message: 'Failed to load settings from GitHub vault',
+      }),
   }).pipe(
     Effect.tap((result) =>
       Effect.sync(() => {
@@ -123,78 +133,3 @@ export const createRepoSelectEffect = ({
     ),
   );
 };
-
-export const createSaveSettingsEffect = ({
-  save,
-  settings,
-  isVaultConfigured,
-  addToast,
-  setIsSyncing,
-}: {
-  readonly save: () => Promise<void>;
-  readonly settings: Settings;
-  readonly isVaultConfigured: boolean;
-  readonly addToast: AddToast;
-  readonly setIsSyncing: (isSyncing: boolean) => void;
-}) =>
-  loadSettings().pipe(
-    Effect.flatMap((previousSettings) =>
-      Effect.tryPromise({
-        try: () => save(),
-        catch: () => new Error('Failed to save settings locally'),
-      }).pipe(
-        Effect.flatMap(() => {
-          if (
-            !isVaultConfigured ||
-            !hasVaultSyncChanges(previousSettings, settings)
-          ) {
-            return Effect.sync(() =>
-              addToast('Settings saved successfully!', 'success'),
-            );
-          }
-
-          return Effect.sync(() => setIsSyncing(true)).pipe(
-            Effect.flatMap(() =>
-              Effect.tryPromise({
-                try: () =>
-                  syncSettingsToVault(
-                    {
-                      subjects: settings.subjects,
-                      timetable: settings.timetable,
-                    },
-                    settings.vault.method,
-                    settings.vault,
-                  ),
-                catch: () => new Error('Failed to sync settings to vault'),
-              }).pipe(
-                Effect.tap((result) =>
-                  Effect.sync(() => {
-                    addToast(
-                      result.success
-                        ? 'Settings saved and synced to vault!'
-                        : `Settings saved, but sync failed: ${result.error}`,
-                      result.success ? 'success' : 'warning',
-                    );
-                  }),
-                ),
-                Effect.catchAll((error) =>
-                  Effect.sync(() =>
-                    addToast(
-                      `Settings saved, but sync failed: ${error.message}`,
-                      'warning',
-                    ),
-                  ),
-                ),
-                Effect.ensuring(Effect.sync(() => setIsSyncing(false))),
-              ),
-            ),
-          );
-        }),
-      ),
-    ),
-    Effect.catchAll((error) =>
-      Effect.sync(() =>
-        addToast(`Failed to save settings: ${error.message}`, 'error'),
-      ),
-    ),
-  );

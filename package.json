@@ -6,13 +6,9 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "turbo dev --parallel",
-    "build": "turbo build",
-    "start": "turbo start",
-    "lint": "turbo lint",
-    "lint:fix": "turbo lint:fix",
-    "test": "turbo test",
-    "check:fix": "turbo check:fix"
+    "check": "turbo run lint check-types test",
+    "check:fix": "turbo run lint:fix check-types test",
+    "dev:web": "turbo run dev --filter @papersync/web"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.4",

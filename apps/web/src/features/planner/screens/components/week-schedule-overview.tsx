@@ -1,9 +1,9 @@
 'use client';
 
 import { motion } from 'motion/react';
-import { Button } from '@/shared/components';
+import { Button } from '@/shared/components/button';
 import type { TimetableDay } from '@/shared/hooks/use-settings';
-import type { DayOfWeek, ISODate, Subject } from '@/shared/types';
+import type { DayOfWeek, ISODate, Subject } from '@/shared/types/schemas';
 import {
   DAY_SHORT_LABELS,
   type ScheduleException,

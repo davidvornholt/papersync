@@ -2,7 +2,7 @@
 
 import { motion } from 'motion/react';
 import Link from 'next/link';
-import { Card, CardContent, CardHeader } from '@/shared/components';
+import { Card, CardContent, CardHeader } from '@/shared/components/card';
 
 type GettingStartedStep = {
   readonly number: number;

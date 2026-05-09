@@ -1,9 +1,7 @@
-import { Effect } from 'effect';
-import {
-  extractHandwriting,
-  type VaultSettings,
-} from '@/shared/services/ocr-actions';
-import type { WeekId } from '@/shared/types';
+import { Data, Effect } from 'effect';
+import { extractHandwriting } from '@/shared/ocr/actions/extract';
+import type { VaultSettings } from '@/shared/ocr/actions/extract-types';
+import type { WeekId } from '@/shared/types/schemas';
 import type { AISettings, ExtractedEntry, ScanState } from './use-scan-types';
 
 export const getCurrentWeekId = (): WeekId => {
@@ -16,11 +14,22 @@ export const getCurrentWeekId = (): WeekId => {
   return `${now.getFullYear()}-W${weekNumber.toString().padStart(2, '0')}` as WeekId;
 };
 
+class FileReadError extends Data.TaggedError('FileReadError')<{
+  readonly message: string;
+}> {}
+
+class ExtractionRequestError extends Data.TaggedError(
+  'ExtractionRequestError',
+)<{
+  readonly message: string;
+  readonly cause: unknown;
+}> {}
+
 export const readFileAsDataUrl = (
   file: File,
   onProgress: (progress: number) => void,
-): Effect.Effect<string, Error> =>
-  Effect.async<string, Error>((resume) => {
+): Effect.Effect<string, FileReadError> =>
+  Effect.async<string, FileReadError>((resume) => {
     const reader = new FileReader();
 
     reader.onprogress = (event) => {
@@ -30,11 +39,22 @@ export const readFileAsDataUrl = (
     };
 
     reader.onload = (event) => {
-      resume(Effect.succeed(event.target?.result as string));
+      const result = event.target?.result;
+      if (typeof result === 'string') {
+        resume(Effect.succeed(result));
+        return;
+      }
+      resume(
+        Effect.fail(
+          new FileReadError({ message: 'Failed to read file as data URL' }),
+        ),
+      );
     };
 
     reader.onerror = () => {
-      resume(Effect.fail(new Error('Failed to read file')));
+      resume(
+        Effect.fail(new FileReadError({ message: 'Failed to read file' })),
+      );
     };
 
     reader.readAsDataURL(file);
@@ -56,10 +76,11 @@ export const processExtractionEffect = (
         ollamaEndpoint: aiSettings.ollamaEndpoint,
         vaultSettings,
       }),
-    catch: (error): Error =>
-      error instanceof Error
-        ? error
-        : new Error('Unknown error during extraction'),
+    catch: (error) =>
+      new ExtractionRequestError({
+        message: 'Unknown error during extraction',
+        cause: error,
+      }),
   }).pipe(
     Effect.flatMap((result): Effect.Effect<ScanState, never> => {
       if (!result.success) {
@@ -89,7 +110,7 @@ export const processExtractionEffect = (
         modelUsed: result.modelUsed,
       });
     }),
-    Effect.catchAll((error: Error) =>
+    Effect.catchAll((error) =>
       Effect.succeed<ScanState>({
         status: 'error' as const,
         error: error.message,

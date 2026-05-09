@@ -1,6 +1,6 @@
 'use client';
 
-import { Effect } from 'effect';
+import { Data, Effect } from 'effect';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   initiateGitHubDeviceFlow,
@@ -16,6 +16,12 @@ import type { OAuthState } from '../components/github-oauth-modal-types';
 // For development, you can create your own OAuth App at:
 // https://github.com/settings/developers
 const GITHUB_CLIENT_ID = process.env.NEXT_PUBLIC_GITHUB_CLIENT_ID ?? '';
+
+class GitHubOAuthClientError extends Data.TaggedError(
+  'GitHubOAuthClientError',
+)<{
+  readonly message: string;
+}> {}
 
 // ============================================================================
 // Hook
@@ -56,7 +62,10 @@ export const useGitHubOAuth = (): UseGitHubOAuthReturn => {
 
       const program = Effect.tryPromise({
         try: () => pollGitHubToken(GITHUB_CLIENT_ID, pollingConfig.deviceCode),
-        catch: () => new Error('Failed to poll GitHub token'),
+        catch: () =>
+          new GitHubOAuthClientError({
+            message: 'Failed to poll GitHub token',
+          }),
       }).pipe(
         Effect.match({
           onFailure: (error) => {
@@ -120,13 +129,15 @@ export const useGitHubOAuth = (): UseGitHubOAuthReturn => {
       return;
     }
 
-    // Cancel any existing OAuth flow
     cancelOAuth();
     setOAuthState({ status: 'loading' });
 
     const program = Effect.tryPromise({
       try: () => initiateGitHubDeviceFlow(GITHUB_CLIENT_ID),
-      catch: () => new Error('Failed to start GitHub OAuth'),
+      catch: () =>
+        new GitHubOAuthClientError({
+          message: 'Failed to start GitHub OAuth',
+        }),
     }).pipe(
       Effect.match({
         onFailure: (error) => {

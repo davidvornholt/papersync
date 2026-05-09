@@ -1,7 +1,8 @@
 import Link from 'next/link';
-import { Button, Card, CardContent, CardHeader } from '@/shared/components';
+import { Button } from '@/shared/components/button';
+import { Card, CardContent, CardHeader } from '@/shared/components/card';
 import type { TimetableDay } from '@/shared/hooks/use-settings';
-import type { DayOfWeek, Subject } from '@/shared/types';
+import type { DayOfWeek, Subject } from '@/shared/types/schemas';
 import type { ScheduleException } from '../planner-screen-types';
 import { WeekScheduleOverview } from './week-schedule-overview';
 

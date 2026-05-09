@@ -1,4 +1,4 @@
-import { Card, CardContent, CardHeader } from '@/shared/components';
+import { Card, CardContent, CardHeader } from '@/shared/components/card';
 import { DragDropZone } from './drag-drop-zone';
 import { ImagePreview } from './image-preview';
 

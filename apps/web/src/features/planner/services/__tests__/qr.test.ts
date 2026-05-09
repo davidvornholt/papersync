@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test';
 import { Effect } from 'effect';
-import type { WeekId } from '@/shared/types';
+import type { WeekId } from '@/shared/types/schemas';
 import { encodeQRPayload, QRDecodeError, QREncodeError } from '../qr';
 
 describe('QR Services', () => {
