@@ -1,0 +1,4 @@
+interface:
+  display_name: "GHCR + Dokploy"
+  short_description: "Publish Docker images to GHCR and deploy via Dokploy"
+  default_prompt: "Use $publish-ghcr-dokploy to add or update a GHCR-to-Dokploy release workflow gated by quality-gates."

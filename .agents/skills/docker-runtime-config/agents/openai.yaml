@@ -1,0 +1,3 @@
+interface:
+  display_name: "Docker Runtime Config"
+  short_description: "Build-time vs runtime config placement for Dockerized apps"
