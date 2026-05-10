@@ -1,4 +1,4 @@
-import { Effect } from 'effect';
+import { Data, Effect } from 'effect';
 import type { WeekId } from '@/shared/types/schemas';
 import {
   checkSuperProductivityHealth,
@@ -26,15 +26,83 @@ type SuperProductivitySyncSummary = {
   readonly taskIds: readonly string[];
 };
 
-const exactTitleMatch = (
+type SuperProductivitySyncFailure = {
+  readonly title: string;
+  readonly message: string;
+};
+
+export class SuperProductivitySyncBatchError extends Data.TaggedError(
+  'SuperProductivitySyncBatchError',
+)<{
+  readonly message: string;
+  readonly failures: readonly SuperProductivitySyncFailure[];
+  readonly summary: SuperProductivitySyncSummary;
+}> {}
+
+type SuperProductivityEntrySyncOutcome =
+  | {
+      readonly outcome: 'succeeded';
+      readonly result: {
+        readonly status: 'created' | 'updated';
+        readonly taskId: string;
+      };
+    }
+  | {
+      readonly outcome: 'failed';
+      readonly failure: SuperProductivitySyncFailure;
+    };
+
+const normalizeKeyPart = (value: string): string =>
+  value.trim().replace(/\s+/g, ' ');
+
+const createPaperSyncKey = (entry: ExtractedEntry, weekId: WeekId): string =>
+  [weekId, entry.day, entry.subject, entry.content]
+    .map(normalizeKeyPart)
+    .join(' | ');
+
+const createSourceLine = (weekId: WeekId): string =>
+  `Synced from PaperSync (${weekId}).`;
+
+const createPaperSyncKeyLine = (
+  entry: ExtractedEntry,
+  weekId: WeekId,
+): string => `PaperSync key: ${createPaperSyncKey(entry, weekId)}`;
+
+const notesHaveLine = (notes: string | undefined, expected: string): boolean =>
+  notes?.split(/\r?\n/).some((line) => line.trim() === expected) ?? false;
+
+const isMatchingPaperSyncTask = (
+  task: SuperProductivityTask,
+  entry: ExtractedEntry,
+  weekId: WeekId,
+): boolean => {
+  const title = entry.content.trim();
+  if (task.title.trim() !== title) {
+    return false;
+  }
+
+  if (notesHaveLine(task.notes, createPaperSyncKeyLine(entry, weekId))) {
+    return true;
+  }
+
+  return (
+    notesHaveLine(task.notes, createSourceLine(weekId)) &&
+    notesHaveLine(task.notes, `Planner day: ${entry.day}`) &&
+    (!entry.subject || notesHaveLine(task.notes, `Subject: ${entry.subject}`))
+  );
+};
+
+const findMatchingPaperSyncTask = (
   tasks: readonly SuperProductivityTask[],
-  title: string,
+  entry: ExtractedEntry,
+  weekId: WeekId,
 ): SuperProductivityTask | undefined =>
-  tasks.find((task) => task.title.trim() === title.trim());
+  tasks.find((task) => isMatchingPaperSyncTask(task, entry, weekId));
 
 const createTaskNotes = (entry: ExtractedEntry, weekId: WeekId): string => {
   const lines = [
-    `Synced from PaperSync (${weekId}).`,
+    createSourceLine(weekId),
+    createPaperSyncKeyLine(entry, weekId),
     `Planner day: ${entry.day}`,
   ];
 
@@ -81,7 +149,11 @@ const syncEntry = (
       options.endpoint,
       title,
     );
-    const existingTask = exactTitleMatch(existingTasks, title);
+    const existingTask = findMatchingPaperSyncTask(
+      existingTasks,
+      entry,
+      options.weekId,
+    );
 
     if (existingTask) {
       const taskId = yield* updateExistingTask(entry, existingTask, options);
@@ -108,12 +180,45 @@ const summarize = (
   taskIds: results.map((result) => result.taskId),
 });
 
+const buildBatchErrorMessage = (
+  synced: number,
+  total: number,
+  failures: readonly SuperProductivitySyncFailure[],
+): string => {
+  const failureDetails = failures
+    .slice(0, 3)
+    .map((failure) => `${failure.title}: ${failure.message}`)
+    .join('; ');
+  const remaining = failures.length > 3 ? `; +${failures.length - 3} more` : '';
+  return `Synced ${synced} of ${total} Super Productivity tasks. Failed ${failures.length}: ${failureDetails}${remaining}`;
+};
+
+const dedupeTaskEntries = (
+  entries: readonly ExtractedEntry[],
+  weekId: WeekId,
+): readonly ExtractedEntry[] => {
+  const seen = new Set<string>();
+  const uniqueEntries: ExtractedEntry[] = [];
+
+  for (const entry of entries) {
+    const key = createPaperSyncKey(entry, weekId);
+    if (!seen.has(key)) {
+      seen.add(key);
+      uniqueEntries.push(entry);
+    }
+  }
+
+  return uniqueEntries;
+};
+
 export const syncToSuperProductivityEffect = (
   entries: readonly ExtractedEntry[],
   options: SuperProductivitySyncOptions,
 ): Effect.Effect<
   SuperProductivitySyncSummary,
-  SyncValidationError | SuperProductivityApiError
+  | SyncValidationError
+  | SuperProductivityApiError
+  | SuperProductivitySyncBatchError
 > =>
   Effect.gen(function* () {
     if (entries.length === 0) {
@@ -122,8 +227,11 @@ export const syncToSuperProductivityEffect = (
       );
     }
 
-    const taskEntries = entries.filter(
-      (entry) => entry.isTask && entry.content.trim().length > 0,
+    const taskEntries = dedupeTaskEntries(
+      entries.filter(
+        (entry) => entry.isTask && entry.content.trim().length > 0,
+      ),
+      options.weekId,
     );
 
     if (taskEntries.length === 0) {
@@ -136,11 +244,48 @@ export const syncToSuperProductivityEffect = (
 
     yield* checkSuperProductivityHealth(options.endpoint);
 
-    const results = yield* Effect.forEach(
+    const outcomes = yield* Effect.forEach(
       taskEntries,
-      (entry) => syncEntry(entry, options),
+      (entry) =>
+        syncEntry(entry, options).pipe(
+          Effect.match({
+            onFailure: (error): SuperProductivityEntrySyncOutcome => ({
+              outcome: 'failed',
+              failure: {
+                title: entry.content.trim(),
+                message: error.message,
+              },
+            }),
+            onSuccess: (result): SuperProductivityEntrySyncOutcome => ({
+              outcome: 'succeeded',
+              result,
+            }),
+          }),
+        ),
       { concurrency: 1 },
     );
 
-    return summarize(results, entries.length - taskEntries.length);
+    const results = outcomes.flatMap((outcome) =>
+      outcome.outcome === 'succeeded' ? [outcome.result] : [],
+    );
+    const failures = outcomes.flatMap((outcome) =>
+      outcome.outcome === 'failed' ? [outcome.failure] : [],
+    );
+    const summary = summarize(results, entries.length - taskEntries.length);
+
+    if (failures.length > 0) {
+      return yield* Effect.fail(
+        new SuperProductivitySyncBatchError({
+          message: buildBatchErrorMessage(
+            results.length,
+            taskEntries.length,
+            failures,
+          ),
+          failures,
+          summary,
+        }),
+      );
+    }
+
+    return summary;
   });
