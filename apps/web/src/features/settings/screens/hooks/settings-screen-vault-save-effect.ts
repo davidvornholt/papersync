@@ -1,8 +1,13 @@
 import { Data, Effect } from 'effect';
-import type { Settings } from '@/shared/hooks/use-settings';
+import type { Settings, VaultMethod } from '@/shared/hooks/use-settings';
 import { loadSettings } from '@/shared/hooks/use-settings-storage';
 import { syncSettingsToVault } from '@/shared/vault/actions/sync-settings';
+import type { VaultMethod as SettingsSyncMethod } from '@/shared/vault/actions/sync-settings-types';
 import { hasVaultSyncChanges } from './settings-screen-vault-sync-helpers';
+
+const supportsSettingsSync = (
+  method: VaultMethod,
+): method is SettingsSyncMethod => method === 'local' || method === 'github';
 
 type AddToast = (
   message: string,
@@ -38,8 +43,13 @@ export const createSaveSettingsEffect = ({
           }),
       }).pipe(
         Effect.flatMap(() => {
+          // Super Productivity is a task manager, not a notes vault; subjects
+          // and timetables are kept local only when it's the active provider.
+          const method = settings.vault.method;
+
           if (
             !isVaultConfigured ||
+            !supportsSettingsSync(method) ||
             !hasVaultSyncChanges(previousSettings, settings)
           ) {
             return Effect.sync(() =>
@@ -56,7 +66,7 @@ export const createSaveSettingsEffect = ({
                       subjects: settings.subjects,
                       timetable: settings.timetable,
                     },
-                    settings.vault.method,
+                    method,
                     settings.vault,
                   ),
                 catch: () =>

@@ -1,6 +1,12 @@
 import * as S from 'effect/Schema';
 
-const VaultMethodSchema = S.Union(S.Literal('local'), S.Literal('github'));
+export const DEFAULT_SUPER_PRODUCTIVITY_ENDPOINT = 'http://127.0.0.1:3876';
+
+const VaultMethodSchema = S.Union(
+  S.Literal('local'),
+  S.Literal('github'),
+  S.Literal('super-productivity'),
+);
 const AIProviderSchema = S.Union(S.Literal('google'), S.Literal('ollama'));
 const DayOfWeekSchema = S.Union(
   S.Literal('monday'),
@@ -36,6 +42,10 @@ export const SettingsSchema = S.Struct({
     githubRepo: S.optional(S.String),
     githubUsername: S.optional(S.String),
     githubToken: S.optional(S.String),
+    superProductivityEndpoint: S.optional(S.String),
+    superProductivityProjectId: S.optional(S.String),
+    superProductivityTagIds: S.optional(S.Array(S.String)),
+    superProductivityVerified: S.optional(S.Boolean),
   }),
   ai: S.Struct({
     provider: AIProviderSchema,
@@ -73,6 +83,10 @@ export const defaultSettings: Settings = {
     localPath: '',
     githubConnected: false,
     githubRepo: '',
+    superProductivityEndpoint: DEFAULT_SUPER_PRODUCTIVITY_ENDPOINT,
+    superProductivityProjectId: '',
+    superProductivityTagIds: [],
+    superProductivityVerified: false,
   },
   ai: {
     provider: 'google',

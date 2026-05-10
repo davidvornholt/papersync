@@ -5,6 +5,7 @@ import type { WeekId } from '@/shared/types/schemas';
 import { syncToGitHubEffect } from './sync-github-effect';
 import { type ExtractedEntry, getCurrentWeekId } from './sync-helpers';
 import { syncToLocalVaultEffect } from './sync-local-effect';
+import { syncToSuperProductivityEffect } from './sync-super-productivity-effect';
 import type { SyncOptions, SyncResult } from './sync-types';
 
 export type {
@@ -70,6 +71,25 @@ export const syncEntriesToVault = async (
         effectiveWeekId,
       ).pipe(
         Effect.map((notePath) => ({ success: true as const, notePath })),
+        Effect.catchAll((error) =>
+          Effect.succeed({ success: false as const, error: error.message }),
+        ),
+      ),
+    );
+  }
+
+  if (options.method === 'super-productivity') {
+    return Effect.runPromise(
+      syncToSuperProductivityEffect(entries, {
+        endpoint: options.superProductivityEndpoint,
+        projectId: options.superProductivityProjectId,
+        tagIds: options.superProductivityTagIds,
+        weekId: effectiveWeekId,
+      }).pipe(
+        Effect.map((summary) => ({
+          success: true as const,
+          notePath: `Super Productivity (${summary.created} created, ${summary.updated} updated${summary.skipped ? `, ${summary.skipped} skipped` : ''})`,
+        })),
         Effect.catchAll((error) =>
           Effect.succeed({ success: false as const, error: error.message }),
         ),

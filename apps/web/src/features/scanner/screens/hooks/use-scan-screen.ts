@@ -3,6 +3,7 @@
 import { useCallback, useState } from 'react';
 import { useToast } from '@/shared/components/toast';
 import { useSettings } from '@/shared/hooks/use-settings';
+import type { VaultSettings } from '@/shared/ocr/actions/extract-types';
 import { syncEntriesToVault } from '@/shared/vault/actions/sync';
 import { type ExtractedEntry, useScan } from '../../hooks/use-scan';
 import type { ResultsPanelState } from '../scan-screen-types';
@@ -26,6 +27,30 @@ type UseScanScreenReturn = {
   readonly handleScanFromDevice: (imageData: string) => Promise<void>;
 };
 
+const buildOcrVaultContext = (
+  vault: ReturnType<typeof useSettings>['settings']['vault'],
+): VaultSettings | undefined => {
+  // OCR uses the vault to fetch existing notes for context. Super Productivity
+  // is task-only — there are no notes to read, so we skip the context lookup.
+  if (vault.method === 'local') {
+    return {
+      method: 'local',
+      localPath: vault.localPath,
+      githubToken: vault.githubToken,
+      githubRepo: vault.githubRepo,
+    };
+  }
+  if (vault.method === 'github') {
+    return {
+      method: 'github',
+      localPath: vault.localPath,
+      githubToken: vault.githubToken,
+      githubRepo: vault.githubRepo,
+    };
+  }
+  return undefined;
+};
+
 export const useScanScreen = (): UseScanScreenReturn => {
   const { settings } = useSettings();
   const { addToast } = useToast();
@@ -35,12 +60,7 @@ export const useScanScreen = (): UseScanScreenReturn => {
       googleApiKey: settings.ai.googleApiKey,
       ollamaEndpoint: settings.ai.ollamaEndpoint,
     },
-    vaultSettings: {
-      method: settings.vault.method,
-      localPath: settings.vault.localPath,
-      githubToken: settings.vault.githubToken,
-      githubRepo: settings.vault.githubRepo,
-    },
+    vaultSettings: buildOcrVaultContext(settings.vault),
   });
 
   const [isDragging, setIsDragging] = useState(false);
@@ -109,7 +129,15 @@ export const useScanScreen = (): UseScanScreenReturn => {
       return Promise.resolve();
     }
 
-    const { method, localPath, githubToken, githubRepo } = settings.vault;
+    const {
+      method,
+      localPath,
+      githubToken,
+      githubRepo,
+      superProductivityEndpoint,
+      superProductivityProjectId,
+      superProductivityTagIds,
+    } = settings.vault;
     setIsSyncing(true);
 
     return syncEntriesToVault(editedEntries, {
@@ -117,6 +145,9 @@ export const useScanScreen = (): UseScanScreenReturn => {
       localPath,
       githubToken,
       githubRepo,
+      superProductivityEndpoint,
+      superProductivityProjectId,
+      superProductivityTagIds,
     })
       .then((result) => {
         if (result.success) {

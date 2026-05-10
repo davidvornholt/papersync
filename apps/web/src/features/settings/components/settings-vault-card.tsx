@@ -4,19 +4,34 @@ import { Button } from '@papersync/ui/button';
 import { Card, CardContent, CardHeader } from '@papersync/ui/card';
 import { AnimatePresence, motion } from 'motion/react';
 import { Spinner } from '@/shared/components/motion';
-import type { Settings } from '@/shared/hooks/use-settings';
+import type { Settings, VaultMethod } from '@/shared/hooks/use-settings';
 import {
   InputField,
   ToggleButtons,
   type ToggleOption,
 } from './settings-controls';
+import {
+  SettingsVaultSuperProductivityPanel,
+  type SuperProductivityConnectionStatus,
+} from './settings-vault-super-productivity-panel';
+
+export type SuperProductivityVaultProps = {
+  readonly tagIdsInput: string;
+  readonly status: SuperProductivityConnectionStatus;
+  readonly error: string | null;
+  readonly onChangeEndpoint: (endpoint: string) => void;
+  readonly onChangeProjectId: (projectId: string) => void;
+  readonly onChangeTagIds: (tagIds: string) => void;
+  readonly onTestConnection: () => void;
+};
 
 type SettingsVaultCardProps = {
   readonly settings: Settings;
   readonly options: readonly ToggleOption[];
   readonly isConfigured: boolean;
   readonly isLoadingVaultSettings: boolean;
-  readonly onChangeMethod: (method: 'local' | 'github') => void;
+  readonly superProductivity: SuperProductivityVaultProps;
+  readonly onChangeMethod: (method: VaultMethod) => void;
   readonly onChangeLocalPath: (path: string) => void;
   readonly onConnect: () => void;
   readonly onDisconnect: () => void;
@@ -28,6 +43,7 @@ export const SettingsVaultCard = ({
   options,
   isConfigured,
   isLoadingVaultSettings,
+  superProductivity,
   onChangeMethod,
   onChangeLocalPath,
   onConnect,
@@ -37,14 +53,14 @@ export const SettingsVaultCard = ({
   <Card>
     <CardHeader>
       <h2 className="serif text-[20px] tracking-[-0.022em] text-ink">
-        Obsidian vault
+        Sync destination
       </h2>
     </CardHeader>
     <CardContent className="space-y-5">
       <ToggleButtons
         options={options}
         value={settings.vault.method}
-        onChange={(value) => onChangeMethod(value as 'local' | 'github')}
+        onChange={(value) => onChangeMethod(value as VaultMethod)}
       />
 
       <AnimatePresence mode="wait">
@@ -68,7 +84,7 @@ export const SettingsVaultCard = ({
               </div>
             )}
           </motion.div>
-        ) : (
+        ) : settings.vault.method === 'github' ? (
           <motion.div
             key="github"
             initial={{ opacity: 0 }}
@@ -120,6 +136,24 @@ export const SettingsVaultCard = ({
                 Connect with GitHub
               </Button>
             )}
+          </motion.div>
+        ) : (
+          <motion.div
+            key="super-productivity"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+          >
+            <SettingsVaultSuperProductivityPanel
+              endpoint={settings.vault.superProductivityEndpoint ?? ''}
+              projectId={settings.vault.superProductivityProjectId ?? ''}
+              tagIdsInput={superProductivity.tagIdsInput}
+              status={superProductivity.status}
+              errorMessage={superProductivity.error}
+              onChangeEndpoint={superProductivity.onChangeEndpoint}
+              onChangeProjectId={superProductivity.onChangeProjectId}
+              onChangeTagIds={superProductivity.onChangeTagIds}
+              onTestConnection={superProductivity.onTestConnection}
+            />
           </motion.div>
         )}
       </AnimatePresence>

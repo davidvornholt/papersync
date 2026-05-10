@@ -35,13 +35,16 @@ export class GitHubFileNotFound extends Data.TaggedError('GitHubFileNotFound')<{
 // Types
 // ============================================================================
 
-export type VaultMethod = 'local' | 'github';
+export type VaultMethod = 'local' | 'github' | 'super-productivity';
 
 export type SyncOptions = {
   readonly method: VaultMethod;
   readonly localPath?: string;
   readonly githubToken?: string;
   readonly githubRepo?: string;
+  readonly superProductivityEndpoint?: string;
+  readonly superProductivityProjectId?: string;
+  readonly superProductivityTagIds?: readonly string[];
   readonly weekId?: WeekId;
 };
 

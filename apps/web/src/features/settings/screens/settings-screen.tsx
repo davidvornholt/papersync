@@ -96,6 +96,7 @@ export const SettingsScreen = (): React.ReactElement => {
               options={vaultOptions}
               isConfigured={controller.isOAuthConfigured}
               isLoadingVaultSettings={controller.isLoadingVaultSettings}
+              superProductivity={controller.superProductivity}
               onChangeMethod={controller.handleVaultMethodChange}
               onChangeLocalPath={controller.handleVaultPathChange}
               onConnect={controller.handleConnect}

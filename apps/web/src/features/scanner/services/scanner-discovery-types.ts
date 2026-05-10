@@ -8,6 +8,7 @@ export type DiscoveredScanner = {
   readonly host: string;
   readonly port: number;
   readonly protocol: ScannerProtocol;
+  readonly resourcePath: string;
   readonly model?: string;
   readonly manufacturer?: string;
   readonly uuid?: string;

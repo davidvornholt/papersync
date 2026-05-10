@@ -2,7 +2,11 @@
 
 import { Effect } from 'effect';
 import { useCallback, useEffect, useState } from 'react';
-import type { Subject, TimetableDay } from '@/shared/hooks/use-settings';
+import type {
+  Subject,
+  TimetableDay,
+  VaultMethod,
+} from '@/shared/hooks/use-settings';
 import type { GitHubRepository } from '../../actions/github-oauth-types';
 import { useGitHubOAuth } from '../../hooks/use-github-oauth';
 import {
@@ -11,6 +15,7 @@ import {
 } from './settings-screen-vault-effects';
 import { createLoadLocalVaultEffect } from './settings-screen-vault-load-local-effect';
 import { createSaveSettingsEffect } from './settings-screen-vault-save-effect';
+import { useSettingsScreenSuperProductivity } from './use-settings-screen-super-productivity';
 import type { UseSettingsScreenVaultProps } from './use-settings-screen-vault-types';
 
 const runEffect = (program: Effect.Effect<unknown, never, never>): void => {
@@ -40,6 +45,12 @@ export const useSettingsScreenVault = ({
   const [lastLoadedLocalPath, setLastLoadedLocalPath] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
+
+  const superProductivity = useSettingsScreenSuperProductivity({
+    settings,
+    updateVault,
+    addToast,
+  });
 
   const applyLoadedSettings = useCallback(
     (
@@ -166,11 +177,12 @@ export const useSettingsScreenVault = ({
     handleRepoSelect,
     handleDisconnect,
     handleSave,
-    handleVaultMethodChange: (method: 'local' | 'github'): void =>
+    handleVaultMethodChange: (method: VaultMethod): void =>
       updateVault({ method }),
     handleVaultPathChange: (localPath: string): void =>
       updateVault({ localPath }),
     handleOpenRepoSelector: (): void => setIsRepoSelectorOpen(true),
     handleCloseRepoSelector: (): void => setIsRepoSelectorOpen(false),
+    ...superProductivity,
   };
 };

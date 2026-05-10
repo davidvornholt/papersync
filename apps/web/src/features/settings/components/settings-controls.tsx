@@ -13,12 +13,24 @@ type ToggleButtonsProps = {
   readonly onChange: (value: string) => void;
 };
 
+const gridColsClass = (count: number): string => {
+  if (count >= 3) {
+    return 'grid-cols-1 sm:grid-cols-3';
+  }
+  if (count === 2) {
+    return 'grid-cols-1 sm:grid-cols-2';
+  }
+  return 'grid-cols-1';
+};
+
 export const ToggleButtons = ({
   options,
   value,
   onChange,
 }: ToggleButtonsProps): React.ReactElement => (
-  <div className="grid grid-cols-1 sm:grid-cols-2 gap-px bg-hairline border border-hairline">
+  <div
+    className={`grid ${gridColsClass(options.length)} gap-px bg-hairline border border-hairline`}
+  >
     {options.map((option) => {
       const isActive = value === option.value;
       return (

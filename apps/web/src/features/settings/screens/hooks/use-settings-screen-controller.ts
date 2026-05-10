@@ -73,6 +73,16 @@ export const useSettingsScreenController = () => {
     setEditingSubject(null);
   };
 
+  const superProductivity = {
+    tagIdsInput: vaultController.superProductivityTagIdsInput,
+    status: vaultController.superProductivityStatus,
+    error: vaultController.superProductivityError,
+    onChangeEndpoint: vaultController.handleChangeSuperProductivityEndpoint,
+    onChangeProjectId: vaultController.handleChangeSuperProductivityProjectId,
+    onChangeTagIds: vaultController.handleChangeSuperProductivityTagIds,
+    onTestConnection: vaultController.handleTestSuperProductivityConnection,
+  };
+
   return {
     settings: settingsApi.settings,
     isLoading: settingsApi.isLoading,
@@ -84,6 +94,7 @@ export const useSettingsScreenController = () => {
     removeTimetableSlot: settingsApi.removeTimetableSlot,
     updateTimetableSlot: settingsApi.updateTimetableSlot,
     ...vaultController,
+    superProductivity,
     handleAIProviderChange: (provider: 'google' | 'ollama'): void =>
       settingsApi.updateAI({ provider }),
     handleGoogleApiKeyChange: (googleApiKey: string): void =>

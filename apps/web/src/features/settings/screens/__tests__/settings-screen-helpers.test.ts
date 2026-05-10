@@ -33,6 +33,32 @@ describe('settings-screen-helpers', () => {
     expect(isVaultConfigured(settings)).toBe(false);
   });
 
+  test('isVaultConfigured returns true for super-productivity with an endpoint', () => {
+    const settings = {
+      ...defaultSettings,
+      vault: {
+        ...defaultSettings.vault,
+        method: 'super-productivity' as const,
+        superProductivityEndpoint: 'http://127.0.0.1:3876',
+      },
+    };
+
+    expect(isVaultConfigured(settings)).toBe(true);
+  });
+
+  test('isVaultConfigured returns false for super-productivity without an endpoint', () => {
+    const settings = {
+      ...defaultSettings,
+      vault: {
+        ...defaultSettings.vault,
+        method: 'super-productivity' as const,
+        superProductivityEndpoint: '   ',
+      },
+    };
+
+    expect(isVaultConfigured(settings)).toBe(false);
+  });
+
   test('getConfiguredDaysCount counts only days that have slots', () => {
     const timetable = [
       { day: 'monday', slots: [{ id: 'slot-1', subjectId: '1' }] },
