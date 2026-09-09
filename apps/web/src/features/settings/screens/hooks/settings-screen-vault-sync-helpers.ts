@@ -1,4 +1,4 @@
-import type { Settings } from '@/shared/hooks/use-settings';
+import type { Settings } from '@/shared/hooks/use-settings-schema';
 
 const getVaultSyncPayload = (settings: Settings) => ({
   subjects: settings.subjects,

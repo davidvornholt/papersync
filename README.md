@@ -1,5 +1,7 @@
 # PaperSync
 
+> Built on [davidvornholt/standards](https://github.com/davidvornholt/standards).
+
 PaperSync is a free and open source self-hosted tool for turning scanned schoolwork into an organized local-first homework workflow.
 
 PaperSync is bring-your-own-key only: you provide any third-party API keys or local model endpoints you choose to use. There is no PaperSync monthly subscription, hosted SaaS plan, or vendor-hosted account requirement. Everybody can self-host PaperSync on their own hardware.

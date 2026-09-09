@@ -3,7 +3,7 @@
 import { Button } from '@papersync/ui/button';
 import { Card, CardContent, CardHeader } from '@papersync/ui/card';
 import { AnimatePresence } from 'motion/react';
-import type { DayOfWeek, Settings } from '@/shared/hooks/use-settings';
+import type { DayOfWeek, Settings } from '@/shared/hooks/use-settings-schema';
 import { SubjectListItem } from './subject-list-item';
 import { TimetableConfigPanel } from './timetable-config-panel';
 
@@ -36,10 +36,10 @@ export const SettingsSubjectsCard = ({
 }: SettingsSubjectsCardProps): React.ReactElement => (
   <Card>
     <CardHeader>
-      <h2 className="serif text-[20px] tracking-[-0.022em] text-ink">
+      <h2 className="serif text-[20px] text-ink tracking-[-0.022em]">
         Subjects & timetable
       </h2>
-      <p className="text-[13px] text-graphite mt-0.5">
+      <p className="mt-0.5 text-[13px] text-graphite">
         {isVaultConfigured
           ? `${settings.subjects.length} subject${settings.subjects.length === 1 ? '' : 's'} · ${configuredDaysCount} day${configuredDaysCount === 1 ? '' : 's'} configured`
           : 'Configure vault connection first'}
@@ -47,17 +47,11 @@ export const SettingsSubjectsCard = ({
     </CardHeader>
 
     <CardContent className="space-y-7">
-      {!isVaultConfigured ? (
-        <div className="text-center py-8 px-4 text-graphite border border-dashed border-hairline-strong">
-          <p className="serif-italic text-[14px]">
-            Vault connection required before configuring subjects and timetable.
-          </p>
-        </div>
-      ) : (
+      {isVaultConfigured ? (
         <>
           <div>
-            <div className="flex items-baseline justify-between mb-2">
-              <h3 className="serif text-[16px] tracking-[-0.018em] text-ink">
+            <div className="mb-2 flex items-baseline justify-between">
+              <h3 className="serif text-[16px] text-ink tracking-[-0.018em]">
                 Subjects
               </h3>
               <Button variant="ghost" size="sm" onClick={onOpenSubjectModal}>
@@ -83,7 +77,7 @@ export const SettingsSubjectsCard = ({
           <div className="rule" />
 
           <div>
-            <h3 className="serif text-[16px] tracking-[-0.018em] text-ink mb-3">
+            <h3 className="serif mb-3 text-[16px] text-ink tracking-[-0.018em]">
               Weekly schedule
             </h3>
             <TimetableConfigPanel
@@ -95,6 +89,12 @@ export const SettingsSubjectsCard = ({
             />
           </div>
         </>
+      ) : (
+        <div className="border border-hairline-strong border-dashed px-4 py-8 text-center text-graphite">
+          <p className="serif-italic text-[14px]">
+            Vault connection required before configuring subjects and timetable.
+          </p>
+        </div>
       )}
     </CardContent>
   </Card>

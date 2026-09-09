@@ -1,5 +1,6 @@
 'use client';
 
+const wideToggleCount = 3;
 export type ToggleOption = {
   readonly value: string;
   readonly label: string;
@@ -8,13 +9,13 @@ export type ToggleOption = {
 };
 
 type ToggleButtonsProps = {
-  readonly options: readonly ToggleOption[];
+  readonly options: ReadonlyArray<ToggleOption>;
   readonly value: string;
   readonly onChange: (value: string) => void;
 };
 
 const gridColsClass = (count: number): string => {
-  if (count >= 3) {
+  if (count >= wideToggleCount) {
     return 'grid-cols-1 sm:grid-cols-3';
   }
   if (count === 2) {
@@ -29,7 +30,7 @@ export const ToggleButtons = ({
   onChange,
 }: ToggleButtonsProps): React.ReactElement => (
   <div
-    className={`grid ${gridColsClass(options.length)} gap-px bg-hairline border border-hairline`}
+    className={`grid ${gridColsClass(options.length)} gap-px border border-hairline bg-hairline`}
   >
     {options.map((option) => {
       const isActive = value === option.value;
@@ -39,22 +40,22 @@ export const ToggleButtons = ({
           type="button"
           aria-pressed={isActive}
           onClick={() => onChange(option.value)}
-          className={`relative text-left p-4 sm:p-5 transition-colors duration-200 cursor-pointer touch-manipulation ${
+          className={`relative cursor-pointer touch-manipulation p-4 text-left transition-colors duration-200 sm:p-5 ${
             isActive
               ? 'bg-paper-deep'
               : 'bg-paper hover:bg-paper-deep/60 focus-visible:bg-paper-deep/60'
           }`}
         >
-          {isActive && (
+          {isActive ? (
             <span
-              aria-hidden
+              aria-hidden={true}
               className="absolute inset-y-0 left-0 w-[2px] bg-accent"
             />
-          )}
+          ) : null}
           <div className="flex items-start gap-3">
             <span
-              aria-hidden
-              className={`shrink-0 inline-flex items-center justify-center w-8 h-8 transition-colors ${
+              aria-hidden={true}
+              className={`inline-flex size-8 shrink-0 items-center justify-center transition-colors ${
                 isActive ? 'text-accent' : 'text-graphite'
               }`}
             >

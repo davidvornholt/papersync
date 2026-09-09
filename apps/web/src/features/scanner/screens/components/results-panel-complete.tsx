@@ -2,12 +2,13 @@
 
 import { Button } from '@papersync/ui/button';
 import { AnimatePresence, motion } from 'motion/react';
-import { Spinner } from '@/shared/components/motion';
-import type { ExtractedEntry } from '../../hooks/use-scan';
+import type { ExtractedEntry } from '@/features/scanner/hooks/use-scan-types';
+import { Spinner } from '@/shared/components/motion-loading';
 import { EditableEntryItem } from './editable-entry-item';
 
+const percentageScale = 100;
 type ResultsPanelCompleteProps = {
-  readonly entries: readonly ExtractedEntry[];
+  readonly entries: ReadonlyArray<ExtractedEntry>;
   readonly confidence: number;
   readonly modelUsed?: string;
   readonly onUpdateEntry: (
@@ -30,29 +31,28 @@ export const ResultsPanelComplete = ({
 }: ResultsPanelCompleteProps): React.ReactElement => (
   <motion.div
     key="results"
-    initial={{ opacity: 0 }}
+    initial={false}
     animate={{ opacity: 1 }}
     exit={{ opacity: 0 }}
-    className="flex-1 flex flex-col min-h-0"
+    className="flex min-h-0 flex-1 flex-col"
   >
-    <div className="flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-1 sm:gap-4 pb-4 mb-4 border-b border-hairline">
+    <div className="mb-4 flex flex-col gap-1 border-hairline border-b pb-4 sm:flex-row sm:items-baseline sm:justify-between sm:gap-4">
       <p className="serif text-[18px] text-ink">
         {entries.length} entr{entries.length === 1 ? 'y' : 'ies'}
         <span className="serif-italic ink"> read</span>
       </p>
-      <p className="mono text-[11px] uppercase tracking-[0.18em] text-graphite">
-        {Math.round(confidence * 100)}% confidence
-        {modelUsed && ` · ${modelUsed}`}
+      <p className="mono text-[11px] text-graphite uppercase tracking-[0.18em]">
+        {Math.round(confidence * percentageScale)}% confidence
+        {modelUsed ? ` · ${modelUsed}` : null}
       </p>
     </div>
 
-    <div className="flex-1 overflow-y-auto space-y-3 min-h-0 pr-1">
+    <div className="min-h-0 flex-1 space-y-3 overflow-y-auto pr-1">
       <AnimatePresence>
-        {entries.map((entry, index) => (
+        {entries.map((entry) => (
           <EditableEntryItem
             key={entry.id}
             entry={entry}
-            index={index}
             onUpdate={onUpdateEntry}
             onDelete={onDeleteEntry}
           />
@@ -60,19 +60,23 @@ export const ResultsPanelComplete = ({
       </AnimatePresence>
     </div>
 
-    <div className="pt-4 mt-4 border-t border-hairline">
+    <div className="mt-4 border-hairline border-t pt-4">
       <Button
         onClick={onSync}
-        disabled={entries.length === 0 || isSyncing}
+        disabled={
+          entries.length === 0 ||
+          isSyncing ||
+          entries.some((entry) => !entry.content.trim())
+        }
         className="w-full"
       >
         {isSyncing ? (
           <>
             <Spinner size="sm" className="mr-2" />
-            Syncing to vault...
+            Saving homework...
           </>
         ) : (
-          'Sync to vault'
+          'Approve and save'
         )}
       </Button>
     </div>

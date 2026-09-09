@@ -1,14 +1,13 @@
 import { Effect } from 'effect';
 import type { WeekId, WeeklyNote } from '@/shared/types/schemas';
+import type {
+  VaultError,
+  VaultFileNotFoundError,
+} from '@/shared/vault/errors/filesystem-errors';
+import { VaultService } from '@/shared/vault/services/filesystem-contract';
 import { getWeeklyNotePath, PAPERSYNC_ROOT, WEEKLY_DIR } from './config-paths';
-import {
-  type VaultError,
-  type VaultFileNotFoundError,
-  VaultService,
-} from './filesystem';
 import { parseWeeklyNoteMarkdown } from './weekly-note-parse';
 import { serializeWeeklyNoteToMarkdown } from './weekly-note-serialize';
-
 export const readWeeklyNote = (
   weekId: WeekId,
 ): Effect.Effect<

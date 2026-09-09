@@ -3,22 +3,13 @@
 import { Effect } from 'effect';
 import {
   ESCLClient,
-  ESCLClientLayer,
   type ScanSettings,
-} from '../services/escl-client';
-import type { DiscoveredScanner } from '../services/scanner-discovery';
-
-// ============================================================================
-// Types
-// ============================================================================
-
+} from '@/features/scanner/services/escl-types';
+import type { DiscoveredScanner } from '@/features/scanner/services/scanner-discovery-types';
+import { ESCLClientLayer } from '../services/escl-client';
 export type ScanFromDeviceResult =
   | { readonly success: true; readonly imageData: string }
   | { readonly success: false; readonly error: string };
-
-// ============================================================================
-// Server Action
-// ============================================================================
 
 export async function scanFromDevice(
   scanner: DiscoveredScanner,

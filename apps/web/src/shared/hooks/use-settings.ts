@@ -1,6 +1,6 @@
 'use client';
 
-import { Effect } from 'effect';
+import { Effect, Fiber } from 'effect';
 import { useCallback, useEffect, useState } from 'react';
 import {
   type DayOfWeek,
@@ -10,7 +10,8 @@ import {
   type TimetableDay,
 } from './use-settings-schema';
 import { loadSettings, saveSettings } from './use-settings-storage';
-
+import { useSubjectSettings } from './use-subject-settings';
+import { useTimetableSettings } from './use-timetable-settings';
 export type UseSettingsReturn = {
   readonly settings: Settings;
   readonly isLoading: boolean;
@@ -19,8 +20,8 @@ export type UseSettingsReturn = {
   readonly addSubject: (name: string) => void;
   readonly removeSubject: (id: string) => void;
   readonly updateSubject: (id: string, name: string) => void;
-  readonly setSubjects: (subjects: Subject[]) => void;
-  readonly updateTimetable: (timetable: TimetableDay[]) => void;
+  readonly setSubjects: (subjects: Array<Subject>) => void;
+  readonly updateTimetable: (timetable: Array<TimetableDay>) => void;
   readonly addTimetableSlot: (day: DayOfWeek, subjectId: string) => void;
   readonly removeTimetableSlot: (day: DayOfWeek, slotId: string) => void;
   readonly updateTimetableSlot: (
@@ -37,10 +38,19 @@ export const useSettings = (): UseSettingsReturn => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    Effect.runPromise(loadSettings()).then((loaded) => {
-      setSettings(loaded);
-      setIsLoading(false);
-    });
+    const fiber = Effect.runFork(
+      loadSettings().pipe(
+        Effect.tap((loaded) =>
+          Effect.sync(() => {
+            setSettings(loaded);
+            setIsLoading(false);
+          }),
+        ),
+      ),
+    );
+    return () => {
+      Effect.runFork(Fiber.interrupt(fiber));
+    };
   }, []);
 
   const updateVault = useCallback(
@@ -57,105 +67,6 @@ export const useSettings = (): UseSettingsReturn => {
     setSettings((prev) => ({ ...prev, ai: { ...prev.ai, ...updates } }));
   }, []);
 
-  const addSubject = useCallback((name: string): void => {
-    setSettings((prev) => ({
-      ...prev,
-      subjects: [...prev.subjects, { id: `subj-${Date.now()}`, name }],
-    }));
-  }, []);
-
-  const removeSubject = useCallback((id: string): void => {
-    setSettings((prev) => ({
-      ...prev,
-      subjects: prev.subjects.filter((subject) => subject.id !== id),
-      timetable: prev.timetable.map((day) => ({
-        ...day,
-        slots: day.slots.filter((slot) => slot.subjectId !== id),
-      })),
-    }));
-  }, []);
-
-  const updateSubject = useCallback((id: string, name: string): void => {
-    setSettings((prev) => ({
-      ...prev,
-      subjects: prev.subjects.map((subject) =>
-        subject.id === id ? { ...subject, name } : subject,
-      ),
-    }));
-  }, []);
-
-  const setSubjects = useCallback((subjects: Subject[]): void => {
-    setSettings((prev) => ({ ...prev, subjects }));
-  }, []);
-
-  const updateTimetable = useCallback((timetable: TimetableDay[]): void => {
-    setSettings((prev) => ({ ...prev, timetable }));
-  }, []);
-
-  const addTimetableSlot = useCallback(
-    (day: DayOfWeek, subjectId: string): void => {
-      setSettings((prev) => {
-        const dayExists = prev.timetable.some(
-          (timetableDay) => timetableDay.day === day,
-        );
-        const newSlot = { id: `slot-${Date.now()}`, subjectId };
-
-        if (dayExists) {
-          return {
-            ...prev,
-            timetable: prev.timetable.map((timetableDay) =>
-              timetableDay.day === day
-                ? { ...timetableDay, slots: [...timetableDay.slots, newSlot] }
-                : timetableDay,
-            ),
-          };
-        }
-
-        return {
-          ...prev,
-          timetable: [...prev.timetable, { day, slots: [newSlot] }],
-        };
-      });
-    },
-    [],
-  );
-
-  const removeTimetableSlot = useCallback(
-    (day: DayOfWeek, slotId: string): void => {
-      setSettings((prev) => ({
-        ...prev,
-        timetable: prev.timetable.map((timetableDay) =>
-          timetableDay.day === day
-            ? {
-                ...timetableDay,
-                slots: timetableDay.slots.filter((slot) => slot.id !== slotId),
-              }
-            : timetableDay,
-        ),
-      }));
-    },
-    [],
-  );
-
-  const updateTimetableSlot = useCallback(
-    (day: DayOfWeek, slotId: string, subjectId: string): void => {
-      setSettings((prev) => ({
-        ...prev,
-        timetable: prev.timetable.map((timetableDay) =>
-          timetableDay.day === day
-            ? {
-                ...timetableDay,
-                slots: timetableDay.slots.map((slot) =>
-                  slot.id === slotId ? { ...slot, subjectId } : slot,
-                ),
-              }
-            : timetableDay,
-        ),
-      }));
-    },
-    [],
-  );
-
   const save = useCallback(
     (): Promise<void> => Effect.runPromise(saveSettings(settings)),
     [settings],
@@ -163,34 +74,20 @@ export const useSettings = (): UseSettingsReturn => {
 
   const reset = useCallback((): void => {
     setSettings(defaultSettings);
-    Effect.runPromise(saveSettings(defaultSettings));
+    Effect.runFork(saveSettings(defaultSettings));
   }, []);
 
+  const timetable = useTimetableSettings(setSettings);
+  const subjects = useSubjectSettings(setSettings);
   return {
+    ...timetable,
+    ...subjects,
     settings,
     isLoading,
     updateVault,
     updateAI,
-    addSubject,
-    removeSubject,
-    updateSubject,
-    setSubjects,
-    updateTimetable,
-    addTimetableSlot,
-    removeTimetableSlot,
-    updateTimetableSlot,
+
     save,
     reset,
   };
 };
-
-export type {
-  AIProvider,
-  DayOfWeek,
-  Settings,
-  Subject,
-  TimetableDay,
-  TimetableSlot,
-  VaultMethod,
-} from './use-settings-schema';
-export { DAYS_OF_WEEK } from './use-settings-schema';

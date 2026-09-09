@@ -1,7 +1,5 @@
 {
   "extends": "./base.json",
-  "compilerOptions": {
-    "types": ["bun"]
-  },
-  "include": ["*.test.ts"]
+  "include": ["*.json", "*.ts"],
+  "exclude": ["node_modules"]
 }

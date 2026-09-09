@@ -3,7 +3,7 @@
 import { Button } from '@papersync/ui/button';
 import { Card, CardContent, CardHeader } from '@papersync/ui/card';
 import { AnimatePresence, motion } from 'motion/react';
-import { Spinner } from '@/shared/components/motion';
+import { Spinner } from '@/shared/components/motion-loading';
 import type { PreviewPanelState } from '../planner-screen-types';
 
 type PreviewPanelProps = {
@@ -23,26 +23,26 @@ export const PreviewPanel = ({
 }: PreviewPanelProps): React.ReactElement => (
   <Card className="h-full">
     <CardHeader>
-      <h2 className="serif text-[20px] tracking-[-0.022em] text-ink">
+      <h2 className="serif text-[20px] text-ink tracking-[-0.022em]">
         Preview
       </h2>
     </CardHeader>
-    <CardContent className="flex items-center justify-center min-h-[320px] sm:min-h-[400px]">
+    <CardContent className="flex min-h-[320px] items-center justify-center sm:min-h-[400px]">
       <AnimatePresence mode="wait">
-        {state === 'generating' && <PreviewGeneratingState />}
-        {state === 'generated' && (
+        {state === 'generating' ? <PreviewGeneratingState /> : null}
+        {state === 'generated' ? (
           <PreviewGeneratedState
             weekId={weekId}
             onDownload={onDownload}
             onOpen={onOpen}
           />
-        )}
-        {state === 'configure' && <PreviewConfigureState />}
-        {state === 'error' && (
+        ) : null}
+        {state === 'configure' ? <PreviewConfigureState /> : null}
+        {state === 'error' ? (
           <PreviewErrorState
             errorMessage={errorMessage ?? 'An unexpected error occurred'}
           />
-        )}
+        ) : null}
       </AnimatePresence>
     </CardContent>
   </Card>
@@ -51,17 +51,17 @@ export const PreviewPanel = ({
 const PreviewGeneratingState = (): React.ReactElement => (
   <motion.div
     key="generating"
-    initial={{ opacity: 0 }}
+    initial={false}
     animate={{ opacity: 1 }}
     exit={{ opacity: 0 }}
-    className="text-center space-y-4"
+    className="space-y-4 text-center"
   >
-    <div className="w-16 h-16 mx-auto flex items-center justify-center">
+    <div className="mx-auto flex size-16 items-center justify-center">
       <Spinner size="lg" />
     </div>
     <div>
       <p className="serif text-[18px] text-ink">Generating PDF…</p>
-      <p className="text-[13px] text-graphite mt-1">
+      <p className="mt-1 text-[13px] text-graphite">
         Setting your weekly planner
       </p>
     </div>
@@ -81,14 +81,14 @@ const PreviewGeneratedState = ({
 }: PreviewGeneratedStateProps): React.ReactElement => (
   <motion.div
     key="generated"
-    initial={{ opacity: 0, scale: 0.96 }}
+    initial={false}
     animate={{ opacity: 1, scale: 1 }}
     exit={{ opacity: 0 }}
-    className="text-center space-y-6 w-full max-w-xs mx-auto"
+    className="mx-auto w-full max-w-xs space-y-6 text-center"
   >
-    <div className="w-16 h-16 mx-auto rounded-full bg-accent-soft flex items-center justify-center">
+    <div className="mx-auto flex size-16 items-center justify-center rounded-full bg-accent-soft">
       <svg
-        className="w-8 h-8 text-accent"
+        className="size-8 text-accent"
         fill="none"
         viewBox="0 0 24 24"
         stroke="currentColor"
@@ -103,15 +103,15 @@ const PreviewGeneratedState = ({
       </svg>
     </div>
     <div>
-      <p className="serif text-[22px] tracking-[-0.022em] text-ink">
+      <p className="serif text-[22px] text-ink tracking-[-0.022em]">
         PDF generated
       </p>
-      <p className="text-[13px] text-graphite mt-1">
+      <p className="mt-1 text-[13px] text-graphite">
         Your planner for <span className="mono text-[12px]">{weekId}</span> is
         ready
       </p>
     </div>
-    <div className="flex flex-col-reverse sm:flex-row gap-2 sm:gap-3">
+    <div className="flex flex-col-reverse gap-2 sm:flex-row sm:gap-3">
       <Button
         onClick={onOpen}
         variant="secondary"
@@ -130,14 +130,14 @@ const PreviewGeneratedState = ({
 const PreviewConfigureState = (): React.ReactElement => (
   <motion.div
     key="configure"
-    initial={{ opacity: 0 }}
+    initial={false}
     animate={{ opacity: 1 }}
     exit={{ opacity: 0 }}
     className="text-center"
   >
-    <div className="w-40 h-56 sm:w-48 sm:h-64 mx-auto border border-dashed border-hairline-strong flex items-center justify-center mb-4 hover:border-accent/60 transition-colors">
+    <div className="mx-auto mb-4 flex h-56 w-40 items-center justify-center border border-hairline-strong border-dashed transition-colors hover:border-accent/60 sm:h-64 sm:w-48">
       <svg
-        className="w-10 h-10 sm:w-12 sm:h-12 text-graphite"
+        className="size-10 text-graphite sm:size-12"
         fill="none"
         viewBox="0 0 24 24"
         stroke="currentColor"
@@ -164,14 +164,14 @@ const PreviewErrorState = ({
 }): React.ReactElement => (
   <motion.div
     key="error"
-    initial={{ opacity: 0 }}
+    initial={false}
     animate={{ opacity: 1 }}
     exit={{ opacity: 0 }}
-    className="text-center space-y-4 max-w-xs mx-auto"
+    className="mx-auto max-w-xs space-y-4 text-center"
   >
-    <div className="w-14 h-14 mx-auto rounded-full bg-accent-soft/60 flex items-center justify-center">
+    <div className="mx-auto flex size-14 items-center justify-center rounded-full bg-accent-soft/60">
       <svg
-        className="w-7 h-7 text-accent"
+        className="size-7 text-accent"
         fill="none"
         viewBox="0 0 24 24"
         stroke="currentColor"
@@ -187,7 +187,7 @@ const PreviewErrorState = ({
     </div>
     <div>
       <p className="serif text-[18px] text-ink">Generation failed</p>
-      <p className="text-[13px] text-graphite mt-1">{errorMessage}</p>
+      <p className="mt-1 text-[13px] text-graphite">{errorMessage}</p>
     </div>
   </motion.div>
 );

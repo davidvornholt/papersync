@@ -1,17 +1,27 @@
 import { describe, expect, it } from 'bun:test';
-import type { WeekId } from '@/shared/types/schemas';
 import {
   getWeekDateRange,
   getWeekEndDate,
   getWeekId,
   getWeekStartDate,
-} from '../generator';
+} from '@/shared/planner/week';
+import type { WeekId } from '@/shared/types/schemas';
+
+const weekPattern = /^\d{4}-W\d{2}$/u;
+
+const year2025 = 2025;
+const decemberMonthIndex = 11;
+const dayOfMonth = 29;
+const year2026 = 2026;
+const juneMonthIndex = 5;
+const lastDayOffset = 6;
+const millisecondsPerDay = 86_400_000;
 
 describe('Week Calculation Utilities', () => {
   describe('getWeekId', () => {
     it('should return ISO week format YYYY-Www', () => {
       const result = getWeekId(new Date('2026-01-27'));
-      expect(result).toMatch(/^\d{4}-W\d{2}$/);
+      expect(result).toMatch(weekPattern);
     });
 
     it('should calculate correct week for start of year', () => {
@@ -34,7 +44,7 @@ describe('Week Calculation Utilities', () => {
 
     it('should use current date when no argument provided', () => {
       const result = getWeekId();
-      expect(result).toMatch(/^\d{4}-W\d{2}$/);
+      expect(result).toMatch(weekPattern);
     });
   });
 
@@ -47,17 +57,17 @@ describe('Week Calculation Utilities', () => {
     it('should return correct date for week 1', () => {
       const result = getWeekStartDate('2026-W01' as WeekId);
       // Week 1 of 2026 starts on Dec 29, 2025
-      expect(result.getFullYear()).toBe(2025);
-      expect(result.getMonth()).toBe(11); // December
-      expect(result.getDate()).toBe(29);
+      expect(result.getFullYear()).toBe(year2025);
+      expect(result.getMonth()).toBe(decemberMonthIndex); // December
+      expect(result.getDate()).toBe(dayOfMonth);
     });
 
     it('should return correct date for week 27', () => {
       const result = getWeekStartDate('2026-W27' as WeekId);
       // Week 27 of 2026 starts on June 29
-      expect(result.getFullYear()).toBe(2026);
-      expect(result.getMonth()).toBe(5); // June
-      expect(result.getDate()).toBe(29);
+      expect(result.getFullYear()).toBe(year2026);
+      expect(result.getMonth()).toBe(juneMonthIndex); // June
+      expect(result.getDate()).toBe(dayOfMonth);
     });
   });
 
@@ -73,9 +83,9 @@ describe('Week Calculation Utilities', () => {
       const end = getWeekEndDate(weekId);
 
       const diffDays = Math.round(
-        (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24),
+        (end.getTime() - start.getTime()) / millisecondsPerDay,
       );
-      expect(diffDays).toBe(6);
+      expect(diffDays).toBe(lastDayOffset);
     });
   });
 

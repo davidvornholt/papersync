@@ -1,0 +1,18 @@
+{
+  "id": "papersync",
+  "name": "PaperSync",
+  "version": "1.0.0",
+  "manifestVersion": 1,
+  "minSupVersion": "18.21.2",
+  "description": "Import approved homework from your PaperSync planner.",
+  "hooks": [],
+  "permissions": [
+    "getTasks",
+    "getArchivedTasks",
+    "addTask",
+    "updateTask",
+    "http"
+  ],
+  "allowedHosts": ["papersync.vornholt.online"],
+  "isSkipMenuEntry": true
+}

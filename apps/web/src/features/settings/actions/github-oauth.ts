@@ -1,6 +1,7 @@
 'use server';
 
 import { Effect } from 'effect';
+import { requireSession } from '@/shared/auth/session';
 import {
   getGitHubUserEffect,
   listRepositoriesEffect,
@@ -15,11 +16,11 @@ import type {
   GitHubUserResult,
   TokenPollResult,
 } from './github-oauth-types';
-
 export const initiateGitHubDeviceFlow = async (
   clientId: string,
-): Promise<DeviceCodeResult> =>
-  Effect.runPromise(
+): Promise<DeviceCodeResult> => {
+  await requireSession();
+  return Effect.runPromise(
     initiateDeviceFlowEffect(clientId).pipe(
       Effect.map((response) => ({ success: true as const, ...response })),
       Effect.catchAll((error) =>
@@ -27,26 +28,32 @@ export const initiateGitHubDeviceFlow = async (
       ),
     ),
   );
+};
 
 export const pollGitHubToken = async (
   clientId: string,
   deviceCode: string,
-): Promise<TokenPollResult> =>
-  Effect.runPromise(
+): Promise<TokenPollResult> => {
+  await requireSession();
+  return Effect.runPromise(
     pollTokenEffect(clientId, deviceCode).pipe(
       Effect.map((response) => ({ success: true as const, ...response })),
       Effect.catchAll((error) => {
+        // biome-ignore lint/security/noSecrets: Stable Effect discriminator or diagnostic text, not a credential.
         if (error._tag === 'GitHubAuthPending') {
           return Effect.succeed({
             success: false as const,
             error: 'Authorization pending',
+            isSlowDown: false,
             shouldRetry: true,
           });
         }
+        // biome-ignore lint/security/noSecrets: Stable Effect discriminator or diagnostic text, not a credential.
         if (error._tag === 'GitHubSlowDown') {
           return Effect.succeed({
             success: false as const,
             error: 'Slow down - polling too fast',
+            isSlowDown: true,
             shouldRetry: true,
           });
         }
@@ -54,15 +61,18 @@ export const pollGitHubToken = async (
           success: false as const,
           error: error.message,
           shouldRetry: false,
+          isSlowDown: false,
         });
       }),
     ),
   );
+};
 
 export const getGitHubUser = async (
   accessToken: string,
-): Promise<GitHubUserResult> =>
-  Effect.runPromise(
+): Promise<GitHubUserResult> => {
+  await requireSession();
+  return Effect.runPromise(
     getGitHubUserEffect(accessToken).pipe(
       Effect.map((user) => ({ success: true as const, ...user })),
       Effect.catchAll((error) =>
@@ -70,11 +80,13 @@ export const getGitHubUser = async (
       ),
     ),
   );
+};
 
 export const listGitHubRepositories = async (
   accessToken: string,
-): Promise<GitHubReposResult> =>
-  Effect.runPromise(
+): Promise<GitHubReposResult> => {
+  await requireSession();
+  return Effect.runPromise(
     listRepositoriesEffect(accessToken).pipe(
       Effect.map((repositories) => ({ success: true as const, repositories })),
       Effect.catchAll((error) =>
@@ -82,3 +94,4 @@ export const listGitHubRepositories = async (
       ),
     ),
   );
+};

@@ -1,13 +1,11 @@
 import { describe, expect, it } from 'bun:test';
 import type { ISODate, WeekId, WeeklyNote } from '@/shared/types/schemas';
-import {
-  convertEntriesToWeeklyNote,
-  type ExtractedEntry,
-} from '../sync-helpers';
+import type { ExtractedEntry } from '@/shared/vault/actions/sync-helpers-types';
+import { convertEntriesToWeeklyNote } from '../sync-helpers';
 
 describe('convertEntriesToWeeklyNote merge behavior', () => {
   it('should merge with existing note and deduplicate tasks', () => {
-    const entries: ExtractedEntry[] = [
+    const entries: Array<ExtractedEntry> = [
       {
         id: '1',
         day: 'Monday',
@@ -65,7 +63,7 @@ describe('convertEntriesToWeeklyNote merge behavior', () => {
   });
 
   it('should merge week-level general tasks', () => {
-    const entries: ExtractedEntry[] = [
+    const entries: Array<ExtractedEntry> = [
       {
         id: '1',
         day: 'Monday',
@@ -112,7 +110,7 @@ describe('convertEntriesToWeeklyNote merge behavior', () => {
 
 describe('BUG: preserving days not in new entries', () => {
   it('should preserve Monday when new entries only contain Tuesday', () => {
-    const tuesdayOnlyEntries: ExtractedEntry[] = [
+    const tuesdayOnlyEntries: Array<ExtractedEntry> = [
       {
         id: '1',
         day: 'Tuesday',

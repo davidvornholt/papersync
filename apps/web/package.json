@@ -9,35 +9,44 @@
     "lint": "biome check --error-on-warnings .",
     "lint:fix": "biome check --write --error-on-warnings .",
     "check-types": "tsc --noEmit",
-    "test": "bun test"
+    "test": "bun test",
+    "test:a11y": "playwright test",
+    "test:integration": "bun run --cwd ../../packages/db db:migrate && bun --env-file=.env.local test ./integration/homework.ts",
+    "test:container": "bash scripts/container-smoke.sh"
   },
   "dependencies": {
-    "@ai-sdk/google": "latest",
+    "@ai-sdk/google": "^4.0.65",
+    "@effect/sql": "^0.52.1",
+    "@effect/sql-pg": "^0.53.0",
+    "@papersync/db": "workspace:*",
+    "@papersync/homework": "workspace:*",
     "@papersync/ui": "workspace:*",
-    "@react-pdf/renderer": "latest",
-    "ai": "latest",
-    "bonjour-service": "latest",
-    "effect": "latest",
-    "jsqr": "latest",
-    "lucide-react": "latest",
-    "motion": "latest",
-    "next": "latest",
-    "octokit": "latest",
-    "qrcode": "latest",
-    "react": "latest",
-    "react-dom": "latest",
-    "undici": "latest"
+    "@react-pdf/renderer": "^4.9.0",
+    "ai": "^7.0.94",
+    "better-auth": "^1.7.3",
+    "bonjour-service": "^1.4.4",
+    "effect": "^3.22.2",
+    "jsqr": "^1.4.0",
+    "lucide-react": "^1.43.0",
+    "motion": "^13.2.0",
+    "next": "^16.3.4",
+    "qrcode": "^1.5.4",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
   },
   "devDependencies": {
-    "@papersync/typescript-config": "workspace:*",
-    "@tailwindcss/postcss": "latest",
-    "@types/bun": "^1.3.13",
-    "@types/node": "latest",
-    "@types/qrcode": "latest",
-    "@types/react": "latest",
-    "@types/react-dom": "latest",
-    "babel-plugin-react-compiler": "latest",
-    "tailwindcss": "latest"
+    "@axe-core/playwright": "^4.13.0",
+    "@davidvornholt/a11y-testing": "workspace:*",
+    "@davidvornholt/typescript-config": "workspace:*",
+    "@playwright/test": "1.62.1",
+    "@tailwindcss/postcss": "^4.3.3",
+    "@types/bun": "^1.4.2",
+    "@types/node": "^26.5.0",
+    "@types/qrcode": "^1.5.6",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.7",
+    "babel-plugin-react-compiler": "^1.0.0",
+    "tailwindcss": "^4.3.3"
   },
   "ignoreScripts": [
     "sharp",
@@ -46,5 +55,6 @@
   "trustedDependencies": [
     "sharp",
     "unrs-resolver"
-  ]
+  ],
+  "type": "module"
 }

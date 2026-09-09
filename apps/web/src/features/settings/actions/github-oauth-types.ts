@@ -1,38 +1,9 @@
-import { Data } from 'effect';
-
 /**
  * Types and Error Classes for GitHub OAuth Device Flow
  *
  * These are separated from the server actions file because
  * "use server" files can only export async functions.
  */
-
-// ============================================================================
-// Error Types
-// ============================================================================
-
-export class GitHubOAuthError extends Data.TaggedError('GitHubOAuthError')<{
-  readonly message: string;
-  readonly cause?: unknown;
-}> {}
-
-export class GitHubAPIError extends Data.TaggedError('GitHubAPIError')<{
-  readonly message: string;
-  readonly status?: number;
-  readonly cause?: unknown;
-}> {}
-
-export class GitHubAuthPending extends Data.TaggedError('GitHubAuthPending')<{
-  readonly shouldRetry: true;
-}> {}
-
-export class GitHubSlowDown extends Data.TaggedError('GitHubSlowDown')<{
-  readonly shouldRetry: true;
-}> {}
-
-// ============================================================================
-// Success Types
-// ============================================================================
 
 export type DeviceCodeResponse = {
   readonly deviceCode: string;
@@ -63,10 +34,6 @@ export type GitHubRepository = {
   readonly description: string | null;
 };
 
-// ============================================================================
-// Result Types (for server action responses)
-// ============================================================================
-
 export type DeviceCodeResult =
   | ({ readonly success: true } & DeviceCodeResponse)
   | { readonly success: false; readonly error: string };
@@ -76,7 +43,8 @@ export type TokenPollResult =
   | {
       readonly success: false;
       readonly error: string;
-      readonly shouldRetry?: boolean;
+      readonly shouldRetry: boolean;
+      readonly isSlowDown: boolean;
     };
 
 export type GitHubUserResult =
@@ -86,6 +54,6 @@ export type GitHubUserResult =
 export type GitHubReposResult =
   | {
       readonly success: true;
-      readonly repositories: readonly GitHubRepository[];
+      readonly repositories: ReadonlyArray<GitHubRepository>;
     }
   | { readonly success: false; readonly error: string };

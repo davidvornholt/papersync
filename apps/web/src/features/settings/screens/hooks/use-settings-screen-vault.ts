@@ -1,25 +1,24 @@
 'use client';
 
 import { Effect } from 'effect';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import type {
   Subject,
   TimetableDay,
   VaultMethod,
-} from '@/shared/hooks/use-settings';
+} from '@/shared/hooks/use-settings-schema';
 import type { GitHubRepository } from '../../actions/github-oauth-types';
 import { useGitHubOAuth } from '../../hooks/use-github-oauth';
 import {
   createOAuthSuccessEffect,
   createRepoSelectEffect,
 } from './settings-screen-vault-effects';
-import { createLoadLocalVaultEffect } from './settings-screen-vault-load-local-effect';
-import { createSaveSettingsEffect } from './settings-screen-vault-save-effect';
 import { useSettingsScreenSuperProductivity } from './use-settings-screen-super-productivity';
 import type { UseSettingsScreenVaultProps } from './use-settings-screen-vault-types';
+import { useVaultPersistence } from './use-vault-persistence';
 
 const runEffect = (program: Effect.Effect<unknown, never, never>): void => {
-  void Effect.runPromise(program);
+  Effect.runFork(program);
 };
 
 export const useSettingsScreenVault = ({
@@ -41,21 +40,16 @@ export const useSettingsScreenVault = ({
 
   const [isOAuthModalOpen, setIsOAuthModalOpen] = useState(false);
   const [isRepoSelectorOpen, setIsRepoSelectorOpen] = useState(false);
-  const [isLoadingVaultSettings, setIsLoadingVaultSettings] = useState(false);
-  const [lastLoadedLocalPath, setLastLoadedLocalPath] = useState('');
-  const [isSaving, setIsSaving] = useState(false);
-  const [isSyncing, setIsSyncing] = useState(false);
 
   const superProductivity = useSettingsScreenSuperProductivity({
     settings,
     updateVault,
-    addToast,
   });
 
   const applyLoadedSettings = useCallback(
     (
-      subjects: readonly Subject[],
-      timetable: readonly TimetableDay[],
+      subjects: ReadonlyArray<Subject>,
+      timetable: ReadonlyArray<TimetableDay>,
     ): void => {
       if (subjects.length > 0) {
         setSubjects([...subjects]);
@@ -118,48 +112,14 @@ export const useSettingsScreenVault = ({
     addToast('Disconnected from GitHub', 'info');
   };
 
-  const handleSave = useCallback((): void => {
-    setIsSaving(true);
-    runEffect(
-      createSaveSettingsEffect({
-        save,
-        settings,
-        isVaultConfigured,
-        addToast,
-        setIsSyncing,
-      }).pipe(
-        Effect.ensuring(
-          Effect.sync(() => {
-            setIsSaving(false);
-            setIsSyncing(false);
-          }),
-        ),
-      ),
-    );
-  }, [addToast, isVaultConfigured, save, settings]);
-
-  useEffect(() => {
-    if (
-      settings.vault.method !== 'local' ||
-      !settings.vault.localPath ||
-      settings.vault.localPath === lastLoadedLocalPath
-    ) {
-      return;
-    }
-
-    setIsLoadingVaultSettings(true);
-    setLastLoadedLocalPath(settings.vault.localPath);
-
-    runEffect(
-      createLoadLocalVaultEffect({
-        localPath: settings.vault.localPath,
-        addToast,
-        applyLoadedSettings,
-      }).pipe(
-        Effect.ensuring(Effect.sync(() => setIsLoadingVaultSettings(false))),
-      ),
-    );
-  }, [addToast, applyLoadedSettings, lastLoadedLocalPath, settings.vault]);
+  const { isLoadingVaultSettings, isSaving, isSyncing, handleSave } =
+    useVaultPersistence({
+      settings,
+      save,
+      isVaultConfigured,
+      addToast,
+      applyLoadedSettings,
+    });
 
   return {
     oauthState,

@@ -1,7 +1,13 @@
 import { describe, expect, it } from 'bun:test';
 import { Effect } from 'effect';
+import { encodeQRPayload } from '@/shared/planner/qr';
+import { QRDecodeError } from '@/shared/planner/qr-decode-error';
+import { QREncodeError } from '@/shared/planner/qr-errors';
 import type { WeekId } from '@/shared/types/schemas';
-import { encodeQRPayload, QRDecodeError, QREncodeError } from '../qr';
+
+const imageDataPattern = /^data:image\/png;base64,/u;
+
+const minimumImageLength = 100;
 
 describe('QR Services', () => {
   describe('encodeQRPayload', () => {
@@ -10,7 +16,7 @@ describe('QR Services', () => {
         encodeQRPayload('2026-W05' as WeekId),
       );
 
-      expect(result).toMatch(/^data:image\/png;base64,/);
+      expect(result).toMatch(imageDataPattern);
     });
 
     it('should generate consistent QR codes for same week', async () => {
@@ -40,8 +46,8 @@ describe('QR Services', () => {
       const result = await Effect.runPromise(encodeQRPayload(weekId));
 
       // The result is a base64 data URL, we can verify it starts correctly
-      expect(result).toMatch(/^data:image\/png;base64,/);
-      expect(result.length).toBeGreaterThan(100);
+      expect(result).toMatch(imageDataPattern);
+      expect(result.length).toBeGreaterThan(minimumImageLength);
     });
   });
 

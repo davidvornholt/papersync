@@ -1,8 +1,12 @@
+// biome-ignore lint/correctness/noUnresolvedImports: Biome cannot resolve this conditional CommonJS export; TypeScript and the production build verify it.
 import type { Service } from 'bonjour-service';
 import type {
   DiscoveredScanner,
   ScannerProtocol,
 } from './scanner-discovery-types';
+
+const datePattern = /\/+$/gu;
+const addressPattern = /^\d{1,3}(?:\.\d{1,3}){3}$/u;
 
 const parseTxtRecord = (
   txt: Record<string, unknown>,
@@ -13,8 +17,8 @@ const parseTxtRecord = (
   adminUrl?: string;
   resourcePath: string;
 } => {
-  const colorModes: string[] = [];
-  const documentFormats: string[] = [];
+  const colorModes: Array<string> = [];
+  const documentFormats: Array<string> = [];
 
   const cs = txt.cs || txt.CS;
   if (typeof cs === 'string') {
@@ -36,15 +40,11 @@ const parseTxtRecord = (
     );
   }
 
+  const uuid = txt.UUID ?? txt.uuid;
   return {
     model: typeof txt.ty === 'string' ? txt.ty : undefined,
     manufacturer: typeof txt.mfg === 'string' ? txt.mfg : undefined,
-    uuid:
-      typeof txt.UUID === 'string'
-        ? txt.UUID
-        : typeof txt.uuid === 'string'
-          ? txt.uuid
-          : undefined,
+    uuid: typeof uuid === 'string' ? uuid : undefined,
     adminUrl: typeof txt.adminurl === 'string' ? txt.adminurl : undefined,
     resourcePath: normalizeResourcePath(txt.rs || txt.RS),
     colorModes,
@@ -63,12 +63,12 @@ const normalizeResourcePath = (value: unknown): string => {
   }
 
   const withLeadingSlash = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
-  const withoutTrailingSlash = withLeadingSlash.replace(/\/+$/g, '');
+  const withoutTrailingSlash = withLeadingSlash.replace(datePattern, '');
   return withoutTrailingSlash || '/eSCL';
 };
 
 const isIpv4Address = (address: string): boolean =>
-  /^\d{1,3}(?:\.\d{1,3}){3}$/.test(address);
+  addressPattern.test(address);
 
 const selectServiceHost = (service: Service): string =>
   service.addresses?.find(isIpv4Address) ??

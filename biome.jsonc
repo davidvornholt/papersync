@@ -1,0 +1,93 @@
+{
+  "extends": ["./biome.base.jsonc"],
+  "css": {"parser": {"tailwindDirectives": true}},
+  "files": {"includes": ["**", "!.claude/workflows", "!!.claude/worktrees"]},
+  "overrides": [
+    // Bun is the required test runner; bun:test is a runtime-provided module.
+{
+  "includes": [
+    "apps/web/**/*.test.ts",
+    "apps/web/**/*.test.tsx",
+    "packages/ui/**/*.test.tsx",
+    "apps/super-productivity-plugin/src/build.ts",
+    "apps/super-productivity-plugin/src/import-homework.test.ts",
+    "apps/web/integration/homework.ts",
+    "packages/db/src/schema.test.ts",
+    "packages/homework/src/identity.test.ts",
+    "packages/typescript-config/*.test.ts",
+    "packages/a11y-testing/src/playwright-config.test.ts"
+  ],
+  "linter": {
+    "rules": {
+      "nursery": {
+        "noBunModules": "off"
+      }
+    }
+  }
+},
+    // These server filesystem and scanner transports intentionally use Node-compatible built-ins under Bun.
+{
+  "includes": [
+    "apps/web/src/shared/vault/services/filesystem.ts",
+    "packages/typescript-config/config.test.ts",
+    "apps/web/src/app/api/plugin/route.ts",
+    "apps/web/a11y/scan.a11y.ts",
+    "apps/web/src/shared/vault/services/__tests__/filesystem-test-helpers.ts",
+    "apps/web/src/features/scanner/services/escl-client.ts",
+    "apps/web/src/features/scanner/services/__tests__/escl-client.test.ts",
+    "apps/web/src/shared/vault/actions/__tests__/sync-local-effect.test.ts"
+  ],
+  "linter": {
+    "rules": {
+      "correctness": {
+        "noNodejsModules": "off"
+      }
+    }
+  }
+},
+    // These layout roots receive global Tailwind styles through the Next.js root layout; Biome cannot follow that stylesheet graph.
+{
+  "includes": [
+    "apps/web/src/shared/components/navigation.tsx",
+    "apps/web/src/shared/components/navigation-sections.tsx",
+    "apps/web/src/shared/components/toast.tsx"
+  ],
+  "linter": {
+    "rules": {
+      "nursery": {
+        "noUndeclaredClasses": "off"
+      }
+    }
+  }
+},
+    // Public theme classes are consumed across workspace boundaries and through generated Tailwind styles.
+{
+  "includes": [
+    "packages/ui/src/theme.css", "packages/ui/src/controls.css", "packages/ui/src/layout.css"
+  ],
+  "linter": {
+    "rules": {
+      "nursery": {
+        "noUnusedClasses": "off"
+      }
+    }
+  }
+},
+    // Framework configuration modules require default exports.
+{
+  "includes": [
+    "apps/web/next.config.ts",
+    "apps/web/postcss.config.mjs",
+    "apps/web/playwright.config.ts",
+    "packages/db/drizzle.config.ts"
+  ],
+  "linter": {
+    "rules": {
+      "style": {
+        "noDefaultExport": "off"
+      }
+    }
+  }
+}
+  ]
+}

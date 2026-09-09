@@ -2,6 +2,8 @@
 
 import { motion } from 'motion/react';
 
+const pulseMaximumScale = 1.2;
+const pulseMinimumOpacity = 0.7;
 type PulseProps = {
   readonly className?: string;
 };
@@ -10,8 +12,8 @@ export const Pulse = ({ className = '' }: PulseProps): React.ReactElement => (
   <motion.div
     className={`rounded-full bg-accent ${className}`}
     animate={{
-      scale: [1, 1.2, 1],
-      opacity: [0.7, 1, 0.7],
+      scale: [1, pulseMaximumScale, 1],
+      opacity: [pulseMinimumOpacity, 1, pulseMinimumOpacity],
     }}
     transition={{
       duration: 1.5,

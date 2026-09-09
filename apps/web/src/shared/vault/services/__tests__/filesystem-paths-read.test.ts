@@ -1,10 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
 import { Effect } from 'effect';
-import {
-  makeLocalVaultLayer,
-  type VaultFileNotFoundError,
-  VaultService,
-} from '../filesystem';
+import type { VaultFileNotFoundError } from '@/shared/vault/errors/filesystem-errors';
+import { VaultService } from '@/shared/vault/services/filesystem-contract';
+import { makeLocalVaultLayer } from '../filesystem';
 import {
   cleanupTestVaultPath,
   joinPath,

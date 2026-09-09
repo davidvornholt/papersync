@@ -1,5 +1,5 @@
 import { Button } from '@papersync/ui/button';
-import { Spinner } from '@/shared/components/motion';
+import { Spinner } from '@/shared/components/motion-loading';
 
 type GeneratePlannerButtonProps = {
   readonly isGenerating: boolean;

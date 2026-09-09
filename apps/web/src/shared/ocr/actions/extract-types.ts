@@ -1,6 +1,5 @@
 import { Data } from 'effect';
 import type { OCRResponse, WeekId } from '@/shared/types/schemas';
-
 /**
  * Types and Error Classes for OCR Extraction
  *
@@ -8,19 +7,11 @@ import type { OCRResponse, WeekId } from '@/shared/types/schemas';
  * "use server" files can only export async functions.
  */
 
-// ============================================================================
-// Error Types
-// ============================================================================
-
 export class ExtractionValidationError extends Data.TaggedError(
   'ExtractionValidationError',
 )<{
   readonly message: string;
 }> {}
-
-// ============================================================================
-// Types
-// ============================================================================
 
 export type VaultSettings = {
   readonly method: 'local' | 'github';
@@ -37,10 +28,6 @@ export type ExtractionOptions = {
   readonly ollamaEndpoint?: string;
   readonly vaultSettings?: VaultSettings;
 };
-
-// ============================================================================
-// Result Types (for server action responses)
-// ============================================================================
 
 export type ExtractionResult =
   | {

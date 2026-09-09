@@ -1,15 +1,14 @@
 'use client';
 
 import { useState } from 'react';
-import { useToast } from '@/shared/components/toast';
-import type { Subject } from '@/shared/hooks/use-settings';
+import { useToast } from '@/shared/components/use-toast';
 import { useSettings } from '@/shared/hooks/use-settings';
+import type { Subject } from '@/shared/hooks/use-settings-schema';
 import {
   getConfiguredDaysCount,
   isVaultConfigured,
 } from '../settings-screen-helpers';
 import { useSettingsScreenVault } from './use-settings-screen-vault';
-
 export const useSettingsScreenController = () => {
   const settingsApi = useSettings();
   const { addToast } = useToast();
@@ -75,12 +74,8 @@ export const useSettingsScreenController = () => {
 
   const superProductivity = {
     tagIdsInput: vaultController.superProductivityTagIdsInput,
-    status: vaultController.superProductivityStatus,
-    error: vaultController.superProductivityError,
-    onChangeEndpoint: vaultController.handleChangeSuperProductivityEndpoint,
     onChangeProjectId: vaultController.handleChangeSuperProductivityProjectId,
     onChangeTagIds: vaultController.handleChangeSuperProductivityTagIds,
-    onTestConnection: vaultController.handleTestSuperProductivityConnection,
   };
 
   return {

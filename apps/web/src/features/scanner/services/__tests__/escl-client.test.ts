@@ -1,13 +1,22 @@
 import { afterEach, describe, expect, it } from 'bun:test';
 import { createServer, type Server } from 'node:http';
 import { Effect } from 'effect';
-import type {
-  ColorMode,
-  ScannerCapabilities,
-  ScanSettings,
-} from '../escl-client';
-import { ESCLClient, ESCLClientLayer } from '../escl-client';
+import {
+  type ColorMode,
+  ESCLClient,
+  type ScannerCapabilities,
+  type ScanSettings,
+} from '@/features/scanner/services/escl-types';
+import { ESCLClientLayer } from '../escl-client';
 import type { DiscoveredScanner } from '../scanner-discovery-types';
+
+const expectedItemCount = 3;
+const standardResolution = 300;
+const draftResolution = 75;
+const previewResolution = 150;
+const highResolution = 600;
+const notFoundStatus = 404;
+const successStatus = 200;
 
 let server: Server | null = null;
 
@@ -21,8 +30,8 @@ afterEach(() => {
 describe('eSCL Client Types', () => {
   describe('ColorMode', () => {
     it('should accept valid color modes', () => {
-      const modes: ColorMode[] = ['color', 'grayscale', 'blackwhite'];
-      expect(modes).toHaveLength(3);
+      const modes: Array<ColorMode> = ['color', 'grayscale', 'blackwhite'];
+      expect(modes).toHaveLength(expectedItemCount);
     });
   });
 
@@ -36,7 +45,7 @@ describe('eSCL Client Types', () => {
       };
 
       expect(settings.colorMode).toBe('color');
-      expect(settings.resolution).toBe(300);
+      expect(settings.resolution).toBe(standardResolution);
       expect(settings.format).toBe('jpeg');
       expect(settings.inputSource).toBe('Platen');
     });
@@ -47,12 +56,19 @@ describe('eSCL Client Types', () => {
       const caps: ScannerCapabilities = {
         inputSources: ['Platen', 'Adf'],
         sourceCapabilities: {
+          // biome-ignore lint/style/useNamingConvention: eSCL input-source identifiers are case-sensitive.
           Platen: {
-            resolutions: [75, 150, 300, 600],
+            resolutions: [
+              draftResolution,
+              previewResolution,
+              standardResolution,
+              highResolution,
+            ],
             colorModes: ['color', 'grayscale'],
           },
+          // biome-ignore lint/style/useNamingConvention: eSCL input-source identifiers are case-sensitive.
           Adf: {
-            resolutions: [150, 300],
+            resolutions: [previewResolution, standardResolution],
             colorModes: ['color', 'grayscale', 'blackwhite'],
           },
         },
@@ -64,7 +80,9 @@ describe('eSCL Client Types', () => {
       };
 
       expect(caps.inputSources).toContain('Platen');
-      expect(caps.sourceCapabilities.Platen.resolutions).toContain(300);
+      expect(caps.sourceCapabilities.Platen.resolutions).toContain(
+        standardResolution,
+      );
       expect(caps.sourceCapabilities.Adf.colorModes).toContain('color');
       expect(caps.formats).toContain('image/jpeg');
     });
@@ -74,12 +92,12 @@ describe('eSCL Client Types', () => {
     it('fetches and parses scanner capabilities', async () => {
       server = createServer((request, response) => {
         if (request.url !== '/eSCL/ScannerCapabilities') {
-          response.writeHead(404);
+          response.writeHead(notFoundStatus);
           response.end();
           return;
         }
 
-        response.writeHead(200, { 'Content-Type': 'text/xml' });
+        response.writeHead(successStatus, { 'content-type': 'text/xml' });
         response.end(`<?xml version="1.0" encoding="UTF-8"?>
 <scan:ScannerCapabilities xmlns:scan="http://schemas.hp.com/imaging/escl/2011/05/03" xmlns:pwg="http://www.pwg.org/schemas/2010/12/sm">
   <scan:Platen>
@@ -124,7 +142,8 @@ describe('eSCL Client Types', () => {
 
       expect(capabilities.inputSources).toEqual(['Platen']);
       expect(capabilities.sourceCapabilities.Platen.resolutions).toEqual([
-        300, 600,
+        standardResolution,
+        highResolution,
       ]);
       expect(capabilities.sourceCapabilities.Platen.colorModes).toEqual([
         'color',

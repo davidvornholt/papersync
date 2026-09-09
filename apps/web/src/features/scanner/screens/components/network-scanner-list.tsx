@@ -1,7 +1,7 @@
-import type { DiscoveredScanner } from '../../services/scanner-discovery';
+import type { DiscoveredScanner } from '@/features/scanner/services/scanner-discovery-types';
 
 type NetworkScannerListProps = {
-  readonly scanners: readonly DiscoveredScanner[];
+  readonly scanners: ReadonlyArray<DiscoveredScanner>;
   readonly selectedScannerId?: string;
   readonly onSelect: (scanner: DiscoveredScanner) => void;
 };
@@ -19,22 +19,22 @@ export const NetworkScannerList = ({
           key={scanner.id}
           type="button"
           onClick={() => onSelect(scanner)}
-          className={`relative w-full px-4 py-3 text-left transition-colors duration-200 cursor-pointer touch-manipulation border-b border-hairline last:border-b-0 ${
+          className={`relative w-full cursor-pointer touch-manipulation border-hairline border-b px-4 py-3 text-left transition-colors duration-200 last:border-b-0 ${
             isSelected
               ? 'bg-paper-deep'
               : 'bg-transparent hover:bg-paper-deep/50 focus-visible:bg-paper-deep/50'
           }`}
         >
-          {isSelected && (
+          {isSelected ? (
             <span
-              aria-hidden
+              aria-hidden={true}
               className="absolute inset-y-0 left-0 w-[2px] bg-accent"
             />
-          )}
+          ) : null}
           <p className="serif text-[16px] text-ink leading-tight">
             {scanner.name}
           </p>
-          <p className="mono text-[11px] text-graphite mt-1">
+          <p className="mono mt-1 text-[11px] text-graphite">
             {scanner.host}:{scanner.port}
           </p>
         </button>

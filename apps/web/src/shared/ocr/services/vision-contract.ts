@@ -1,18 +1,9 @@
-import { Context, Data, type Effect } from 'effect';
+import { Context, type Effect } from 'effect';
+import type {
+  VisionError,
+  VisionValidationError,
+} from '@/shared/ocr/errors/vision-contract';
 import type { OCRResponse, WeekId } from '@/shared/types/schemas';
-
-export class VisionError extends Data.TaggedError('VisionError')<{
-  readonly message: string;
-  readonly cause?: unknown;
-}> {}
-
-export class VisionValidationError extends Data.TaggedError(
-  'VisionValidationError',
-)<{
-  readonly message: string;
-  readonly raw?: string;
-}> {}
-
 export type OCRResultWithModel = {
   readonly data: OCRResponse;
   readonly modelUsed: string;
@@ -29,15 +20,7 @@ export type VisionProvider = {
 export const VisionProvider =
   Context.GenericTag<VisionProvider>('VisionProvider');
 
-export type GeminiModelConfig = {
-  readonly modelId: string;
-  readonly isGemini3: boolean;
-};
-
-export const GEMINI_MODELS: readonly GeminiModelConfig[] = [
-  { modelId: 'gemini-3-flash-preview', isGemini3: true },
-  { modelId: 'gemini-flash-latest', isGemini3: false },
-  { modelId: 'gemini-2.5-flash', isGemini3: false },
-  { modelId: 'gemini-flash-lite-latest', isGemini3: false },
-  { modelId: 'gemini-2.5-flash-lite', isGemini3: false },
+export const GEMINI_MODELS = [
+  'gemini-3.8-flash',
+  'gemini-3.5-flash-lite',
 ] as const;

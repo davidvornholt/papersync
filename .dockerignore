@@ -1,0 +1,12 @@
+.git
+**/node_modules
+**/.next
+**/dist
+**/.turbo
+**/.env*
+secrets
+config/dev.local.yaml
+**/test-results
+**/playwright-report
+.agents
+.claude

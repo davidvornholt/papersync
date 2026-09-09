@@ -1,39 +1,35 @@
-import { Effect } from 'effect';
-import * as S from 'effect/Schema';
+import { Effect, Schema } from 'effect';
+import { SettingsStorageError } from './settings-storage-error';
 import {
-  createDefaultTimetable,
   defaultSettings,
   type Settings,
   SettingsSchema,
 } from './use-settings-schema';
 
-const STORAGE_KEY = 'papersync-settings';
+const storageKey = 'papersync-settings';
+export const loadSettings = (): Effect.Effect<Settings> =>
+  Effect.try({
+    try: () => globalThis.localStorage.getItem(storageKey),
+    catch: () =>
+      new SettingsStorageError({
+        message: 'Browser settings are unavailable.',
+      }),
+  }).pipe(
+    Effect.flatMap((stored) =>
+      stored
+        ? Schema.decodeUnknown(Schema.parseJson(SettingsSchema))(stored)
+        : Effect.succeed(defaultSettings),
+    ),
+    Effect.orElseSucceed(() => defaultSettings),
+  );
 
-export const loadSettings = (): Effect.Effect<Settings, never> =>
-  Effect.sync(() => {
-    if (typeof window === 'undefined') return defaultSettings;
-
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (!stored) return defaultSettings;
-
-      const parsed = JSON.parse(stored);
-      if (!parsed.timetable) {
-        parsed.timetable = createDefaultTimetable();
-      }
-
-      return S.decodeUnknownSync(SettingsSchema)(parsed);
-    } catch {
-      return defaultSettings;
-    }
-  });
-
-export const saveSettings = (settings: Settings): Effect.Effect<void, never> =>
-  Effect.sync(() => {
-    if (typeof window === 'undefined') return;
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
-    } catch {
-      return;
-    }
+export const saveSettings = (settings: Settings) =>
+  Effect.try({
+    try: () =>
+      globalThis.localStorage.setItem(storageKey, JSON.stringify(settings)),
+    catch: () =>
+      new SettingsStorageError({
+        message:
+          'Browser storage could not save your settings. Check available space and browser privacy settings.',
+      }),
   });

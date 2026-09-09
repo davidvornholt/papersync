@@ -1,5 +1,4 @@
 import type { HTMLAttributes, ReactElement, ReactNode } from 'react';
-
 export type CardProps = HTMLAttributes<HTMLDivElement> & {
   readonly children: ReactNode;
 };
@@ -24,7 +23,7 @@ export const CardHeader = ({
   ...props
 }: CardSectionProps): ReactElement => (
   <div
-    className={`px-5 sm:px-7 pt-5 sm:pt-6 pb-4 sm:pb-5 border-b border-hairline ${className}`.trim()}
+    className={`border-hairline border-b px-5 pt-5 pb-4 sm:px-7 sm:pt-6 sm:pb-5 ${className}`.trim()}
     {...props}
   >
     {children}
@@ -36,7 +35,7 @@ export const CardContent = ({
   className = '',
   ...props
 }: CardSectionProps): ReactElement => (
-  <div className={`px-5 sm:px-7 py-5 sm:py-6 ${className}`.trim()} {...props}>
+  <div className={`p-5 sm:px-7 sm:py-6 ${className}`.trim()} {...props}>
     {children}
   </div>
 );
@@ -47,7 +46,7 @@ export const CardFooter = ({
   ...props
 }: CardSectionProps): ReactElement => (
   <div
-    className={`px-5 sm:px-7 py-4 sm:py-5 border-t border-hairline bg-paper-deep/40 ${className}`.trim()}
+    className={`border-hairline border-t bg-paper-deep/40 px-5 py-4 sm:px-7 sm:py-5 ${className}`.trim()}
     {...props}
   >
     {children}

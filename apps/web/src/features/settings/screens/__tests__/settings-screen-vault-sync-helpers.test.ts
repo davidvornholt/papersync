@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'bun:test';
+import { describe, expect, it } from 'bun:test';
 import {
   defaultSettings,
   type Settings,
@@ -6,7 +6,7 @@ import {
 import { hasVaultSyncChanges } from '../hooks/settings-screen-vault-sync-helpers';
 
 describe('settings-screen-vault-sync-helpers', () => {
-  test('returns false when only AI settings change', () => {
+  it('returns false when only AI settings change', () => {
     const previousSettings = defaultSettings;
     const nextSettings: Settings = {
       ...defaultSettings,
@@ -16,7 +16,7 @@ describe('settings-screen-vault-sync-helpers', () => {
     expect(hasVaultSyncChanges(previousSettings, nextSettings)).toBe(false);
   });
 
-  test('returns true when subjects change', () => {
+  it('returns true when subjects change', () => {
     const previousSettings = defaultSettings;
     const nextSettings: Settings = {
       ...defaultSettings,
@@ -26,7 +26,7 @@ describe('settings-screen-vault-sync-helpers', () => {
     expect(hasVaultSyncChanges(previousSettings, nextSettings)).toBe(true);
   });
 
-  test('returns true when timetable changes', () => {
+  it('returns true when timetable changes', () => {
     const previousSettings = defaultSettings;
     const nextSettings: Settings = {
       ...defaultSettings,

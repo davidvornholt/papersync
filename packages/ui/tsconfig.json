@@ -1,5 +1,5 @@
 {
-  "extends": "@papersync/typescript-config/base.json",
+  "extends": "@davidvornholt/typescript-config/react-library",
   "compilerOptions": {
     "jsx": "react-jsx",
     "lib": ["dom", "dom.iterable", "esnext"],

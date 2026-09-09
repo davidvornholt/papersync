@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
 import { Effect } from 'effect';
-import { makeLocalVaultLayer, VaultService } from '../filesystem';
+import { VaultService } from '@/shared/vault/services/filesystem-contract';
+import { makeLocalVaultLayer } from '../filesystem';
 import {
   cleanupTestVaultPath,
   ensureDirectory,
@@ -11,136 +12,127 @@ import {
   writeTextFile,
 } from './filesystem-test-helpers';
 
-describe('Local Filesystem VaultService write/list/delete behavior', () => {
-  let testVaultPath = '';
+let testVaultPath = '';
 
-  beforeEach(async () => {
-    testVaultPath = await setupTestVaultPath();
+beforeEach(async () => {
+  testVaultPath = await setupTestVaultPath();
+});
+
+afterEach(async () => {
+  await cleanupTestVaultPath(testVaultPath);
+});
+
+describe('writeFile', () => {
+  it('should write a new file', async () => {
+    const program = Effect.gen(function* () {
+      const vault = yield* VaultService;
+      yield* vault.writeFile('new-file.md', 'new content');
+    }).pipe(Effect.provide(makeLocalVaultLayer(testVaultPath)));
+
+    await Effect.runPromise(program);
+    const content = await readTextFile(joinPath(testVaultPath, 'new-file.md'));
+    expect(content).toBe('new content');
   });
 
-  afterEach(async () => {
-    await cleanupTestVaultPath(testVaultPath);
+  it('should create nested directories', async () => {
+    const program = Effect.gen(function* () {
+      const vault = yield* VaultService;
+      yield* vault.writeFile('new/nested/path/note.md', 'nested content');
+    }).pipe(Effect.provide(makeLocalVaultLayer(testVaultPath)));
+
+    await Effect.runPromise(program);
+    const content = await readTextFile(
+      joinPath(testVaultPath, 'new/nested/path/note.md'),
+    );
+    expect(content).toBe('nested content');
   });
 
-  describe('writeFile', () => {
-    it('should write a new file', async () => {
-      const program = Effect.gen(function* () {
-        const vault = yield* VaultService;
-        yield* vault.writeFile('new-file.md', 'new content');
-      }).pipe(Effect.provide(makeLocalVaultLayer(testVaultPath)));
+  it('should overwrite existing file', async () => {
+    await writeTextFile(joinPath(testVaultPath, 'existing.md'), 'old content');
 
-      await Effect.runPromise(program);
-      const content = await readTextFile(
-        joinPath(testVaultPath, 'new-file.md'),
-      );
-      expect(content).toBe('new content');
-    });
+    const program = Effect.gen(function* () {
+      const vault = yield* VaultService;
+      yield* vault.writeFile('existing.md', 'new content');
+    }).pipe(Effect.provide(makeLocalVaultLayer(testVaultPath)));
 
-    it('should create nested directories', async () => {
-      const program = Effect.gen(function* () {
-        const vault = yield* VaultService;
-        yield* vault.writeFile('new/nested/path/note.md', 'nested content');
-      }).pipe(Effect.provide(makeLocalVaultLayer(testVaultPath)));
+    await Effect.runPromise(program);
+    const content = await readTextFile(joinPath(testVaultPath, 'existing.md'));
+    expect(content).toBe('new content');
+  });
+});
 
-      await Effect.runPromise(program);
-      const content = await readTextFile(
-        joinPath(testVaultPath, 'new/nested/path/note.md'),
-      );
-      expect(content).toBe('nested content');
-    });
+describe('fileExists', () => {
+  it('should return true for existing file', async () => {
+    await writeTextFile(joinPath(testVaultPath, 'exists.md'), 'content');
 
-    it('should overwrite existing file', async () => {
-      await writeTextFile(
-        joinPath(testVaultPath, 'existing.md'),
-        'old content',
-      );
+    const program = Effect.gen(function* () {
+      const vault = yield* VaultService;
+      return yield* vault.fileExists('exists.md');
+    }).pipe(Effect.provide(makeLocalVaultLayer(testVaultPath)));
 
-      const program = Effect.gen(function* () {
-        const vault = yield* VaultService;
-        yield* vault.writeFile('existing.md', 'new content');
-      }).pipe(Effect.provide(makeLocalVaultLayer(testVaultPath)));
-
-      await Effect.runPromise(program);
-      const content = await readTextFile(
-        joinPath(testVaultPath, 'existing.md'),
-      );
-      expect(content).toBe('new content');
-    });
+    const result = await Effect.runPromise(program);
+    expect(result).toBe(true);
   });
 
-  describe('fileExists', () => {
-    it('should return true for existing file', async () => {
-      await writeTextFile(joinPath(testVaultPath, 'exists.md'), 'content');
+  it('should return false for non-existent file', async () => {
+    const program = Effect.gen(function* () {
+      const vault = yield* VaultService;
+      return yield* vault.fileExists('does-not-exist.md');
+    }).pipe(Effect.provide(makeLocalVaultLayer(testVaultPath)));
 
-      const program = Effect.gen(function* () {
-        const vault = yield* VaultService;
-        return yield* vault.fileExists('exists.md');
-      }).pipe(Effect.provide(makeLocalVaultLayer(testVaultPath)));
+    const result = await Effect.runPromise(program);
+    expect(result).toBe(false);
+  });
+});
 
-      const result = await Effect.runPromise(program);
-      expect(result).toBe(true);
-    });
+describe('listFiles', () => {
+  it('should list files in a directory', async () => {
+    await writeTextFile(joinPath(testVaultPath, 'file1.md'), '');
+    await writeTextFile(joinPath(testVaultPath, 'file2.md'), '');
+    await ensureDirectory(joinPath(testVaultPath, 'subdir'));
 
-    it('should return false for non-existent file', async () => {
-      const program = Effect.gen(function* () {
-        const vault = yield* VaultService;
-        return yield* vault.fileExists('does-not-exist.md');
-      }).pipe(Effect.provide(makeLocalVaultLayer(testVaultPath)));
+    const program = Effect.gen(function* () {
+      const vault = yield* VaultService;
+      return yield* vault.listFiles('.');
+    }).pipe(Effect.provide(makeLocalVaultLayer(testVaultPath)));
 
-      const result = await Effect.runPromise(program);
-      expect(result).toBe(false);
-    });
+    const result = await Effect.runPromise(program);
+    expect(result).toContain('file1.md');
+    expect(result).toContain('file2.md');
+    expect(result).not.toContain('subdir');
   });
 
-  describe('listFiles', () => {
-    it('should list files in a directory', async () => {
-      await writeTextFile(joinPath(testVaultPath, 'file1.md'), '');
-      await writeTextFile(joinPath(testVaultPath, 'file2.md'), '');
-      await ensureDirectory(joinPath(testVaultPath, 'subdir'));
+  it('should return empty array for non-existent directory', async () => {
+    const program = Effect.gen(function* () {
+      const vault = yield* VaultService;
+      return yield* vault.listFiles('non-existent');
+    }).pipe(Effect.provide(makeLocalVaultLayer(testVaultPath)));
 
-      const program = Effect.gen(function* () {
-        const vault = yield* VaultService;
-        return yield* vault.listFiles('.');
-      }).pipe(Effect.provide(makeLocalVaultLayer(testVaultPath)));
+    const result = await Effect.runPromise(program);
+    expect(result).toEqual([]);
+  });
+});
 
-      const result = await Effect.runPromise(program);
-      expect(result).toContain('file1.md');
-      expect(result).toContain('file2.md');
-      expect(result).not.toContain('subdir');
-    });
+describe('deleteFile', () => {
+  it('should delete an existing file', async () => {
+    const filePath = joinPath(testVaultPath, 'to-delete.md');
+    await writeTextFile(filePath, 'content');
 
-    it('should return empty array for non-existent directory', async () => {
-      const program = Effect.gen(function* () {
-        const vault = yield* VaultService;
-        return yield* vault.listFiles('non-existent');
-      }).pipe(Effect.provide(makeLocalVaultLayer(testVaultPath)));
+    const program = Effect.gen(function* () {
+      const vault = yield* VaultService;
+      yield* vault.deleteFile('to-delete.md');
+    }).pipe(Effect.provide(makeLocalVaultLayer(testVaultPath)));
 
-      const result = await Effect.runPromise(program);
-      expect(result).toEqual([]);
-    });
+    await Effect.runPromise(program);
+    expect(await pathExists(filePath)).toBe(false);
   });
 
-  describe('deleteFile', () => {
-    it('should delete an existing file', async () => {
-      const filePath = joinPath(testVaultPath, 'to-delete.md');
-      await writeTextFile(filePath, 'content');
+  it('should fail for non-existent file', async () => {
+    const program = Effect.gen(function* () {
+      const vault = yield* VaultService;
+      yield* vault.deleteFile('does-not-exist.md');
+    }).pipe(Effect.provide(makeLocalVaultLayer(testVaultPath)));
 
-      const program = Effect.gen(function* () {
-        const vault = yield* VaultService;
-        yield* vault.deleteFile('to-delete.md');
-      }).pipe(Effect.provide(makeLocalVaultLayer(testVaultPath)));
-
-      await Effect.runPromise(program);
-      expect(await pathExists(filePath)).toBe(false);
-    });
-
-    it('should fail for non-existent file', async () => {
-      const program = Effect.gen(function* () {
-        const vault = yield* VaultService;
-        yield* vault.deleteFile('does-not-exist.md');
-      }).pipe(Effect.provide(makeLocalVaultLayer(testVaultPath)));
-
-      await expect(Effect.runPromise(program)).rejects.toThrow();
-    });
+    await expect(Effect.runPromise(program)).rejects.toThrow();
   });
 });

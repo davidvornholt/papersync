@@ -1,5 +1,5 @@
 import { Data, Effect } from 'effect';
-import type { Subject, TimetableDay } from '@/shared/hooks/use-settings';
+import type { Subject, TimetableDay } from '@/shared/hooks/use-settings-schema';
 import { loadSettingsFromVault } from '@/shared/vault/actions/sync-settings';
 
 class LocalVaultSettingsLoadError extends Data.TaggedError(
@@ -14,8 +14,8 @@ type AddToast = (
 ) => void;
 
 type ApplyLoadedSettings = (
-  subjects: readonly Subject[],
-  timetable: readonly TimetableDay[],
+  subjects: ReadonlyArray<Subject>,
+  timetable: ReadonlyArray<TimetableDay>,
 ) => void;
 
 export const createLoadLocalVaultEffect = ({
@@ -40,8 +40,8 @@ export const createLoadLocalVaultEffect = ({
           return;
         }
         applyLoadedSettings(
-          result.subjects as Subject[],
-          result.timetable as TimetableDay[],
+          result.subjects as Array<Subject>,
+          result.timetable as Array<TimetableDay>,
         );
         if (result.subjects.length > 0 || result.timetable.length > 0) {
           addToast('Loaded settings from vault', 'success');

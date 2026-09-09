@@ -1,0 +1,28 @@
+import { createA11yPlaywrightConfig } from '@davidvornholt/a11y-testing/playwright-config';
+import { browserAuth } from './a11y/auth-fixture';
+
+const webServerCommand = 'bun run start --hostname 127.0.0.1 --port 3100';
+export default {
+  ...createA11yPlaywrightConfig({
+    baseUrl: browserAuth.baseUrl,
+    webServerCommand,
+  }),
+  webServer: {
+    command: webServerCommand,
+    url: `${browserAuth.baseUrl}/login`,
+    reuseExistingServer: false,
+    timeout: 120_000,
+    env: {
+      // biome-ignore lint/style/useNamingConvention: Runtime environment variable name.
+      BETTER_AUTH_URL: browserAuth.baseUrl,
+      // biome-ignore lint/style/useNamingConvention: Runtime environment variable name.
+      BETTER_AUTH_SECRET: browserAuth.secret,
+      // biome-ignore lint/style/useNamingConvention: Runtime environment variable name.
+      GITHUB_CLIENT_ID: 'browser-test-client',
+      // biome-ignore lint/style/useNamingConvention: Runtime environment variable name.
+      GITHUB_CLIENT_SECRET: 'browser-test-client-secret',
+      // biome-ignore lint/style/useNamingConvention: Runtime environment variable name.
+      GITHUB_ALLOWED_ACCOUNT_ID: browserAuth.accountId,
+    },
+  },
+};

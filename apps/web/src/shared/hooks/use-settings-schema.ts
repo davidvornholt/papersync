@@ -1,6 +1,4 @@
-import * as S from 'effect/Schema';
-
-export const DEFAULT_SUPER_PRODUCTIVITY_ENDPOINT = 'http://127.0.0.1:3876';
+import { Schema as S } from 'effect';
 
 const VaultMethodSchema = S.Union(
   S.Literal('local'),
@@ -42,10 +40,8 @@ export const SettingsSchema = S.Struct({
     githubRepo: S.optional(S.String),
     githubUsername: S.optional(S.String),
     githubToken: S.optional(S.String),
-    superProductivityEndpoint: S.optional(S.String),
     superProductivityProjectId: S.optional(S.String),
     superProductivityTagIds: S.optional(S.Array(S.String)),
-    superProductivityVerified: S.optional(S.Boolean),
   }),
   ai: S.Struct({
     provider: AIProviderSchema,
@@ -64,7 +60,7 @@ export type DayOfWeek = S.Schema.Type<typeof DayOfWeekSchema>;
 export type TimetableSlot = S.Schema.Type<typeof TimetableSlotSchema>;
 export type TimetableDay = S.Schema.Type<typeof TimetableDaySchema>;
 
-export const DAYS_OF_WEEK: DayOfWeek[] = [
+export const DAYS_OF_WEEK: Array<DayOfWeek> = [
   'monday',
   'tuesday',
   'wednesday',
@@ -74,19 +70,17 @@ export const DAYS_OF_WEEK: DayOfWeek[] = [
   'sunday',
 ];
 
-export const createDefaultTimetable = (): TimetableDay[] =>
+export const createDefaultTimetable = (): Array<TimetableDay> =>
   DAYS_OF_WEEK.map((day) => ({ day, slots: [] }));
 
 export const defaultSettings: Settings = {
   vault: {
-    method: 'local',
+    method: 'super-productivity',
     localPath: '',
     githubConnected: false,
     githubRepo: '',
-    superProductivityEndpoint: DEFAULT_SUPER_PRODUCTIVITY_ENDPOINT,
     superProductivityProjectId: '',
     superProductivityTagIds: [],
-    superProductivityVerified: false,
   },
   ai: {
     provider: 'google',

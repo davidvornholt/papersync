@@ -1,94 +1,67 @@
-import { Effect } from 'effect';
-import {
-  GitHubAPIError,
-  type GitHubRepository,
-  type GitHubUser,
-} from './github-oauth-types';
+import { Effect, Schema } from 'effect';
+import { GitHubAPIError } from '@/features/settings/errors/github-oauth-types';
+import { fetchJson } from '@/shared/http/json';
 
-export const getGitHubUserEffect = (
-  accessToken: string,
-): Effect.Effect<GitHubUser, GitHubAPIError> =>
-  Effect.tryPromise({
-    try: () =>
-      fetch('https://api.github.com/user', {
-        headers: {
-          Accept: 'application/vnd.github+json',
-          Authorization: `Bearer ${accessToken}`,
-          'X-GitHub-Api-Version': '2022-11-28',
-        },
-      }).then((response) => {
-        if (!response.ok) {
-          return Promise.reject({ status: response.status });
-        }
-        return response.json().then((data) => ({
-          login: data.login,
-          name: data.name,
-          avatarUrl: data.avatar_url,
-        }));
-      }),
-    catch: (error) =>
-      new GitHubAPIError({
-        message:
-          typeof error === 'object' && error !== null && 'status' in error
-            ? `GitHub API returned ${error.status}`
-            : error instanceof Error
-              ? error.message
-              : 'Failed to fetch GitHub user',
-        status:
-          typeof error === 'object' && error !== null && 'status' in error
-            ? (error.status as number)
-            : undefined,
-        cause: error,
-      }),
-  });
-
-export const listRepositoriesEffect = (
-  accessToken: string,
-): Effect.Effect<readonly GitHubRepository[], GitHubAPIError> =>
-  Effect.tryPromise({
-    try: () =>
-      fetch('https://api.github.com/user/repos?sort=updated&per_page=100', {
-        headers: {
-          Accept: 'application/vnd.github+json',
-          Authorization: `Bearer ${accessToken}`,
-          'X-GitHub-Api-Version': '2022-11-28',
-        },
-      }).then((response) => {
-        if (!response.ok) {
-          return Promise.reject({ status: response.status });
-        }
-        return response.json().then((data) =>
-          data.map(
-            (repo: {
-              id: number;
-              name: string;
-              full_name: string;
-              owner: { login: string };
-              private: boolean;
-              description: string | null;
-            }) => ({
-              id: repo.id,
-              name: repo.name,
-              fullName: repo.full_name,
-              owner: repo.owner.login,
-              private: repo.private,
-              description: repo.description,
-            }),
-          ),
-        );
-      }),
-    catch: (error) =>
-      new GitHubAPIError({
-        message:
-          typeof error === 'object' && error !== null && 'status' in error
-            ? `GitHub API returned ${error.status}`
-            : error instanceof Error
-              ? error.message
-              : 'Failed to list repositories',
-        status:
-          typeof error === 'object' && error !== null && 'status' in error
-            ? (error.status as number)
-            : undefined,
-        cause: error,
-      }),
-  });
+const userSchema = Schema.Struct({
+  login: Schema.String,
+  name: Schema.NullOr(Schema.String),
+  // biome-ignore lint/style/useNamingConvention: GitHub wire-format field required by the API.
+  avatar_url: Schema.String,
+});
+const repositorySchema = Schema.Struct({
+  id: Schema.Number,
+  name: Schema.String,
+  // biome-ignore lint/style/useNamingConvention: GitHub wire-format field required by the API.
+  full_name: Schema.String,
+  owner: Schema.Struct({ login: Schema.String }),
+  private: Schema.Boolean,
+  description: Schema.NullOr(Schema.String),
+});
+const getHeaders = (accessToken: string) => ({
+  accept: 'application/vnd.github+json',
+  authorization: `Bearer ${accessToken}`,
+  'X-GitHub-Api-Version': '2022-11-28',
+});
+export const getGitHubUserEffect = (accessToken: string) =>
+  fetchJson('https://api.github.com/user', {
+    headers: getHeaders(accessToken),
+  }).pipe(
+    Effect.flatMap(Schema.decodeUnknown(userSchema)),
+    Effect.map((data) => ({
+      login: data.login,
+      name: data.name,
+      avatarUrl: data.avatar_url,
+    })),
+    Effect.mapError(
+      (cause) =>
+        new GitHubAPIError({
+          message:
+            'Could not fetch your GitHub profile. Check the connection and try again.',
+          cause,
+        }),
+    ),
+  );
+export const listRepositoriesEffect = (accessToken: string) =>
+  fetchJson('https://api.github.com/user/repos?sort=updated&per_page=100', {
+    headers: getHeaders(accessToken),
+  }).pipe(
+    Effect.flatMap(Schema.decodeUnknown(Schema.Array(repositorySchema))),
+    Effect.map((data) =>
+      data.map((repo) => ({
+        id: repo.id,
+        name: repo.name,
+        fullName: repo.full_name,
+        owner: repo.owner.login,
+        private: repo.private,
+        description: repo.description,
+      })),
+    ),
+    Effect.mapError(
+      (cause) =>
+        new GitHubAPIError({
+          message:
+            'Could not list GitHub repositories. Check the connection and try again.',
+          cause,
+        }),
+    ),
+  );

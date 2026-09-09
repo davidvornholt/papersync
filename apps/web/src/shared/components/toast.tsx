@@ -2,57 +2,13 @@
 
 import { AnimatePresence, motion } from 'motion/react';
 import type { ReactNode } from 'react';
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useState,
-} from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { type Toast, ToastContext, type ToastType } from './use-toast';
 
-// ============================================================================
-// Types
-// ============================================================================
-
-type ToastType = 'success' | 'error' | 'info' | 'warning';
-
-type Toast = {
-  readonly id: string;
-  readonly message: string;
-  readonly type: ToastType;
-  readonly duration?: number;
-};
-
-type ToastContextType = {
-  readonly toasts: readonly Toast[];
-  readonly addToast: (
-    message: string,
-    type?: ToastType,
-    duration?: number,
-  ) => void;
-  readonly removeToast: (id: string) => void;
-};
-
-// ============================================================================
-// Context
-// ============================================================================
-
-const ToastContext = createContext<ToastContextType | null>(null);
-const fallbackToastContext: ToastContextType = {
-  toasts: [],
-  addToast: () => undefined,
-  removeToast: () => undefined,
-};
-
-export const useToast = (): ToastContextType => {
-  const context = useContext(ToastContext);
-  return context ?? fallbackToastContext;
-};
-
-// ============================================================================
-// Toast Provider
-// ============================================================================
-
+const identifierRadix = 36;
+const percentageScale = 100;
+const toastDurationMilliseconds = 4000;
+const progressIntervalMilliseconds = 50;
 type ToastProviderProps = {
   readonly children: ReactNode;
 };
@@ -60,7 +16,7 @@ type ToastProviderProps = {
 export const ToastProvider = ({
   children,
 }: ToastProviderProps): React.ReactElement => {
-  const [toasts, setToasts] = useState<Toast[]>([]);
+  const [toasts, setToasts] = useState<Array<Toast>>([]);
 
   const removeToast = useCallback((id: string) => {
     setToasts((prev) => prev.filter((t) => t.id !== id));
@@ -68,7 +24,7 @@ export const ToastProvider = ({
 
   const addToast = useCallback(
     (message: string, type: ToastType = 'info', duration = 4000) => {
-      const id = `toast-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      const id = `toast-${Date.now()}-${Math.random().toString(identifierRadix).slice(2)}`;
       const toast: Toast = { id, message, type, duration };
       setToasts((prev) => [...prev, toast]);
 
@@ -87,12 +43,8 @@ export const ToastProvider = ({
   );
 };
 
-// ============================================================================
-// Toast Container
-// ============================================================================
-
 type ToastContainerProps = {
-  readonly toasts: readonly Toast[];
+  readonly toasts: ReadonlyArray<Toast>;
   readonly removeToast: (id: string) => void;
 };
 
@@ -100,7 +52,7 @@ const ToastContainer = ({
   toasts,
   removeToast,
 }: ToastContainerProps): React.ReactElement => (
-  <div className="fixed inset-x-4 bottom-[calc(env(safe-area-inset-bottom,0px)+4.5rem)] sm:inset-x-auto sm:right-6 sm:bottom-6 z-50 flex flex-col items-end gap-2 pointer-events-none">
+  <div className="pointer-events-none fixed inset-x-4 bottom-[calc(env(safe-area-inset-bottom,0px)+4.5rem)] z-50 flex flex-col items-end gap-2 sm:inset-x-auto sm:right-6 sm:bottom-6">
     <AnimatePresence mode="popLayout">
       {toasts.map((toast) => (
         <ToastItem key={toast.id} toast={toast} onDismiss={removeToast} />
@@ -108,10 +60,6 @@ const ToastContainer = ({
     </AnimatePresence>
   </div>
 );
-
-// ============================================================================
-// Toast Item
-// ============================================================================
 
 type ToastItemProps = {
   readonly toast: Toast;
@@ -136,53 +84,59 @@ const ToastItem = ({
   toast,
   onDismiss,
 }: ToastItemProps): React.ReactElement => {
-  const [progress, setProgress] = useState(100);
+  const [progress, setProgress] = useState(percentageScale);
 
   useEffect(() => {
-    if (!toast.duration) return;
+    if (!toast.duration) {
+      return;
+    }
 
     const interval = setInterval(() => {
       setProgress((prev) => {
-        const duration = toast.duration ?? 4000;
-        const next = prev - 100 / (duration / 50);
-        return next < 0 ? 0 : next;
+        const duration = toast.duration ?? toastDurationMilliseconds;
+        const next =
+          prev - percentageScale / (duration / progressIntervalMilliseconds);
+        return Math.max(next, 0);
       });
-    }, 50);
+    }, progressIntervalMilliseconds);
 
     return () => clearInterval(interval);
   }, [toast.duration]);
 
   return (
     <motion.div
-      layout
-      initial={{ opacity: 0, x: 50, scale: 0.9 }}
+      role={toast.type === 'error' ? 'alert' : 'status'}
+      layout={true}
+      initial={false}
       animate={{ opacity: 1, x: 0, scale: 1 }}
       exit={{ opacity: 0, x: 50, scale: 0.9 }}
-      transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
-      className={`pointer-events-auto w-full sm:min-w-[280px] sm:max-w-[400px] shadow-soft overflow-hidden ${toastStyles[toast.type]}`}
+      transition={{ duration: 0.3, ease: 'easeOut' }}
+      className={`pointer-events-auto w-full overflow-hidden shadow-soft sm:min-w-[280px] sm:max-w-[400px] ${toastStyles[toast.type]}`}
     >
       <div className="flex items-center gap-3 px-4 py-3">
-        <span className="text-lg font-medium">{toastIcons[toast.type]}</span>
-        <p className="flex-1 text-sm font-medium">{toast.message}</p>
+        <span className="font-medium text-lg">{toastIcons[toast.type]}</span>
+        <p className="flex-1 font-medium text-inherit text-sm">
+          {toast.message}
+        </p>
         <button
           type="button"
           onClick={() => onDismiss(toast.id)}
-          className="opacity-70 hover:opacity-100 transition-opacity"
+          className="opacity-70 transition-opacity hover:opacity-100"
           aria-label="Dismiss"
         >
           ✕
         </button>
       </div>
-      {toast.duration && toast.duration > 0 && (
+      {toast.duration && toast.duration > 0 ? (
         <div className="h-px bg-paper/20">
           <motion.div
             className="h-full bg-paper/50"
-            initial={{ width: '100%' }}
+            initial={false}
             animate={{ width: `${progress}%` }}
             transition={{ duration: 0.05, ease: 'linear' }}
           />
         </div>
-      )}
+      ) : null}
     </motion.div>
   );
 };

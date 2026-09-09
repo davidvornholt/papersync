@@ -1,18 +1,18 @@
 import { describe, expect, it } from 'bun:test';
 import { Effect } from 'effect';
+import { RequestValidationError } from '@/features/planner/errors/pdf-generation';
 import type { WeekId } from '@/shared/types/schemas';
 import {
   type GeneratePdfRequest,
   generatePlannerPdfBufferEffect,
   parseGeneratePdfRequestBody,
-  RequestValidationError,
   validateGeneratePdfRequest,
 } from '../pdf-generation';
 
 const createRequest = (body: string): Request =>
   new Request('http://localhost/api/planner', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'content-type': 'application/json' },
     body,
   });
 

@@ -1,7 +1,7 @@
 'use client';
 
 import { Button } from '@papersync/ui/button';
-import { Spinner } from '@/shared/components/motion';
+import { Spinner } from '@/shared/components/motion-loading';
 
 type SettingsSaveActionProps = {
   readonly isSaving: boolean;
@@ -27,7 +27,7 @@ export const SettingsSaveAction = ({
         'Save all settings'
       )}
     </Button>
-    <p className="text-xs text-muted text-center mt-2">
+    <p className="mt-2 text-center text-muted text-xs">
       {isVaultConfigured
         ? 'Saves all settings locally and syncs to vault'
         : 'Saves all settings locally'}

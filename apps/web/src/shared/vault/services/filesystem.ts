@@ -1,189 +1,149 @@
-import * as path from 'node:path';
+import {
+  mkdir,
+  readdir,
+  readFile,
+  rename,
+  rm,
+  stat,
+  writeFile,
+} from 'node:fs/promises';
+import path from 'node:path';
 import { Effect, Layer } from 'effect';
-import type { VaultService } from './filesystem-contract';
-import { VaultService as VaultServiceTag } from './filesystem-contract';
 import {
   VaultError,
   VaultFileNotFoundError,
-  VaultNotFoundError,
-} from './filesystem-errors';
+} from '@/shared/vault/errors/filesystem-errors';
+import { VaultService } from './filesystem-contract';
 
-export { VaultService } from './filesystem-contract';
-export { VaultError, VaultFileNotFoundError, VaultNotFoundError };
+const isMissing = (cause: unknown): boolean =>
+  typeof cause === 'object' &&
+  cause !== null &&
+  'code' in cause &&
+  cause.code === 'ENOENT';
 
-const getErrorMessage = (error: unknown, fallback: string): string =>
-  error instanceof Error && error.message.length > 0 ? error.message : fallback;
-
-const isMissingDirectoryError = (error: unknown): boolean =>
-  error instanceof Error &&
-  (error.message.includes('ENOENT') || error.message.includes('ENOTDIR'));
-
-const assertDirectoryExists = (directoryPath: string): Promise<void> =>
-  Array.fromAsync(new Bun.Glob('*').scan({ cwd: directoryPath })).then(
-    () => undefined,
-  );
-
-// ============================================================================
-// Local Filesystem Implementation
-// ============================================================================
+const getVaultFilePath = (
+  vaultPath: string,
+  relativePath: string,
+): Effect.Effect<string, VaultError> => {
+  const resolved = path.resolve(vaultPath, relativePath);
+  const relative = path.relative(vaultPath, resolved);
+  return path.isAbsolute(relativePath) ||
+    relative === '..' ||
+    relative.startsWith(`..${path.sep}`)
+    ? Effect.fail(
+        new VaultError({
+          message: 'Choose a path inside the configured vault.',
+        }),
+      )
+    : Effect.succeed(resolved);
+};
 
 const createLocalVaultService = (initialPath: string): VaultService => {
-  let vaultPath = initialPath;
-
-  const resolvePath = (relativePath: string): string =>
-    path.join(vaultPath, relativePath);
+  let vaultPath = path.resolve(initialPath);
+  const getPath = (relativePath: string) =>
+    getVaultFilePath(vaultPath, relativePath);
+  const operation = <T>(
+    relativePath: string,
+    run: (fullPath: string) => Promise<T>,
+  ) =>
+    getPath(relativePath).pipe(
+      Effect.flatMap((fullPath) =>
+        Effect.tryPromise({
+          try: () => run(fullPath),
+          catch: (cause) =>
+            new VaultError({
+              message: `Vault operation failed for ${relativePath || '.'}. Check the path and permissions.`,
+              cause,
+            }),
+        }),
+      ),
+    );
 
   return {
     getVaultPath: () => Effect.succeed(vaultPath),
-
-    setVaultPath: (newPath: string) =>
-      Effect.tryPromise({
-        try: () =>
-          assertDirectoryExists(newPath).then(() => {
-            vaultPath = newPath;
-          }),
-        catch: (error) =>
-          new VaultError({
-            message: `Failed to set vault path: ${newPath}${
-              error instanceof Error && error.message.length > 0
-                ? ` (${error.message})`
-                : ''
-            }`,
-            cause: error,
-          }),
-      }),
-
-    readFile: (relativePath: string) =>
-      Effect.tryPromise({
-        try: () => {
-          const fullPath = resolvePath(relativePath);
-          const file = Bun.file(fullPath);
-          return file.exists().then((exists) => {
-            if (!exists) {
-              return Promise.reject({ _tag: 'file_not_found' as const });
-            }
-            return file.text();
-          });
-        },
-        catch: (error) => {
-          if (
-            typeof error === 'object' &&
-            error !== null &&
-            '_tag' in error &&
-            error._tag === 'file_not_found'
-          ) {
-            return new VaultFileNotFoundError({
-              filePath: relativePath,
-            });
-          }
-          return new VaultError({
-            message: `Failed to read file: ${relativePath}`,
-            cause: error,
-          });
-        },
-      }),
-
-    writeFile: (relativePath: string, content: string) =>
-      Effect.tryPromise({
-        try: () => {
-          const fullPath = resolvePath(relativePath);
-          return Bun.write(fullPath, content).then(() => undefined);
-        },
-        catch: (error) =>
-          new VaultError({
-            message: getErrorMessage(
-              error,
-              `Failed to write file: ${relativePath}`,
-            ),
-            cause: error,
-          }),
-      }),
-
-    fileExists: (relativePath: string) =>
-      Effect.tryPromise({
-        try: () => {
-          const fullPath = resolvePath(relativePath);
-          return Bun.file(fullPath).exists();
-        },
-        catch: (error) =>
-          new VaultError({
-            message: `Failed to check file existence: ${relativePath}`,
-            cause: error,
-          }),
-      }),
-
-    listFiles: (relativePath: string) =>
-      Effect.tryPromise({
-        try: () => {
-          const fullPath = resolvePath(relativePath);
-          return Array.fromAsync(
-            new Bun.Glob('*').scan({
-              cwd: fullPath,
-              onlyFiles: true,
+    setVaultPath: (nextPath) =>
+      Effect.gen(function* () {
+        const info = yield* Effect.tryPromise({
+          try: () => stat(nextPath),
+          catch: (cause) =>
+            new VaultError({
+              message: `Cannot open vault: ${nextPath}`,
+              cause,
             }),
-          ).catch((error) =>
-            isMissingDirectoryError(error) ? [] : Promise.reject(error),
+        });
+        if (!info.isDirectory()) {
+          return yield* Effect.fail(
+            new VaultError({
+              message: `Failed to set vault path: ${nextPath}. Choose a directory.`,
+            }),
           );
-        },
-        catch: (error) =>
-          new VaultError({
-            message: `Failed to list files: ${relativePath}`,
-            cause: error,
-          }),
+        }
+        vaultPath = path.resolve(nextPath);
       }),
-
-    ensureDirectory: (relativePath: string) =>
-      Effect.tryPromise({
-        try: () => {
-          const fullPath = resolvePath(relativePath);
-          const markerPath = path.join(fullPath, '.papersync-dir-marker');
-          return Bun.write(markerPath, '').then(() =>
-            Bun.file(markerPath)
-              .delete()
-              .then(() => undefined),
-          );
-        },
-        catch: (error) =>
-          new VaultError({
-            message: getErrorMessage(
-              error,
-              `Failed to create directory: ${relativePath}`,
+    readFile: (relativePath) =>
+      getPath(relativePath).pipe(
+        Effect.flatMap((fullPath) =>
+          Effect.tryPromise({
+            try: () => readFile(fullPath, 'utf8'),
+            catch: (cause) =>
+              isMissing(cause)
+                ? new VaultFileNotFoundError({ filePath: relativePath })
+                : new VaultError({
+                    message: `Cannot read ${relativePath}. Check the file and permissions.`,
+                    cause,
+                  }),
+          }),
+        ),
+      ),
+    writeFile: (relativePath, content) =>
+      getPath(relativePath).pipe(
+        Effect.flatMap((fullPath) => {
+          const temporaryPath = `${fullPath}.${crypto.randomUUID()}.tmp`;
+          return Effect.gen(function* () {
+            yield* operation(relativePath, () =>
+              mkdir(path.dirname(fullPath), { recursive: true }),
+            );
+            yield* operation(relativePath, () =>
+              writeFile(temporaryPath, content, { flag: 'wx' }),
+            );
+            yield* operation(relativePath, () =>
+              rename(temporaryPath, fullPath),
+            );
+          }).pipe(
+            Effect.ensuring(
+              Effect.promise(() => rm(temporaryPath, { force: true })).pipe(
+                Effect.catchAllCause(() => Effect.void),
+              ),
             ),
-            cause: error,
-          }),
-      }),
-
-    deleteFile: (relativePath: string) =>
-      Effect.tryPromise({
-        try: () => {
-          const fullPath = resolvePath(relativePath);
-          return Bun.file(fullPath)
-            .exists()
-            .then((exists) => {
-              if (!exists) {
-                return Promise.reject(
-                  new Error(`Failed to delete file: ${fullPath}`),
-                );
-              }
-              return Bun.file(fullPath)
-                .delete()
-                .then(() => undefined);
-            });
-        },
-        catch: (error) =>
-          new VaultError({
-            message: `Failed to delete file: ${relativePath}`,
-            cause: error,
-          }),
-      }),
+          );
+        }),
+      ),
+    fileExists: (relativePath) =>
+      operation(relativePath, (fullPath) => stat(fullPath)).pipe(
+        Effect.map((info) => info.isFile()),
+        Effect.catchAll((error) =>
+          isMissing(error.cause) ? Effect.succeed(false) : Effect.fail(error),
+        ),
+      ),
+    listFiles: (relativePath) =>
+      operation(relativePath, (fullPath) =>
+        readdir(fullPath, { withFileTypes: true }),
+      ).pipe(
+        Effect.map((entries) =>
+          entries.filter((entry) => entry.isFile()).map((entry) => entry.name),
+        ),
+        Effect.catchAll((error) =>
+          isMissing(error.cause) ? Effect.succeed([]) : Effect.fail(error),
+        ),
+      ),
+    ensureDirectory: (relativePath) =>
+      operation(relativePath, (fullPath) =>
+        mkdir(fullPath, { recursive: true }),
+      ).pipe(Effect.asVoid),
+    deleteFile: (relativePath) =>
+      operation(relativePath, (fullPath) => rm(fullPath)),
   };
 };
 
-// ============================================================================
-// Layer
-// ============================================================================
-
-export const makeLocalVaultLayer = (
-  vaultPath: string,
-): Layer.Layer<VaultService, never, never> =>
-  Layer.succeed(VaultServiceTag, createLocalVaultService(vaultPath));
+export const makeLocalVaultLayer = (vaultPath: string) =>
+  Layer.succeed(VaultService, createLocalVaultService(vaultPath));

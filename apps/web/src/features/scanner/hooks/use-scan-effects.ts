@@ -1,40 +1,37 @@
-import { Data, Effect } from 'effect';
+import { Effect } from 'effect';
+import {
+  ExtractionRequestError,
+  FileReadError,
+} from '@/features/scanner/errors/use-scan-effects';
 import { extractHandwriting } from '@/shared/ocr/actions/extract';
 import type { VaultSettings } from '@/shared/ocr/actions/extract-types';
 import type { WeekId } from '@/shared/types/schemas';
 import type { AISettings, ExtractedEntry, ScanState } from './use-scan-types';
 
-export const getCurrentWeekId = (): WeekId => {
-  const now = new Date();
-  const startOfYear = new Date(now.getFullYear(), 0, 1);
-  const days = Math.floor(
-    (now.getTime() - startOfYear.getTime()) / (24 * 60 * 60 * 1000),
-  );
-  const weekNumber = Math.ceil((days + startOfYear.getDay() + 1) / 7);
-  return `${now.getFullYear()}-W${weekNumber.toString().padStart(2, '0')}` as WeekId;
-};
-
-class FileReadError extends Data.TaggedError('FileReadError')<{
-  readonly message: string;
-}> {}
-
-class ExtractionRequestError extends Data.TaggedError(
-  'ExtractionRequestError',
-)<{
-  readonly message: string;
-  readonly cause: unknown;
-}> {}
-
+const percentageScale = 100;
+const bytesPerMebibyte = 1_048_576;
+const maximumImageBytes = 10 * bytesPerMebibyte;
+const supportedImageTypes = new Set(['image/jpeg', 'image/png', 'image/webp']);
 export const readFileAsDataUrl = (
   file: File,
   onProgress: (progress: number) => void,
 ): Effect.Effect<string, FileReadError> =>
   Effect.async<string, FileReadError>((resume) => {
+    if (file.size > maximumImageBytes || !supportedImageTypes.has(file.type)) {
+      resume(
+        Effect.fail(
+          new FileReadError({
+            message: 'Choose a JPEG, PNG, or WebP image no larger than 10 MB.',
+          }),
+        ),
+      );
+      return;
+    }
     const reader = new FileReader();
 
     reader.onprogress = (event) => {
       if (event.lengthComputable) {
-        onProgress(Math.round((event.loaded / event.total) * 100));
+        onProgress(Math.round((event.loaded / event.total) * percentageScale));
       }
     };
 
@@ -58,6 +55,12 @@ export const readFileAsDataUrl = (
     };
 
     reader.readAsDataURL(file);
+    return Effect.sync(() => {
+      reader.onload = null;
+      reader.onerror = null;
+      reader.onprogress = null;
+      reader.abort();
+    });
   });
 
 export const processExtractionEffect = (
@@ -90,7 +93,7 @@ export const processExtractionEffect = (
         });
       }
 
-      const entries: ExtractedEntry[] = result.data.entries.map(
+      const entries: Array<ExtractedEntry> = result.data.entries.map(
         (entry, index) => ({
           id: `entry-${Date.now()}-${index}`,
           day: entry.day,

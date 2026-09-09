@@ -1,6 +1,7 @@
 'use server';
 
 import { Effect } from 'effect';
+import { requireSession } from '@/shared/auth/session';
 import {
   loadFromGitHubEffect,
   syncToGitHubEffect,
@@ -15,14 +16,6 @@ import type {
   SyncSettingsResult,
   VaultMethod,
 } from './sync-settings-types';
-
-export type {
-  LoadSettingsResult,
-  SettingsToSync,
-  SyncSettingsResult,
-  VaultMethod,
-} from './sync-settings-types';
-
 export const syncSettingsToVault = async (
   settings: SettingsToSync,
   method: VaultMethod,
@@ -32,6 +25,7 @@ export const syncSettingsToVault = async (
     githubRepo?: string;
   },
 ): Promise<SyncSettingsResult> => {
+  await requireSession();
   if (method === 'local') {
     if (!options.localPath) {
       return { success: false, error: 'Vault path not configured' };
@@ -55,7 +49,7 @@ export const syncSettingsToVault = async (
     }
 
     const [owner, repo] = options.githubRepo.split('/');
-    if (!owner || !repo) {
+    if (!(owner && repo)) {
       return { success: false, error: 'Invalid repository name' };
     }
 
@@ -80,6 +74,7 @@ export const loadSettingsFromVault = async (
     githubRepo?: string;
   },
 ): Promise<LoadSettingsResult> => {
+  await requireSession();
   if (method === 'local') {
     if (!options.localPath) {
       return { success: false, error: 'Vault path not configured' };
@@ -103,7 +98,7 @@ export const loadSettingsFromVault = async (
     }
 
     const [owner, repo] = options.githubRepo.split('/');
-    if (!owner || !repo) {
+    if (!(owner && repo)) {
       return { success: false, error: 'Invalid repository name' };
     }
 

@@ -1,5 +1,4 @@
 import { Context, Data, type Effect } from 'effect';
-
 export type ScannerProtocol = 'http' | 'https';
 
 export type DiscoveredScanner = {
@@ -14,8 +13,8 @@ export type DiscoveredScanner = {
   readonly uuid?: string;
   readonly adminUrl?: string;
   readonly capabilities: {
-    readonly colorModes: readonly string[];
-    readonly documentFormats: readonly string[];
+    readonly colorModes: ReadonlyArray<string>;
+    readonly documentFormats: ReadonlyArray<string>;
   };
 };
 
@@ -29,7 +28,7 @@ export class ScannerDiscoveryError extends Data.TaggedError(
 export type ScannerDiscoveryService = {
   readonly discover: (
     timeoutMs?: number,
-  ) => Effect.Effect<readonly DiscoveredScanner[], ScannerDiscoveryError>;
+  ) => Effect.Effect<ReadonlyArray<DiscoveredScanner>, ScannerDiscoveryError>;
 };
 
 export const ScannerDiscoveryService =

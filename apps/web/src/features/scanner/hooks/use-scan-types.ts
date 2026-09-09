@@ -1,6 +1,5 @@
 import type { VaultSettings } from '@/shared/ocr/actions/extract-types';
 import type { WeekId } from '@/shared/types/schemas';
-
 export type ExtractedEntry = {
   readonly id: string;
   readonly day: string;
@@ -18,7 +17,7 @@ export type ScanState =
   | { readonly status: 'processing' }
   | {
       readonly status: 'complete';
-      readonly entries: readonly ExtractedEntry[];
+      readonly entries: ReadonlyArray<ExtractedEntry>;
       readonly confidence: number;
       readonly modelUsed: string;
     }
@@ -32,14 +31,16 @@ export type AISettings = {
 
 export type UseScanOptions = {
   readonly aiSettings: AISettings;
-  readonly weekId?: WeekId;
   readonly vaultSettings?: VaultSettings;
 };
 
 export type UseScanReturn = {
   readonly state: ScanState;
+  readonly weekId: WeekId | null;
+  readonly hasDetectedWeek: boolean;
+  readonly setWeekId: (value: string) => void;
   readonly imagePreview: string | null;
-  readonly upload: (file: File) => Promise<void>;
+  readonly upload: (file: File) => Promise<boolean>;
   readonly process: () => Promise<ScanState>;
   readonly clear: () => void;
 };

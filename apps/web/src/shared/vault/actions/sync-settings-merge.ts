@@ -1,6 +1,5 @@
 import type { SubjectsConfig } from '@/shared/types/schemas';
-import type { TimetableConfig } from '../services/config';
-
+import type { TimetableConfig } from '@/shared/vault/services/config-json';
 export const mergeSubjects = (
   existing: SubjectsConfig,
   incoming: SubjectsConfig,
@@ -28,36 +27,34 @@ export const mergeTimetable = (
   const existingDays = new Map(existing.map((day) => [day.day, day]));
   const incomingDays = new Map(incoming.map((day) => [day.day, day]));
   const allDays = new Set([...existingDays.keys(), ...incomingDays.keys()]);
-  const result: TimetableConfig[number][] = [];
+  const result: Array<TimetableConfig[number]> = [];
 
   for (const day of allDays) {
     const existingDay = existingDays.get(day);
     const incomingDay = incomingDays.get(day);
 
     if (!incomingDay) {
-      if (existingDay) result.push(existingDay);
-      continue;
-    }
+      if (existingDay) {
+        result.push(existingDay);
+      }
+    } else if (existingDay) {
+      const incomingSlotById = new Map(
+        incomingDay.slots.map((slot) => [slot.id, slot]),
+      );
+      const existingSlotIds = new Set(existingDay.slots.map((slot) => slot.id));
 
-    if (!existingDay) {
+      const updatedExistingSlots = existingDay.slots.map((existingSlot) => {
+        const incomingSlot = incomingSlotById.get(existingSlot.id);
+        return incomingSlot ?? existingSlot;
+      });
+      const newSlots = incomingDay.slots.filter(
+        (slot) => !existingSlotIds.has(slot.id),
+      );
+
+      result.push({ day, slots: [...updatedExistingSlots, ...newSlots] });
+    } else {
       result.push(incomingDay);
-      continue;
     }
-
-    const incomingSlotById = new Map(
-      incomingDay.slots.map((slot) => [slot.id, slot]),
-    );
-    const existingSlotIds = new Set(existingDay.slots.map((slot) => slot.id));
-
-    const updatedExistingSlots = existingDay.slots.map((existingSlot) => {
-      const incomingSlot = incomingSlotById.get(existingSlot.id);
-      return incomingSlot ?? existingSlot;
-    });
-    const newSlots = incomingDay.slots.filter(
-      (slot) => !existingSlotIds.has(slot.id),
-    );
-
-    result.push({ day, slots: [...updatedExistingSlots, ...newSlots] });
   }
 
   return result;

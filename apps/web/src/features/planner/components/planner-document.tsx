@@ -1,3 +1,4 @@
+// biome-ignore lint/correctness/noUnresolvedImports: Biome cannot resolve this conditional CommonJS export; TypeScript and the production build verify it.
 import { Document, Font, Page, View } from '@react-pdf/renderer';
 import { LAYOUT } from './planner-document-constants';
 import {
@@ -14,6 +15,11 @@ import {
 import { styles } from './planner-document-styles';
 import type { PlannerProps } from './planner-document-types';
 
+const weekPattern = /^\d{4}-W/u;
+
+const frontPageDays = 3;
+const schoolDays = 5;
+const minimumNotesLines = 4;
 const registerFonts = (): void => {
   Font.register({
     family: 'Roboto',
@@ -49,11 +55,11 @@ export const PlannerDocument = ({
   qrDataUrl,
 }: PlannerProps): React.ReactElement => {
   const days = getDaysOfWeek(dateRange.start);
-  const weekNumber = weekId.replace(/^\d{4}-W/, 'W');
+  const weekNumber = weekId.replace(weekPattern, 'W');
   const dateRangeStr = formatCompactDateRange(dateRange.start);
 
-  const page1Days = days.slice(0, 3);
-  const page2Days = days.slice(3, 5);
+  const page1Days = days.slice(0, frontPageDays);
+  const page2Days = days.slice(frontPageDays, schoolDays);
 
   const page1Data = calculatePageData(
     page1Days,
@@ -85,7 +91,7 @@ export const PlannerDocument = ({
 
   const notesHeight = (notesWeight / page2TotalWeight) * LAYOUT.contentHeight;
   const notesLines = Math.max(
-    4,
+    minimumNotesLines,
     Math.floor((notesHeight - LAYOUT.dayHeaderHeight) / LAYOUT.lineHeight),
   );
 
@@ -124,5 +130,3 @@ export const PlannerDocument = ({
     </Document>
   );
 };
-
-export type { PlannerProps } from './planner-document-types';

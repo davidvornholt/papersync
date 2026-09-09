@@ -1,81 +1,113 @@
 'use client';
 
-import { Effect } from 'effect';
-import { useCallback, useState } from 'react';
-import {
-  getCurrentWeekId,
-  processExtractionEffect,
-  readFileAsDataUrl,
-} from './use-scan-effects';
+import { Effect, Schema } from 'effect';
+import { useRef, useState } from 'react';
+import { getImageWeek } from '@/features/scanner/services/image-week';
+import { WeekId } from '@/shared/types/schemas';
+import { processExtractionEffect, readFileAsDataUrl } from './use-scan-effects';
 import type {
   ScanState,
   UseScanOptions,
   UseScanReturn,
 } from './use-scan-types';
-
-export type {
-  AISettings,
-  ExtractedEntry,
-  ScanState,
-  UseScanOptions,
-  UseScanReturn,
-} from './use-scan-types';
-
 export const useScan = (options: UseScanOptions): UseScanReturn => {
   const [state, setState] = useState<ScanState>({ status: 'idle' });
   const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [imageData, setImageData] = useState<string | null>(null);
-  const weekId = options.weekId ?? getCurrentWeekId();
+  const [weekId, setWeek] = useState<WeekId | null>(null);
+  const [hasDetectedWeek, setHasDetectedWeek] = useState(false);
+  const revisionRef = useRef(0);
 
-  const upload = useCallback((file: File): Promise<void> => {
+  const clear = () => {
+    revisionRef.current += 1;
+    setState({ status: 'idle' });
+    setImagePreview(null);
+    setWeek(null);
+    setHasDetectedWeek(false);
+  };
+
+  const upload = (file: File): Promise<boolean> => {
+    clear();
+    const currentRevision = revisionRef.current;
     setState({ status: 'uploading', progress: 0 });
     return Effect.runPromise(
-      readFileAsDataUrl(file, (progress) =>
-        setState({ status: 'uploading', progress }),
+      Effect.all(
+        [
+          readFileAsDataUrl(file, (progress) => {
+            if (currentRevision === revisionRef.current) {
+              setState({ status: 'uploading', progress });
+            }
+          }),
+          getImageWeek(file),
+        ],
+        { concurrency: 'unbounded' },
       ).pipe(
-        Effect.tap((data) =>
+        Effect.map(([data, payload]) => {
+          if (currentRevision !== revisionRef.current) {
+            return false;
+          }
+          setImagePreview(data);
+          setWeek(payload?.week ?? null);
+          setHasDetectedWeek(payload !== null);
+          setState({ status: 'idle' });
+          return true;
+        }),
+        Effect.catchAll((error) =>
           Effect.sync(() => {
-            setImagePreview(data);
-            setImageData(data);
-            setState({ status: 'idle' });
+            if (currentRevision === revisionRef.current) {
+              setState({ status: 'error', error: error.message });
+            }
+            return false;
           }),
         ),
-        Effect.catchAll((error) =>
-          Effect.sync(() =>
-            setState({ status: 'error', error: error.message }),
-          ),
-        ),
-        Effect.asVoid,
       ),
     );
-  }, []);
+  };
 
-  const process = useCallback((): Promise<ScanState> => {
-    if (!imageData) {
+  const process = (): Promise<ScanState> => {
+    revisionRef.current += 1;
+    const currentRevision = revisionRef.current;
+    if (!(imagePreview && weekId)) {
       const nextState: ScanState = {
         status: 'error',
-        error: 'No image to process',
+        error: 'Choose an image and the week printed on the sheet.',
       };
       setState(nextState);
       return Promise.resolve(nextState);
     }
-
     setState({ status: 'processing' });
     return Effect.runPromise(
       processExtractionEffect(
-        imageData,
+        imagePreview,
         weekId,
         options.aiSettings,
         options.vaultSettings,
-      ).pipe(Effect.tap((nextState) => Effect.sync(() => setState(nextState)))),
+      ).pipe(
+        Effect.map((nextState): ScanState => {
+          if (currentRevision !== revisionRef.current) {
+            return { status: 'idle' };
+          }
+          setState(nextState);
+          return nextState;
+        }),
+      ),
     );
-  }, [imageData, weekId, options.aiSettings, options.vaultSettings]);
+  };
 
-  const clear = useCallback((): void => {
+  const setWeekId = (value: string) => {
+    revisionRef.current += 1;
+    setWeek(Schema.is(WeekId)(value) ? value : null);
+    setHasDetectedWeek(false);
     setState({ status: 'idle' });
-    setImagePreview(null);
-    setImageData(null);
-  }, []);
+  };
 
-  return { state, imagePreview, upload, process, clear };
+  return {
+    state,
+    weekId,
+    hasDetectedWeek,
+    setWeekId,
+    imagePreview,
+    upload,
+    process,
+    clear,
+  };
 };

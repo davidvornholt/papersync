@@ -3,30 +3,24 @@
 import { Effect } from 'effect';
 import {
   ESCLClient,
-  ESCLClientLayer,
   type ScannerCapabilities,
-} from '../services/escl-client';
+} from '@/features/scanner/services/escl-types';
 import {
   type DiscoveredScanner,
-  MdnsDiscoveryLayer,
   ScannerDiscoveryService,
-} from '../services/scanner-discovery';
-
-// ============================================================================
-// Types
-// ============================================================================
-
+} from '@/features/scanner/services/scanner-discovery-types';
+import { ESCLClientLayer } from '../services/escl-client';
+import { MdnsDiscoveryLayer } from '../services/scanner-discovery';
 export type DiscoveryResult =
-  | { readonly success: true; readonly scanners: readonly DiscoveredScanner[] }
+  | {
+      readonly success: true;
+      readonly scanners: ReadonlyArray<DiscoveredScanner>;
+    }
   | { readonly success: false; readonly error: string };
 
 export type CapabilitiesResult =
   | { readonly success: true; readonly capabilities: ScannerCapabilities }
   | { readonly success: false; readonly error: string };
-
-// ============================================================================
-// Server Actions
-// ============================================================================
 
 export async function discoverScanners(
   timeoutMs = 5000,

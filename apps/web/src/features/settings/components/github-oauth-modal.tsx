@@ -11,6 +11,7 @@ import {
 } from './github-oauth-modal-states';
 import type { OAuthState } from './github-oauth-modal-types';
 
+const feedbackMilliseconds = 1500;
 type GitHubOAuthModalProps = {
   readonly isOpen: boolean;
   readonly onClose: () => void;
@@ -19,8 +20,6 @@ type GitHubOAuthModalProps = {
   readonly onStartOAuth: () => void;
   readonly onCancel: () => void;
 };
-
-export type { OAuthState } from './github-oauth-modal-types';
 
 export const GitHubOAuthModal = ({
   isOpen,
@@ -35,7 +34,7 @@ export const GitHubOAuthModal = ({
       const timer = setTimeout(() => {
         onSuccess(oauthState.accessToken);
         onClose();
-      }, 1500);
+      }, feedbackMilliseconds);
       return () => clearTimeout(timer);
     }
   }, [oauthState, onSuccess, onClose]);
@@ -67,26 +66,26 @@ export const GitHubOAuthModal = ({
     >
       <div className="flex flex-col items-center py-4">
         <AnimatePresence mode="wait">
-          {oauthState.status === 'loading' && <OAuthLoadingState />}
+          {oauthState.status === 'loading' ? <OAuthLoadingState /> : null}
 
-          {oauthState.status === 'awaiting-authorization' && (
+          {oauthState.status === 'awaiting-authorization' ? (
             <OAuthAwaitingState
               userCode={oauthState.userCode}
               verificationUri={oauthState.verificationUri}
               expiresAt={oauthState.expiresAt}
               onClose={handleClose}
             />
-          )}
+          ) : null}
 
-          {oauthState.status === 'success' && <OAuthSuccessState />}
+          {oauthState.status === 'success' ? <OAuthSuccessState /> : null}
 
-          {oauthState.status === 'error' && (
+          {oauthState.status === 'error' ? (
             <OAuthErrorState
               message={oauthState.message}
               onClose={handleClose}
               onRetry={onStartOAuth}
             />
-          )}
+          ) : null}
         </AnimatePresence>
       </div>
     </Modal>

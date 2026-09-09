@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test';
 import type { WeekId } from '@/shared/types/schemas';
-import { parseWeeklyNoteMarkdown } from '../config';
+import { parseWeeklyNoteMarkdown } from '@/shared/vault/services/weekly-note-parse';
 
 describe('parseWeeklyNoteMarkdown', () => {
   it('should parse YAML frontmatter', () => {
@@ -28,8 +28,8 @@ synced_at: 2026-01-27T12:00:00Z
     );
 
     expect(String(result.week)).toBe('2026-W05');
-    expect(String(result.dateRange.start)).toBe('');
-    expect(String(result.dateRange.end)).toBe('');
+    expect(String(result.dateRange.start)).toBe('2026-01-26');
+    expect(String(result.dateRange.end)).toBe('2026-02-01');
   });
 
   it('should parse day headers and create day records', () => {
@@ -107,7 +107,7 @@ date_range: 2026-01-26 to 2026-02-01
 
     const result = parseWeeklyNoteMarkdown(markdown, '2026-W05' as WeekId);
 
-    const mathEntry = result.days[0].entries[0];
+    const [mathEntry] = result.days[0].entries;
     expect(mathEntry.tasks[0].content).toBe('Do homework');
     expect(String(mathEntry.tasks[0].dueDate)).toBe('2026-01-30');
     expect(mathEntry.tasks[1].content).toBe('No due date task');

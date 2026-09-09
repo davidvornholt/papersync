@@ -1,25 +1,21 @@
 'use server';
 
+import { databaseRuntime } from '@papersync/db/runtime';
 import { Effect } from 'effect';
+import { requireSession } from '@/shared/auth/session';
+import { enqueueHomework } from '@/shared/homework/queue';
+import { getWeekId as getCurrentWeekId } from '@/shared/planner/week';
 import type { WeekId } from '@/shared/types/schemas';
+import type { ExtractedEntry } from '@/shared/vault/actions/sync-helpers-types';
 import { syncToGitHubEffect } from './sync-github-effect';
-import { type ExtractedEntry, getCurrentWeekId } from './sync-helpers';
 import { syncToLocalVaultEffect } from './sync-local-effect';
-import { syncToSuperProductivityEffect } from './sync-super-productivity-effect';
 import type { SyncOptions, SyncResult } from './sync-types';
-
-export type {
-  ExtractedEntry,
-  SyncOptions,
-  SyncResult,
-  VaultMethod,
-} from './sync-types';
-
 export const syncToVault = async (
-  entries: readonly ExtractedEntry[],
+  entries: ReadonlyArray<ExtractedEntry>,
   vaultPath: string,
   weekId?: WeekId,
 ): Promise<SyncResult> => {
+  await requireSession();
   const effectiveWeekId = weekId ?? getCurrentWeekId();
   return Effect.runPromise(
     syncToLocalVaultEffect(entries, vaultPath, effectiveWeekId).pipe(
@@ -32,9 +28,10 @@ export const syncToVault = async (
 };
 
 export const syncEntriesToVault = async (
-  entries: readonly ExtractedEntry[],
+  entries: ReadonlyArray<ExtractedEntry>,
   options: SyncOptions,
 ): Promise<SyncResult> => {
+  await requireSession();
   const effectiveWeekId = options.weekId ?? getCurrentWeekId();
 
   if (entries.length === 0) {
@@ -58,18 +55,17 @@ export const syncEntriesToVault = async (
     }
 
     const [owner, repo] = options.githubRepo.split('/');
-    if (!owner || !repo) {
+    if (!(owner && repo)) {
       return { success: false, error: 'Invalid repository name' };
     }
 
     return Effect.runPromise(
-      syncToGitHubEffect(
-        entries,
-        options.githubToken,
+      syncToGitHubEffect(entries, {
+        token: options.githubToken,
         owner,
         repo,
-        effectiveWeekId,
-      ).pipe(
+        weekId: effectiveWeekId,
+      }).pipe(
         Effect.map((notePath) => ({ success: true as const, notePath })),
         Effect.catchAll((error) =>
           Effect.succeed({ success: false as const, error: error.message }),
@@ -79,19 +75,21 @@ export const syncEntriesToVault = async (
   }
 
   if (options.method === 'super-productivity') {
-    return Effect.runPromise(
-      syncToSuperProductivityEffect(entries, {
-        endpoint: options.superProductivityEndpoint,
+    return databaseRuntime.runPromise(
+      enqueueHomework(entries, {
+        weekId: effectiveWeekId,
         projectId: options.superProductivityProjectId,
         tagIds: options.superProductivityTagIds,
-        weekId: effectiveWeekId,
       }).pipe(
-        Effect.map((summary) => ({
+        Effect.map((count) => ({
           success: true as const,
-          notePath: `Super Productivity (${summary.created} created, ${summary.updated} updated${summary.skipped ? `, ${summary.skipped} skipped` : ''})`,
+          notePath: `${count} tasks waiting for Super Productivity`,
         })),
-        Effect.catchAll((error) =>
-          Effect.succeed({ success: false as const, error: error.message }),
+        Effect.catchAll(() =>
+          Effect.succeed({
+            success: false as const,
+            error: 'Could not queue homework. Check the entries and try again.',
+          }),
         ),
       ),
     );

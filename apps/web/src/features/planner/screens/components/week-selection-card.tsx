@@ -14,17 +14,17 @@ export const WeekSelectionCard = ({
 }: WeekSelectionCardProps): React.ReactElement => (
   <Card>
     <CardHeader>
-      <h2 className="serif text-[20px] tracking-[-0.022em] text-ink">
+      <h2 className="serif text-[20px] text-ink tracking-[-0.022em]">
         Week selection
       </h2>
     </CardHeader>
     <CardContent>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="min-w-0">
-          <p className="serif text-[22px] tracking-[-0.025em] text-ink leading-tight">
+          <p className="serif text-[22px] text-ink leading-tight tracking-[-0.025em]">
             {currentWeekId}
           </p>
-          <p className="mono text-[12px] text-graphite mt-1">{dateRangeStr}</p>
+          <p className="mono mt-1 text-[12px] text-graphite">{dateRangeStr}</p>
         </div>
         <Button variant="secondary" size="sm" onClick={onOpenWeekModal}>
           Change

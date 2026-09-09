@@ -1,5 +1,10 @@
 import { Effect } from 'effect';
 import type { AppConfig, SubjectsConfig } from '@/shared/types/schemas';
+import type {
+  VaultError,
+  VaultFileNotFoundError,
+} from '@/shared/vault/errors/filesystem-errors';
+import { VaultService } from '@/shared/vault/services/filesystem-contract';
 import {
   CONFIG_DIR,
   getConfigPath,
@@ -7,12 +12,6 @@ import {
   getTimetablePath,
   PAPERSYNC_ROOT,
 } from './config-paths';
-import {
-  type VaultError,
-  type VaultFileNotFoundError,
-  VaultService,
-} from './filesystem';
-
 export type TimetableDayConfig = {
   readonly day: string;
   readonly slots: ReadonlyArray<{ id: string; subjectId: string }>;
