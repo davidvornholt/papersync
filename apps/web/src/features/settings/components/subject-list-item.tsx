@@ -1,6 +1,8 @@
 'use client';
 
+import { Pencil, Trash2 } from 'lucide-react';
 import { motion } from 'motion/react';
+import { IconButton } from '@/shared/components/icon-button';
 import type { Subject } from '@/shared/hooks/use-settings-schema';
 
 type SubjectListItemProps = {
@@ -25,23 +27,18 @@ export const SubjectListItem = ({
       {subject.name}
     </span>
     <div className="flex shrink-0 items-center gap-1">
-      <button
-        type="button"
+      <IconButton
+        label={`Edit ${subject.name}`}
         onClick={() => onEdit(subject.id)}
-        className="mono cursor-pointer touch-manipulation px-2 py-1 text-[10px] text-graphite uppercase tracking-[0.18em] transition-colors hover:text-ink"
       >
-        Edit
-      </button>
-      <span aria-hidden={true} className="text-graphite/40">
-        ·
-      </span>
-      <button
-        type="button"
+        <Pencil size={16} aria-hidden={true} />
+      </IconButton>
+      <IconButton
+        label={`Delete ${subject.name}`}
         onClick={() => onDelete(subject.id)}
-        className="mono cursor-pointer touch-manipulation px-2 py-1 text-[10px] text-graphite uppercase tracking-[0.18em] transition-colors hover:text-accent"
       >
-        Delete
-      </button>
+        <Trash2 size={16} aria-hidden={true} />
+      </IconButton>
     </div>
   </motion.li>
 );

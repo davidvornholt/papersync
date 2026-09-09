@@ -1,6 +1,7 @@
 'use client';
 
 import { Effect, Fiber } from 'effect';
+import { CircleHelp } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import {
   createConnectionKey,
@@ -70,6 +71,37 @@ export const SettingsVaultSuperProductivityPanel = ({
         connection key into its settings. Approved tasks wait here until the
         plugin imports them.
       </p>
+      <details className="border border-hairline bg-paper p-4">
+        <summary className="cursor-pointer font-medium text-sm">
+          <CircleHelp
+            size={16}
+            aria-hidden={true}
+            className="mr-2 inline-block align-text-bottom"
+          />
+          How the plugin works
+        </summary>
+        <div className="mt-3 space-y-3 text-graphite text-sm">
+          <p>
+            Scan your paper at home, review the homework, and approve it.
+            Approved homework waits in PaperSync until Super Productivity is
+            open.
+          </p>
+          <p>
+            Install the ZIP under Super Productivity Settings → Plugins, then
+            paste a connection key into the plugin settings. It connects to
+            papersync.vornholt.online and checks at startup and
+            every minute while Super Productivity is open. Use its “Import
+            homework” button to check immediately.
+          </p>
+          <p>
+            The plugin creates tasks with due dates. Connect one Super
+            Productivity installation; SuperSync then shares those tasks with
+            your other devices. PaperSync does not need access to your
+            computer's files, and homework stays queued while Super Productivity
+            is closed.
+          </p>
+        </div>
+      </details>
       <a href="/api/plugin" className="inline-block underline">
         Get the PaperSync plugin ZIP
       </a>

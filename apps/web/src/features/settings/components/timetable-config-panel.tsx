@@ -1,8 +1,10 @@
 'use client';
 
 import { Button } from '@papersync/ui/button';
+import { Trash2 } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useState } from 'react';
+import { IconButton } from '@/shared/components/icon-button';
 import {
   DAYS_OF_WEEK,
   type DayOfWeek,
@@ -128,6 +130,7 @@ export const TimetableConfigPanel = ({
                     {String(index + 1).padStart(2, '0')}
                   </span>
                   <select
+                    aria-label={`${DAY_LABELS[activeDay]} class ${index + 1}`}
                     value={slot.subjectId}
                     onChange={(e) =>
                       onUpdateSlot(activeDay, slot.id, e.target.value)
@@ -140,14 +143,12 @@ export const TimetableConfigPanel = ({
                       </option>
                     ))}
                   </select>
-                  <button
-                    type="button"
+                  <IconButton
+                    label={`Remove ${DAY_LABELS[activeDay]} class ${index + 1}`}
                     onClick={() => onRemoveSlot(activeDay, slot.id)}
-                    className="mono cursor-pointer touch-manipulation px-2 py-1 text-[10px] text-graphite uppercase tracking-[0.18em] transition-colors hover:text-accent"
-                    aria-label="Remove class"
                   >
-                    Remove
-                  </button>
+                    <Trash2 size={16} aria-hidden={true} />
+                  </IconButton>
                 </motion.li>
               ))}
             </AnimatePresence>
