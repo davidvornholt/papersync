@@ -1,6 +1,6 @@
 apps:
   web:
-    # Optional server-managed OCR. Set all three GOOGLE_VERTEX values to enable; partial configuration fails closed.
+    # Optional server-managed OCR. Set all three GOOGLE_VERTEX values to enable; empty values are omitted and nonblank partial configuration fails closed.
     # Gemini 3.8 Flash runs with high reasoning. Supported locations: global, eu, us. No fallback.
     # GOOGLE_VERTEX_PROJECT: your-gcp-project
     # GOOGLE_VERTEX_LOCATION: global

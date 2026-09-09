@@ -22,11 +22,13 @@ const vertexEnvironment = Config.all({
   location: Config.option(Config.string('GOOGLE_VERTEX_LOCATION')),
   credentials: Config.option(Config.string('GOOGLE_VERTEX_CREDENTIALS_JSON')),
 });
+const hasNonBlankValue = (value: Option.Option<string>): boolean =>
+  value.pipe(Option.exists((candidate) => candidate.trim().length > 0));
 
 export const hasVertexConfiguration = (): boolean =>
   Effect.runSync(
     vertexEnvironment.pipe(
-      Effect.map((values) => Object.values(values).some(Option.isSome)),
+      Effect.map((values) => Object.values(values).some(hasNonBlankValue)),
     ),
   );
 
