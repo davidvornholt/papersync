@@ -12,37 +12,6 @@ for (const route of ['/', '/scan', '/planner', '/settings']) {
     await expect(
       footer.getByRole('button', { name: 'Sign out' }),
     ).toBeVisible();
-    if (route === '/') {
-      await expect(
-        page.getByRole('heading', { name: 'Self-hosted and open source.' }),
-      ).toHaveCSS('font-size', '24px');
-      await expect(
-        page.getByRole('heading', { name: 'Set up your first school week.' }),
-      ).toHaveCSS('font-size', '30px');
-    }
-    if (route === '/settings') {
-      const isMobile = (page.viewportSize()?.width ?? 1280) < 640;
-      const heading = page.getByRole('heading', {
-        name: 'Sync destination',
-        exact: true,
-      });
-      await expect(heading).toHaveCSS('font-size', '20px');
-      const header = heading.locator('..');
-      await expect(header).toHaveCSS('padding-top', isMobile ? '20px' : '24px');
-      await expect(header).toHaveCSS(
-        'padding-left',
-        isMobile ? '20px' : '28px',
-      );
-      const content = header.locator('xpath=following-sibling::*[1]');
-      await expect(content).toHaveCSS(
-        'padding-top',
-        isMobile ? '20px' : '24px',
-      );
-      await expect(content).toHaveCSS(
-        'padding-left',
-        isMobile ? '20px' : '28px',
-      );
-    }
     expect(await scanWcag22AaViolations(page)).toEqual([]);
   });
 }
@@ -76,7 +45,6 @@ test('subject editing closes with Escape and returns focus', async ({
 test('settings help and icon actions work with a keyboard', async ({
   page,
   context,
-  isMobile,
 }) => {
   await context.addCookies(await createSessionCookies());
   await page.goto('/settings');
@@ -106,13 +74,6 @@ test('settings help and icon actions work with a keyboard', async ({
     name: 'Edit Chemistry',
     exact: true,
   });
-  if (!isMobile) {
-    await help.focus();
-    await edit.hover();
-    await expect(tooltip).toBeVisible();
-    await page.keyboard.press('Escape');
-    await expect(tooltip).not.toBeVisible();
-  }
   await edit.focus();
   await expect(tooltip).toBeVisible();
   await page.keyboard.press('Escape');
@@ -133,4 +94,59 @@ test('settings help and icon actions work with a keyboard', async ({
   await expect(
     page.getByRole('combobox', { name: 'Monday class 1' }),
   ).toHaveCount(0);
+});
+
+test('shared styles preserve card spacing and heading sizes', async ({
+  page,
+  context,
+  isMobile,
+}) => {
+  await context.addCookies(await createSessionCookies());
+  await page.goto('/settings');
+  const heading = page.getByRole('heading', {
+    name: 'Sync destination',
+    exact: true,
+  });
+  await expect(heading).toHaveCSS('font-size', '20px');
+  const header = heading.locator('..');
+  await expect(header).toHaveCSS('padding-top', isMobile ? '20px' : '24px');
+  await expect(header).toHaveCSS('padding-left', isMobile ? '20px' : '28px');
+  const content = header.locator('xpath=following-sibling::*[1]');
+  await expect(content).toHaveCSS('padding-top', isMobile ? '20px' : '24px');
+  await expect(content).toHaveCSS('padding-left', isMobile ? '20px' : '28px');
+  await page.goto('/');
+  await expect(
+    page.getByRole('heading', { name: 'Self-hosted and open source.' }),
+  ).toHaveCSS('font-size', '24px');
+  await expect(
+    page.getByRole('heading', { name: 'Set up your first school week.' }),
+  ).toHaveCSS('font-size', '30px');
+});
+
+test('hovered tooltips dismiss without moving focus', async ({
+  page,
+  context,
+  isMobile,
+}) => {
+  test.skip(
+    isMobile,
+    'Touch devices do not expose hover tooltips; keyboard focus is covered separately.',
+  );
+  await context.addCookies(await createSessionCookies());
+  await page.goto('/settings');
+  const help = page
+    .locator('summary')
+    .filter({ hasText: 'How the plugin works' });
+  await help.focus();
+  await page
+    .getByRole('button', { name: 'Edit Chemistry', exact: true })
+    .hover();
+  const tooltip = page.getByRole('tooltip', {
+    name: 'Edit Chemistry',
+    exact: true,
+  });
+  await expect(tooltip).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(tooltip).not.toBeVisible();
+  await expect(help).toBeFocused();
 });

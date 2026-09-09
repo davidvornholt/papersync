@@ -89,9 +89,9 @@ export const SettingsVaultSuperProductivityPanel = ({
           <p>
             Install the ZIP under Super Productivity Settings → Plugins, then
             paste a connection key into the plugin settings. It connects to
-            papersync.vornholt.online and checks at startup and
-            every minute while Super Productivity is open. Use its “Import
-            homework” button to check immediately.
+            papersync.vornholt.online and checks at startup and every minute
+            while Super Productivity is open. Use its “Import homework” button
+            to check immediately.
           </p>
           <p>
             The plugin creates tasks with due dates. Connect one Super
