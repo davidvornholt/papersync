@@ -54,6 +54,7 @@ export const createGeminiVisionProvider = (
           entries: validated.entries.map((entry) => ({
             ...entry,
             day: normalizeDayName(entry.day),
+            dueDate: entry.dueDate ?? undefined,
             action: 'add' as const,
           })),
           confidence: validated.confidence,

@@ -47,19 +47,29 @@ it('validates Google output, defaults completion, and normalizes the written day
     { ...entry, day: 'Monday', isCompleted: false, action: 'add' },
   ]);
 });
-it('rejects impossible dates without switching models', async () => {
+it.each([
+  ['accepts null and maps it to the optional domain field', null, 'Right'],
+  ['rejects a missing dueDate', undefined, 'Left'],
+  ['rejects an impossible date', '2026-02-30', 'Left'],
+] as const)('enforces dueDate as date-or-null: %s', async (_, dueDate, tag) => {
+  const modelEntry: Record<string, unknown> = { ...entry };
+  if (dueDate === undefined) {
+    delete modelEntry.dueDate;
+  } else {
+    modelEntry.dueDate = dueDate;
+  }
   fetchSpy.mockResolvedValue(
-    googleResponse({
-      entries: [{ ...entry, dueDate: '2026-02-30' }],
-      confidence: 1,
-    }),
+    googleResponse({ entries: [modelEntry], confidence: 1 }),
   );
   const result = await Effect.runPromise(
     createGoogleVisionProvider('fixture-key')
       .extractHandwriting(image, week, '')
       .pipe(Effect.either),
   );
-  expect(result._tag).toBe('Left');
+  expect(result._tag).toBe(tag);
+  if (result._tag === 'Right') {
+    expect(result.right.data.entries[0]?.dueDate).toBeUndefined();
+  }
   expect(fetchSpy).toHaveBeenCalledTimes(1);
 });
 it('rejects invalid Gemini output', async () => {
@@ -76,12 +86,25 @@ it('rejects invalid Gemini output', async () => {
 it('sends Ollama the OCR schema and rejects malformed model output', async () => {
   const provider = createOllamaVisionProvider('http://localhost:11434');
   fetchSpy.mockResolvedValue(
-    Response.json({ response: '```json\n{"entries":[],"confidence":1}\n```' }),
+    Response.json({
+      response: JSON.stringify({
+        entries: [{ ...entry, dueDate: null }],
+        confidence: 1,
+      }),
+    }),
   );
   expect(
     (await Effect.runPromise(provider.extractHandwriting(image, week, ''))).data
       .entries,
-  ).toEqual([]);
+  ).toEqual([
+    {
+      ...entry,
+      day: 'Monday',
+      isCompleted: false,
+      action: 'add',
+      dueDate: undefined,
+    },
+  ]);
   const request = fetchSpy.mock.calls[0]?.[1];
   const payload = JSON.parse(String(request?.body)) as {
     format?: unknown;
@@ -90,7 +113,11 @@ it('sends Ollama the OCR schema and rejects malformed model output', async () =>
   expect(payload.format).toEqual(OCRResponseJsonSchema);
   expect(payload.prompt).toContain('Use these exact camelCase key names');
   expect(payload.prompt).toContain('isCompleted (optional)');
-  expect(payload.prompt).toContain('dueDate (optional)');
+  expect(payload.prompt).toContain('dueDate (required)');
+  expect(payload.prompt).toContain('YYYY-MM-DD date or null');
+  expect(payload.prompt).toContain(
+    'associate its line with the entry it belongs to',
+  );
   fetchSpy.mockResolvedValue(Response.json({ response: 'unreadable' }));
   expect(
     (
