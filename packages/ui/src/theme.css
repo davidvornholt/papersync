@@ -3,6 +3,19 @@
 
 @source "./components";
 
+/* Keep reduced motion unlayered so it overrides component and utility motion. */
+@media (prefers-reduced-motion: reduce) {
+  html *,
+  html *::before,
+  html *::after {
+    animation-delay: 0.01ms;
+    animation-duration: 0.01ms;
+    animation-iteration-count: 1;
+    transition-duration: 0.01ms;
+    scroll-behavior: auto;
+  }
+}
+
 @theme inline {
   /* --- Color: paper, ink, and a single accent ------------------------------ */
   --color-paper: oklch(0.977 0.008 80);

@@ -69,18 +69,6 @@
   animation-delay: 800ms;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  html *,
-  html *::before,
-  html *::after {
-    animation-delay: 0.01ms;
-    animation-duration: 0.01ms;
-    animation-iteration-count: 1;
-    transition-duration: 0.01ms;
-    scroll-behavior: auto;
-  }
-}
-
 /* =============================================================================
    Layout — generous shells, calmly opinionated
    ============================================================================= */

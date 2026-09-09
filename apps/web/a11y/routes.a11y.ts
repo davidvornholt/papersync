@@ -102,6 +102,7 @@ test('shared styles preserve card spacing and heading sizes', async ({
   isMobile,
 }) => {
   await context.addCookies(await createSessionCookies());
+  await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/settings');
   const heading = page.getByRole('heading', {
     name: 'Sync destination',
@@ -114,6 +115,9 @@ test('shared styles preserve card spacing and heading sizes', async ({
   const content = header.locator('xpath=following-sibling::*[1]');
   await expect(content).toHaveCSS('padding-top', isMobile ? '20px' : '24px');
   await expect(content).toHaveCSS('padding-left', isMobile ? '20px' : '28px');
+  await expect(
+    page.getByRole('button', { name: 'Local filesystem', exact: false }),
+  ).toHaveCSS('transition-duration', '1e-05s');
   await page.goto('/');
   await expect(
     page.getByRole('heading', { name: 'Self-hosted and open source.' }),
