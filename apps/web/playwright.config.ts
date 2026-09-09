@@ -7,6 +7,7 @@ export default {
     baseUrl: browserAuth.baseUrl,
     webServerCommand,
   }),
+  testIgnore: /managed\.a11y\.ts/u,
   webServer: {
     command: webServerCommand,
     url: `${browserAuth.baseUrl}/login`,

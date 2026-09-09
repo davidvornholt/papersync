@@ -7,20 +7,17 @@ import type {
   VisionValidationError,
 } from '@/shared/ocr/errors/vision-contract';
 import { VisionProvider } from '@/shared/ocr/services/vision-contract';
+import { getVisionLayer } from '@/shared/ocr/services/vision-selection';
 import type { OCRResponse, WeekId } from '@/shared/types/schemas';
 import { getWeeklyNotePath } from '@/shared/vault/services/config-paths';
 import { makeLocalVaultLayer } from '@/shared/vault/services/filesystem';
 import { VaultService } from '@/shared/vault/services/filesystem-contract';
 import { githubService } from '@/shared/vault/services/github';
-import {
-  makeGoogleVisionLayer,
-  makeOllamaVisionLayer,
-} from '../services/vision-provider';
-import {
-  type ExtractionOptions,
-  type ExtractionResult,
+import type {
+  ExtractionOptions,
+  ExtractionResult,
   ExtractionValidationError,
-  type VaultSettings,
+  VaultSettings,
 } from './extract-types';
 
 /**
@@ -99,43 +96,14 @@ const extractHandwritingEffect = (
   ExtractionValidationError | VisionError | VisionValidationError
 > =>
   Effect.gen(function* () {
-    const {
-      imageBase64,
-      weekId,
-      provider,
-      googleApiKey,
-      ollamaEndpoint,
-      vaultSettings,
-    } = options;
-
-    // Validate provider configuration
-    if (provider === 'google' && !googleApiKey) {
-      return yield* Effect.fail(
-        new ExtractionValidationError({
-          message: 'Google API key not configured. Please add it in Settings.',
-        }),
-      );
-    }
-
-    if (provider === 'ollama' && !ollamaEndpoint) {
-      return yield* Effect.fail(
-        new ExtractionValidationError({
-          message: 'Ollama endpoint not configured. Please add it in Settings.',
-        }),
-      );
-    }
+    const { imageBase64, weekId, vaultSettings } = options;
+    const visionLayer = yield* getVisionLayer(options);
 
     // Fetch existing content from vault to provide context to AI
     const existingContent = yield* fetchExistingContentEffect(
       weekId,
       vaultSettings,
     );
-
-    // Create the appropriate layer based on provider
-    const visionLayer =
-      provider === 'google'
-        ? makeGoogleVisionLayer(googleApiKey ?? '')
-        : makeOllamaVisionLayer(ollamaEndpoint ?? 'http://localhost:11434');
 
     // Run the extraction with the vision provider
     const vision = yield* Effect.provide(VisionProvider, visionLayer);

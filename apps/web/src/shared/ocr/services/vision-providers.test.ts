@@ -37,31 +37,32 @@ it('validates Google output, defaults completion, and normalizes the written day
       '',
     ),
   );
+  const [request] = fetchSpy.mock.calls;
+  expect(String(request?.[0])).toContain('/gemini-3.8-flash:generateContent');
+  const body = JSON.parse(String(request?.[1]?.body)) as {
+    generationConfig: { thinkingConfig: { thinkingLevel: string } };
+  };
+  expect(body.generationConfig.thinkingConfig.thinkingLevel).toBe('high');
   expect(result.data.entries).toEqual([
     { ...entry, day: 'Monday', isCompleted: false, action: 'add' },
   ]);
 });
-it('retries another Google model when output contains an impossible date', async () => {
-  fetchSpy.mockResolvedValueOnce(
+it('rejects impossible dates without switching models', async () => {
+  fetchSpy.mockResolvedValue(
     googleResponse({
       entries: [{ ...entry, dueDate: '2026-02-30' }],
       confidence: 1,
     }),
   );
-  fetchSpy.mockResolvedValueOnce(
-    googleResponse({ entries: [entry], confidence: 1 }),
-  );
   const result = await Effect.runPromise(
-    createGoogleVisionProvider('fixture-key').extractHandwriting(
-      image,
-      week,
-      '',
-    ),
+    createGoogleVisionProvider('fixture-key')
+      .extractHandwriting(image, week, '')
+      .pipe(Effect.either),
   );
-  expect(result.data.entries[0]?.dueDate).toBe(entry.dueDate);
-  expect(fetchSpy).toHaveBeenCalledTimes(2);
+  expect(result._tag).toBe('Left');
+  expect(fetchSpy).toHaveBeenCalledTimes(1);
 });
-it('rejects invalid output from every Google model', async () => {
+it('rejects invalid Gemini output', async () => {
   fetchSpy.mockResolvedValue(
     googleResponse({ entries: [entry], confidence: 9 }),
   );
