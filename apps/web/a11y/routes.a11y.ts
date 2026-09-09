@@ -123,15 +123,11 @@ test('shared styles preserve card spacing and heading sizes', async ({
   ).toHaveCSS('font-size', '30px');
 });
 
-test('hovered tooltips dismiss without moving focus', async ({
+test('pointer tooltips respect touch devices and dismiss without moving focus', async ({
   page,
   context,
   isMobile,
 }) => {
-  test.skip(
-    isMobile,
-    'Touch devices do not expose hover tooltips; keyboard focus is covered separately.',
-  );
   await context.addCookies(await createSessionCookies());
   await page.goto('/settings');
   const help = page
@@ -145,7 +141,7 @@ test('hovered tooltips dismiss without moving focus', async ({
     name: 'Edit Chemistry',
     exact: true,
   });
-  await expect(tooltip).toBeVisible();
+  await expect(tooltip).toBeVisible({ visible: !isMobile });
   await page.keyboard.press('Escape');
   await expect(tooltip).not.toBeVisible();
   await expect(help).toBeFocused();
