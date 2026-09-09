@@ -9,7 +9,7 @@ const features = [
   },
   {
     title: 'Your handwriting',
-    body: 'Use a Google vision model with your own key, or a local Ollama model. Review the result before saving.',
+    body: 'Use hosted Gemini, or when self-hosting connect Google with your own key or a local Ollama model. Review the result before saving.',
   },
 ];
 export const LandingFeatures = () => (

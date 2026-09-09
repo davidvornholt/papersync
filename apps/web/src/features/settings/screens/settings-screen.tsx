@@ -34,7 +34,11 @@ const SECTIONS = [
   },
 ] as const;
 
-export const SettingsScreen = (): React.ReactElement => {
+export const SettingsScreen = ({
+  isManagedAI,
+}: {
+  readonly isManagedAI: boolean;
+}): React.ReactElement => {
   const controller = useSettingsScreenController();
 
   if (controller.isLoading) {
@@ -55,7 +59,7 @@ export const SettingsScreen = (): React.ReactElement => {
           section="Settings"
           title="Tune the press"
           italicSuffix="to your hand."
-          description="Three quiet decisions: where your notes live, which model reads your handwriting, and what your week looks like. Set once, edit rarely. Your keys, your vault, your defaults — never sent anywhere unless you ask."
+          description="Choose where approved homework goes and set up your subjects and timetable. Check how this instance processes your scans below."
           aside={
             <div className="space-y-5">
               {SECTIONS.map((section) => (
@@ -118,6 +122,7 @@ export const SettingsScreen = (): React.ReactElement => {
               <span className="serif-italic ink">reads your hand</span>.
             </h2>
             <SettingsAICard
+              isManagedAI={isManagedAI}
               settings={controller.settings}
               options={aiOptions}
               onChangeProvider={controller.handleAIProviderChange}

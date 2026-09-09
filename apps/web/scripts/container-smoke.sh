@@ -16,10 +16,11 @@ trap cleanup EXIT
   -e POSTGRES_USER=papersync -e POSTGRES_PASSWORD=fixture-password -e POSTGRES_DB=papersync \
   docker.io/library/postgres:18-alpine >/dev/null
 for attempt in {1..30}; do
-  if "$engine" exec "$database" pg_isready -U papersync >/dev/null 2>&1; then break; fi
+  # PostgreSQL initdb briefly serves only on its Unix socket; probe TCP for the final server.
+  if "$engine" exec "$database" pg_isready -h 127.0.0.1 -U papersync >/dev/null 2>&1; then break; fi
   sleep 1
 done
-"$engine" exec "$database" pg_isready -U papersync
+"$engine" exec "$database" pg_isready -h 127.0.0.1 -U papersync
 uri="postgresql://papersync:fixture-password@$database:5432/papersync"
 "$engine" run --rm --network "$network" -e "DATABASE_URL=$uri" \
   "$image" bun run --cwd /app/packages/db db:migrate:deploy

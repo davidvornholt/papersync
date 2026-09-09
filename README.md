@@ -4,7 +4,7 @@
 
 Write homework on paper at school. At home, scan the sheet, check the recognized text and deadlines, and approve the tasks for Super Productivity. A plugin imports them while Super Productivity is open; SuperSync distributes the imported tasks to your other devices.
 
-PaperSync is open source and can be self-hosted. The web app requires PostgreSQL and a GitHub OAuth application restricted to one account. OCR uses your Google API key or an Ollama endpoint reachable from the server. Local Obsidian vaults and network scanners also resolve from the server running PaperSync.
+PaperSync is open source and can be self-hosted. The web app requires PostgreSQL and a GitHub OAuth application restricted to one account. Hosted OCR uses Gemini 3.8 Flash at high reasoning through Google Cloud Enterprise AI, with a dedicated server-managed service account. Self-hosted instances can instead use a Google API key or an Ollama endpoint reachable from the server. Local Obsidian vaults and network scanners also resolve from the server running PaperSync.
 
 The included Super Productivity plugin targets `papersync.vornholt.online`. Hosting that integration at another address currently requires changing its request URL and manifest host permission before building the plugin. Configurable plugin destinations are deferred.
 

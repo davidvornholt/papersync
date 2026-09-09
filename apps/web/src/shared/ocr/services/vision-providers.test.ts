@@ -1,5 +1,5 @@
 import { afterAll, afterEach, expect, it, spyOn } from 'bun:test';
-import { Effect, Schema } from 'effect';
+import { Effect, Either, Schema } from 'effect';
 import { ISODate, WeekId } from '@/shared/types/schemas';
 import { createGoogleVisionProvider } from './vision-google-provider';
 import { createOllamaVisionProvider } from './vision-ollama-provider';
@@ -37,31 +37,39 @@ it('validates Google output, defaults completion, and normalizes the written day
       '',
     ),
   );
+  const [request] = fetchSpy.mock.calls;
+  expect(String(request?.[0])).toContain('/gemini-3.8-flash:generateContent');
+  const body = JSON.parse(String(request?.[1]?.body)) as {
+    generationConfig: { thinkingConfig: { thinkingLevel: string } };
+  };
+  expect(body.generationConfig.thinkingConfig.thinkingLevel).toBe('high');
   expect(result.data.entries).toEqual([
     { ...entry, day: 'Monday', isCompleted: false, action: 'add' },
   ]);
 });
-it('retries another Google model when output contains an impossible date', async () => {
-  fetchSpy.mockResolvedValueOnce(
-    googleResponse({
-      entries: [{ ...entry, dueDate: '2026-02-30' }],
-      confidence: 1,
-    }),
-  );
-  fetchSpy.mockResolvedValueOnce(
-    googleResponse({ entries: [entry], confidence: 1 }),
+it.each([
+  ['accepts null and maps it to the optional domain field', null, 'Right'],
+  ['rejects a missing dueDate', undefined, 'Left'],
+  ['rejects an impossible date', '2026-02-30', 'Left'],
+] as const)('enforces dueDate as date-or-null: %s', async (_, dueDate, tag) => {
+  const modelEntry = { ...entry, dueDate };
+  fetchSpy.mockResolvedValue(
+    googleResponse({ entries: [modelEntry], confidence: 1 }),
   );
   const result = await Effect.runPromise(
-    createGoogleVisionProvider('fixture-key').extractHandwriting(
-      image,
-      week,
-      '',
-    ),
+    createGoogleVisionProvider('fixture-key')
+      .extractHandwriting(image, week, '')
+      .pipe(Effect.either),
   );
-  expect(result.data.entries[0]?.dueDate).toBe(entry.dueDate);
-  expect(fetchSpy).toHaveBeenCalledTimes(2);
+  expect(result._tag).toBe(tag);
+  expect(
+    Either.getOrNull(
+      Either.map(result, (value) => value.data.entries[0]?.dueDate),
+    ),
+  ).toBe(tag === 'Right' ? undefined : null);
+  expect(fetchSpy).toHaveBeenCalledTimes(1);
 });
-it('rejects invalid output from every Google model', async () => {
+it('rejects invalid Gemini output', async () => {
   fetchSpy.mockResolvedValue(
     googleResponse({ entries: [entry], confidence: 9 }),
   );
@@ -75,12 +83,25 @@ it('rejects invalid output from every Google model', async () => {
 it('sends Ollama the OCR schema and rejects malformed model output', async () => {
   const provider = createOllamaVisionProvider('http://localhost:11434');
   fetchSpy.mockResolvedValue(
-    Response.json({ response: '```json\n{"entries":[],"confidence":1}\n```' }),
+    Response.json({
+      response: JSON.stringify({
+        entries: [{ ...entry, dueDate: null }],
+        confidence: 1,
+      }),
+    }),
   );
   expect(
     (await Effect.runPromise(provider.extractHandwriting(image, week, ''))).data
       .entries,
-  ).toEqual([]);
+  ).toEqual([
+    {
+      ...entry,
+      day: 'Monday',
+      isCompleted: false,
+      action: 'add',
+      dueDate: undefined,
+    },
+  ]);
   const request = fetchSpy.mock.calls[0]?.[1];
   const payload = JSON.parse(String(request?.body)) as {
     format?: unknown;
@@ -89,7 +110,11 @@ it('sends Ollama the OCR schema and rejects malformed model output', async () =>
   expect(payload.format).toEqual(OCRResponseJsonSchema);
   expect(payload.prompt).toContain('Use these exact camelCase key names');
   expect(payload.prompt).toContain('isCompleted (optional)');
-  expect(payload.prompt).toContain('dueDate (optional)');
+  expect(payload.prompt).toContain('dueDate (required)');
+  expect(payload.prompt).toContain('YYYY-MM-DD date or null');
+  expect(payload.prompt).toContain(
+    'associate its line with the entry it belongs to',
+  );
   fetchSpy.mockResolvedValue(Response.json({ response: 'unreadable' }));
   expect(
     (

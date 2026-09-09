@@ -78,7 +78,7 @@ export const createOllamaVisionProvider = (
             isTask: entry.isTask,
             isCompleted: entry.isCompleted,
             action: 'add' as const,
-            dueDate: entry.dueDate,
+            dueDate: entry.dueDate ?? undefined,
           })),
           confidence: validated.confidence,
           notes: validated.notes,

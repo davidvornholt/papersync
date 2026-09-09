@@ -11,6 +11,7 @@ import {
 } from './settings-controls';
 
 type SettingsAICardProps = {
+  readonly isManagedAI: boolean;
   readonly settings: Settings;
   readonly options: ReadonlyArray<ToggleOption>;
   readonly onChangeProvider: (provider: 'google' | 'ollama') => void;
@@ -19,6 +20,7 @@ type SettingsAICardProps = {
 };
 
 export const SettingsAICard = ({
+  isManagedAI,
   settings,
   options,
   onChangeProvider,
@@ -26,6 +28,23 @@ export const SettingsAICard = ({
   onChangeOllamaEndpoint,
 }: SettingsAICardProps): React.ReactElement => {
   const instanceId = useId();
+  if (isManagedAI) {
+    return (
+      <Card>
+        <CardHeader>
+          <h3 className="serif text-[20px] text-ink">Gemini 3.8 Flash</h3>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p>High reasoning through Google Cloud Enterprise AI.</p>
+          <p className="text-graphite">
+            This server manages the AI connection. Your scan is sent to Google
+            Cloud when you process it. Review the recognized homework before
+            approving it.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
   return (
     <Card>
       <CardHeader>

@@ -7,7 +7,7 @@ const OCREntrySchema = Schema.Struct({
   content: Schema.NonEmptyTrimmedString,
   isTask: Schema.Boolean,
   isCompleted: Schema.optionalWith(Schema.Boolean, { default: () => false }),
-  dueDate: Schema.optional(ISODate),
+  dueDate: Schema.NullOr(ISODate),
 });
 export const OCRResponseSchema = Schema.Struct({
   entries: Schema.Array(OCREntrySchema),

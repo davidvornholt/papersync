@@ -20,7 +20,4 @@ export type VisionProvider = {
 export const VisionProvider =
   Context.GenericTag<VisionProvider>('VisionProvider');
 
-export const GEMINI_MODELS = [
-  'gemini-3.8-flash',
-  'gemini-3.5-flash-lite',
-] as const;
+export const GEMINI_MODEL = 'gemini-3.8-flash';
