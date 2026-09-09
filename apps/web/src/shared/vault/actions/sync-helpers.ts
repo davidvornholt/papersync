@@ -7,8 +7,8 @@ import type {
   WeekId,
   WeeklyNote,
 } from '@/shared/types/schemas';
-import type { ExtractedEntry } from './sync-helpers-types';
 import { isValidDateRange, isValidISODate } from '../services/weekly-note-date';
+import type { ExtractedEntry } from './sync-helpers-types';
 
 const dayNames = [
   'Monday',

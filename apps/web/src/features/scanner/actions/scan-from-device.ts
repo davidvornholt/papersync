@@ -1,12 +1,12 @@
 'use server';
 
 import { Effect, Schema } from 'effect';
-import { requireSession } from '@/shared/auth/session';
 import {
   ESCLClient,
   ScanSettingsSchema,
 } from '@/features/scanner/services/escl-types';
 import { DiscoveredScannerSchema } from '@/features/scanner/services/scanner-discovery-types';
+import { requireSession } from '@/shared/auth/session';
 import { ESCLClientLayer } from '../services/escl-client';
 export type ScanFromDeviceResult =
   | { readonly success: true; readonly imageData: string }

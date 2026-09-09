@@ -4,14 +4,15 @@ import {
   getDayDate,
   getWeekIsoDateRange,
 } from '@/shared/planner/week';
-import { ISODate } from '@/shared/types/schemas';
 import type { WeekId } from '@/shared/types/schemas';
+import { ISODate } from '@/shared/types/schemas';
 
 type ISODateRange = Readonly<{
   start: ISODate;
   end: ISODate;
 }>;
 
+const yearLength = 4;
 const dateRangePattern =
   /^date_range:\s*(?<start>\d{4}-\d{2}-\d{2})\s+to\s+(?<end>\d{4}-\d{2}-\d{2})\r?$/mu;
 const dateHeadingPattern =
@@ -103,18 +104,17 @@ export const getDayDateFromHeading = (
   const years = groups.year
     ? [Number(groups.year)]
     : [
-        Number(dateRange.start.slice(0, 4)),
-        Number(dateRange.end.slice(0, 4)),
-        Number(weekId.slice(0, 4)),
+        Number(dateRange.start.slice(0, yearLength)),
+        Number(dateRange.end.slice(0, yearLength)),
+        Number(weekId.slice(0, yearLength)),
       ];
   for (const year of [...new Set(years)]) {
     const date = new Date(Date.UTC(year, month, day));
-    if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month) {
-      continue;
-    }
-    const isoDate = date.toISOString().slice(0, 10) as ISODate;
-    if (isoDate >= dateRange.start && isoDate <= dateRange.end) {
-      return isoDate;
+    if (date.getUTCFullYear() === year && date.getUTCMonth() === month) {
+      const isoDate = date.toISOString().slice(0, 10) as ISODate;
+      if (isoDate >= dateRange.start && isoDate <= dateRange.end) {
+        return isoDate;
+      }
     }
   }
   return fallback;

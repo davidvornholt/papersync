@@ -1,4 +1,4 @@
-import { Context, Data, Schema, type Effect } from 'effect';
+import { Context, Data, type Effect, Schema } from 'effect';
 export type ScannerProtocol = 'http' | 'https';
 
 export const DiscoveredScannerSchema = Schema.Struct({

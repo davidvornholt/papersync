@@ -1,16 +1,16 @@
 'use server';
 
 import { Effect, Schema } from 'effect';
-import { requireSession } from '@/shared/auth/session';
 import {
   ESCLClient,
   type ScannerCapabilities,
 } from '@/features/scanner/services/escl-types';
 import {
-  DiscoveredScannerSchema,
   type DiscoveredScanner,
+  DiscoveredScannerSchema,
   ScannerDiscoveryService,
 } from '@/features/scanner/services/scanner-discovery-types';
+import { requireSession } from '@/shared/auth/session';
 import { ESCLClientLayer } from '../services/escl-client';
 import { MdnsDiscoveryLayer } from '../services/scanner-discovery';
 export type DiscoveryResult =

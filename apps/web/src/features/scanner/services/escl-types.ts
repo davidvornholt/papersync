@@ -1,4 +1,4 @@
-import { Context, Schema, type Effect } from 'effect';
+import { Context, type Effect, Schema } from 'effect';
 import type {
   ESCLCapabilitiesError,
   ESCLError,
