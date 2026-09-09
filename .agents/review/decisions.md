@@ -13,3 +13,7 @@ The user chose to omit PR preview sites for now. PaperSync serves private homewo
 ### D-002 (2026-09-09, decided) — Super Productivity plugin import
 
 The user approved an installable Super Productivity plugin that imports approved homework from PaperSync. Connect one Super Productivity installation; SuperSync distributes its tasks to the other devices. Matching repeated scans use sheet week, written day, subject, and normalized text. Due date and completion corrections update that identity; changed wording is a new entry and remains reviewable before approval.
+
+### D-003 (2026-09-09, decided) — Plugin destination scope
+
+This deployment and its bundled plugin target `papersync.vornholt.online`, the address requested by the user. A self-hosted installation at another address requires rebuilding the plugin with the matching request URL and manifest host permission. Configurable plugin destinations are deferred; documentation must state this limitation rather than imply that the distributed ZIP connects to arbitrary deployments.

@@ -9,3 +9,5 @@ Tasks carry a PaperSync ID in their notes. A retry finds that ID in active or ar
 `src/api.ts` describes the methods this plugin uses from the [v18.21.2 host contract](https://github.com/super-productivity/super-productivity/blob/v18.21.2/packages/plugin-api/src/types.ts). The published `@super-productivity/plugin-api` package is older and lacks the supported HTTP and secret-storage APIs.
 
 Run `bun run build` to generate `dist/papersync-plugin.zip`. The plugin has no environment variables. Its sole network destination is declared in `manifest.json` and `src/import-homework.ts`.
+
+For another PaperSync deployment address, change `serviceUrl` in `src/import-homework.ts` and the matching host in `manifest.json` before building. The distributed ZIP targets `papersync.vornholt.online`; a key from another deployment will not connect it to that deployment.
