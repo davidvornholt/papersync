@@ -1,5 +1,20 @@
-@import "./layout.css";
-@import "./controls.css";
+@import "./layout.css" layer(components);
+@import "./controls.css" layer(components);
+
+@source "./components";
+
+/* Keep reduced motion unlayered so it overrides component and utility motion. */
+@media (prefers-reduced-motion: reduce) {
+  html *,
+  html *::before,
+  html *::after {
+    animation-delay: 0.01ms;
+    animation-duration: 0.01ms;
+    animation-iteration-count: 1;
+    transition-duration: 0.01ms;
+    scroll-behavior: auto;
+  }
+}
 
 @theme inline {
   /* --- Color: paper, ink, and a single accent ------------------------------ */
@@ -64,283 +79,291 @@
    Base
    ============================================================================= */
 
-html {
-  scroll-behavior: smooth;
-  overscroll-behavior: none;
-  background: var(--color-paper);
-}
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    overscroll-behavior: none;
+    background: var(--color-paper);
+  }
 
-body {
-  font-family: var(--font-body);
-  background: var(--color-paper);
-  color: var(--color-ink);
-  font-size: 15px;
-  line-height: 1.6;
-  letter-spacing: var(--tracking-tight);
-  font-feature-settings:
-    "kern" 1,
-    "liga" 1,
-    "ss01" 1;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
+  body {
+    font-family: var(--font-body);
+    background: var(--color-paper);
+    color: var(--color-ink);
+    font-size: 15px;
+    line-height: 1.6;
+    letter-spacing: var(--tracking-tight);
+    font-feature-settings:
+      "kern" 1,
+      "liga" 1,
+      "ss01" 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
 
-/* The faintest cream/oat wash. Suggests stock without imitating it. */
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 0;
-  background:
-    radial-gradient(
-      circle at 12% 8%,
-      oklch(0.99 0.01 90 / 0.5),
-      transparent 60%
-    ),
-    radial-gradient(
-      circle at 88% 92%,
-      oklch(0.94 0.012 60 / 0.4),
-      transparent 55%
-    );
-}
+  /* The faintest cream/oat wash. Suggests stock without imitating it. */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background:
+      radial-gradient(
+        circle at 12% 8%,
+        oklch(0.99 0.01 90 / 0.5),
+        transparent 60%
+      ),
+      radial-gradient(
+        circle at 88% 92%,
+        oklch(0.94 0.012 60 / 0.4),
+        transparent 55%
+      );
+  }
 
-main,
-header,
-footer {
-  position: relative;
-  z-index: 1;
-}
+  main,
+  header,
+  footer {
+    position: relative;
+    z-index: 1;
+  }
 
-/* =============================================================================
+  /* =============================================================================
    Typography
    ============================================================================= */
 
-h1,
-h2,
-h3,
-h4,
-h5,
-h6 {
-  font-family: var(--font-display);
-  font-weight: 400;
-  letter-spacing: var(--tracking-display);
-  line-height: 1.04;
-  color: var(--color-ink);
-  font-optical-sizing: auto;
-  font-variation-settings:
-    "SOFT" 30,
-    "WONK" 0,
-    "opsz" 144;
-}
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-display);
+    font-weight: 400;
+    letter-spacing: var(--tracking-display);
+    line-height: 1.04;
+    color: var(--color-ink);
+    font-optical-sizing: auto;
+    font-variation-settings:
+      "SOFT" 30,
+      "WONK" 0,
+      "opsz" 144;
+  }
 
-h1 {
-  font-size: clamp(2.4rem, 6.8vw, 5.6rem);
-  font-weight: 350;
-}
+  h1 {
+    font-size: clamp(2.4rem, 6.8vw, 5.6rem);
+    font-weight: 350;
+  }
 
-h2 {
-  font-size: clamp(1.6rem, 3.4vw, 2.6rem);
-  font-weight: 380;
-}
+  h2 {
+    font-size: clamp(1.6rem, 3.4vw, 2.6rem);
+    font-weight: 380;
+  }
 
-h3 {
-  font-size: clamp(1.15rem, 1.6vw, 1.4rem);
-  font-weight: 420;
-  letter-spacing: -0.02em;
-}
+  h3 {
+    font-size: clamp(1.15rem, 1.6vw, 1.4rem);
+    font-weight: 420;
+    letter-spacing: -0.02em;
+  }
 
-@layer base {
   p {
     color: var(--color-ink-soft);
   }
-}
 
-em,
-i {
-  font-style: italic;
-  font-variation-settings:
-    "SOFT" 60,
-    "WONK" 1,
-    "opsz" 144;
-}
+  em,
+  i {
+    font-style: italic;
+    font-variation-settings:
+      "SOFT" 60,
+      "WONK" 1,
+      "opsz" 144;
+  }
 
-code,
-pre,
-kbd,
-samp {
-  font-family: var(--font-mono);
-  font-size: 0.86em;
-  letter-spacing: var(--tracking-mono);
-}
+  code,
+  pre,
+  kbd,
+  samp {
+    font-family: var(--font-mono);
+    font-size: 0.86em;
+    letter-spacing: var(--tracking-mono);
+  }
 
-::selection {
-  background: var(--color-accent);
-  color: var(--color-paper);
-}
+  ::selection {
+    background: var(--color-accent);
+    color: var(--color-paper);
+  }
 
-/* =============================================================================
+  /* =============================================================================
    Editorial primitives — the small voice classes used throughout the product
    ============================================================================= */
-
-.editorial-eyebrow {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: var(--tracking-wide);
-  text-transform: uppercase;
-  color: var(--color-graphite);
-  display: inline-flex;
-  align-items: center;
-  gap: 0.6rem;
 }
 
-.editorial-eyebrow::before {
-  content: "";
-  display: inline-block;
-  width: 22px;
-  height: 1px;
-  background: currentColor;
-  opacity: 0.6;
+@layer components {
+  .editorial-eyebrow {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: var(--tracking-wide);
+    text-transform: uppercase;
+    color: var(--color-graphite);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+
+  .editorial-eyebrow::before {
+    content: "";
+    display: inline-block;
+    width: 22px;
+    height: 1px;
+    background: currentColor;
+    opacity: 0.6;
+  }
+
+  .section-number {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: var(--tracking-wide);
+    text-transform: uppercase;
+    color: var(--color-graphite);
+  }
+
+  .measure {
+    max-width: 56ch;
+  }
+
+  .measure-wide {
+    max-width: 72ch;
+  }
+
+  .hairline {
+    border-color: var(--color-hairline);
+  }
+
+  .hairline-top {
+    border-top: 1px solid var(--color-hairline);
+  }
+
+  .hairline-bottom {
+    border-bottom: 1px solid var(--color-hairline);
+  }
+
+  .rule {
+    height: 1px;
+    background: var(--color-hairline);
+    width: 100%;
+  }
+
+  .serif {
+    font-family: var(--font-display);
+    letter-spacing: var(--tracking-display);
+  }
+
+  .serif-italic {
+    font-family: var(--font-display);
+    font-style: italic;
+    font-variation-settings:
+      "SOFT" 80,
+      "WONK" 1,
+      "opsz" 144;
+    letter-spacing: -0.025em;
+  }
+
+  .mono {
+    font-family: var(--font-mono);
+    letter-spacing: var(--tracking-mono);
+  }
+
+  .mono-tag {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-wide);
+    color: var(--color-graphite);
+  }
+
+  .ink {
+    color: var(--color-accent);
+  }
+
+  /* The signature link. A 1px ink line draws beneath on hover. */
+  .editorial-link {
+    color: var(--color-ink);
+    position: relative;
+    display: inline-block;
+    padding-bottom: 2px;
+    background-image: linear-gradient(var(--color-accent), var(--color-accent));
+    background-position: 0 100%;
+    background-repeat: no-repeat;
+    background-size: 0% 1px;
+    transition: background-size var(--transition-flow);
+  }
+
+  .editorial-link:hover {
+    background-size: 100% 1px;
+  }
 }
 
-.section-number {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: var(--tracking-wide);
-  text-transform: uppercase;
-  color: var(--color-graphite);
-}
+@layer base {
+  a {
+    color: var(--color-ink);
+    text-decoration: none;
+    transition: color var(--transition-quick);
+  }
 
-.measure {
-  max-width: 56ch;
-}
+  a:hover {
+    color: var(--color-accent);
+  }
 
-.measure-wide {
-  max-width: 72ch;
-}
-
-.hairline {
-  border-color: var(--color-hairline);
-}
-
-.hairline-top {
-  border-top: 1px solid var(--color-hairline);
-}
-
-.hairline-bottom {
-  border-bottom: 1px solid var(--color-hairline);
-}
-
-.rule {
-  height: 1px;
-  background: var(--color-hairline);
-  width: 100%;
-}
-
-.serif {
-  font-family: var(--font-display);
-  letter-spacing: var(--tracking-display);
-}
-
-.serif-italic {
-  font-family: var(--font-display);
-  font-style: italic;
-  font-variation-settings:
-    "SOFT" 80,
-    "WONK" 1,
-    "opsz" 144;
-  letter-spacing: -0.025em;
-}
-
-.mono {
-  font-family: var(--font-mono);
-  letter-spacing: var(--tracking-mono);
-}
-
-.mono-tag {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: var(--tracking-wide);
-  color: var(--color-graphite);
-}
-
-.ink {
-  color: var(--color-accent);
-}
-
-/* The signature link. A 1px ink line draws beneath on hover. */
-.editorial-link {
-  color: var(--color-ink);
-  position: relative;
-  display: inline-block;
-  padding-bottom: 2px;
-  background-image: linear-gradient(var(--color-accent), var(--color-accent));
-  background-position: 0 100%;
-  background-repeat: no-repeat;
-  background-size: 0% 1px;
-  transition: background-size var(--transition-flow);
-}
-
-.editorial-link:hover {
-  background-size: 100% 1px;
-}
-
-a {
-  color: var(--color-ink);
-  text-decoration: none;
-  transition: color var(--transition-quick);
-}
-
-a:hover {
-  color: var(--color-accent);
-}
-
-/* =============================================================================
+  /* =============================================================================
    Forms — labels behave like marginalia, inputs as a single ruled line
    ============================================================================= */
 
-input,
-select,
-textarea {
-  font-family: inherit;
-  color: var(--color-ink);
+  input,
+  select,
+  textarea {
+    font-family: inherit;
+    color: var(--color-ink);
+  }
 }
 
-.field-label {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: var(--tracking-wide);
-  text-transform: uppercase;
-  color: var(--color-graphite);
-  display: block;
-  margin-bottom: 0.5rem;
-}
+@layer components {
+  .field-label {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: var(--tracking-wide);
+    text-transform: uppercase;
+    color: var(--color-graphite);
+    display: block;
+    margin-bottom: 0.5rem;
+  }
 
-.field-input {
-  width: 100%;
-  padding: 0.7rem 0;
-  background: transparent;
-  border: 0;
-  border-bottom: 1px solid var(--color-hairline-strong);
-  font-size: 15px;
-  color: var(--color-ink);
-  letter-spacing: -0.005em;
-  transition: border-color var(--transition-quick);
-  border-radius: 0;
-}
+  .field-input {
+    width: 100%;
+    padding: 0.7rem 0;
+    background: transparent;
+    border: 0;
+    border-bottom: 1px solid var(--color-hairline-strong);
+    font-size: 15px;
+    color: var(--color-ink);
+    letter-spacing: -0.005em;
+    transition: border-color var(--transition-quick);
+    border-radius: 0;
+  }
 
-.field-input:focus {
-  outline: none;
-  border-bottom-color: var(--color-ink);
-}
+  .field-input:focus {
+    outline: none;
+    border-bottom-color: var(--color-ink);
+  }
 
-/* =============================================================================
+  /* =============================================================================
    Focus
    ============================================================================= */
+}
 
-:focus-visible {
-  outline: 1px solid var(--color-accent);
-  outline-offset: 3px;
-  border-radius: 0;
+@layer base {
+  :focus-visible {
+    outline: 1px solid var(--color-accent);
+    outline-offset: 3px;
+    border-radius: 0;
+  }
 }
