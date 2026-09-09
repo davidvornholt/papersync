@@ -1,11 +1,13 @@
 'use server';
 
-import { Effect } from 'effect';
+import { Effect, Schema } from 'effect';
+import { requireSession } from '@/shared/auth/session';
 import {
   ESCLClient,
   type ScannerCapabilities,
 } from '@/features/scanner/services/escl-types';
 import {
+  DiscoveredScannerSchema,
   type DiscoveredScanner,
   ScannerDiscoveryService,
 } from '@/features/scanner/services/scanner-discovery-types';
@@ -22,36 +24,53 @@ export type CapabilitiesResult =
   | { readonly success: true; readonly capabilities: ScannerCapabilities }
   | { readonly success: false; readonly error: string };
 
-export async function discoverScanners(
-  timeoutMs = 5000,
-): Promise<DiscoveryResult> {
+const getErrorMessage = (error: unknown): string =>
+  error instanceof Error ? error.message : 'Scanner request failed.';
+
+export const discoverScanners = async (
+  timeoutMs: unknown = 5000,
+): Promise<DiscoveryResult> => {
+  await requireSession();
   const program = Effect.gen(function* () {
+    const decodedTimeout = yield* Schema.decodeUnknown(Schema.Number)(
+      timeoutMs,
+    );
     const discovery = yield* ScannerDiscoveryService;
-    return yield* discovery.discover(timeoutMs);
+    return yield* discovery.discover(decodedTimeout);
   }).pipe(
     Effect.provide(MdnsDiscoveryLayer),
     Effect.map((scanners) => ({ success: true as const, scanners })),
     Effect.catchAll((error) =>
-      Effect.succeed({ success: false as const, error: error.message }),
+      Effect.succeed({
+        success: false as const,
+        error: getErrorMessage(error),
+      }),
     ),
   );
 
   return Effect.runPromise(program);
-}
+};
 
-export async function getScannerCapabilities(
-  scanner: DiscoveredScanner,
-): Promise<CapabilitiesResult> {
+export const getScannerCapabilities = async (
+  scanner: unknown,
+): Promise<CapabilitiesResult> => {
+  await requireSession();
   const program = Effect.gen(function* () {
+    const decodedScanner = yield* Schema.decodeUnknown(DiscoveredScannerSchema)(
+      scanner,
+    );
     const client = yield* ESCLClient;
-    return yield* client.getCapabilities(scanner);
+    return yield* client.getCapabilities(decodedScanner);
   }).pipe(
     Effect.provide(ESCLClientLayer),
     Effect.map((capabilities) => ({ success: true as const, capabilities })),
     Effect.catchAll((error) =>
-      Effect.succeed({ success: false as const, error: error.message }),
+      Effect.succeed({
+        success: false as const,
+        error: getErrorMessage(error),
+      }),
     ),
   );
 
   return Effect.runPromise(program);
-}
+};

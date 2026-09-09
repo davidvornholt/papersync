@@ -118,31 +118,35 @@ const createESCLClient = (): ESCLClient => ({
           method: 'POST',
           headers: { 'content-type': 'text/xml; charset=utf-8' },
           body: createScanRequestXml(settings),
-        }).then((response) => {
-          if (response.statusCode !== createdStatus) {
-            return Promise.reject(
-              new Error(
-                `Failed to create scan job: HTTP ${response.statusCode}`,
-              ),
-            );
-          }
-
-          const jobUrl = getHeaderValue(response.headers.location);
-          if (!jobUrl) {
-            return Promise.reject(
-              new Error('No job URL returned from scanner'),
-            );
-          }
-
-          return {
-            jobUrl: resolveScannerLocation(scanner, jobUrl),
-            status: 'pending' as const,
-          };
         });
       },
       catch: (error) =>
         new ESCLError({ message: 'Failed to start scan job', cause: error }),
-    }),
+    }).pipe(
+      Effect.flatMap((response) => {
+        if (response.statusCode !== createdStatus) {
+          return Effect.fail(
+            new ESCLError({
+              message: `Failed to create scan job: HTTP ${response.statusCode}`,
+            }),
+          );
+        }
+
+        const jobUrl = getHeaderValue(response.headers.location);
+        if (!jobUrl) {
+          return Effect.fail(
+            new ESCLError({ message: 'No job URL returned from scanner' }),
+          );
+        }
+
+        return resolveScannerLocation(scanner, jobUrl).pipe(
+          Effect.map((resolvedJobUrl) => ({
+            jobUrl: resolvedJobUrl,
+            status: 'pending' as const,
+          })),
+        );
+      }),
+    ),
 
   getScanResult: (jobUrl: string) =>
     Effect.tryPromise({

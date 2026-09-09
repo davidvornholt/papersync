@@ -1,5 +1,22 @@
-import { Context, Data, type Effect } from 'effect';
+import { Context, Data, Schema, type Effect } from 'effect';
 export type ScannerProtocol = 'http' | 'https';
+
+export const DiscoveredScannerSchema = Schema.Struct({
+  id: Schema.String,
+  name: Schema.String,
+  host: Schema.String,
+  port: Schema.Number,
+  protocol: Schema.Literal('http', 'https'),
+  resourcePath: Schema.String,
+  model: Schema.optional(Schema.String),
+  manufacturer: Schema.optional(Schema.String),
+  uuid: Schema.optional(Schema.String),
+  adminUrl: Schema.optional(Schema.String),
+  capabilities: Schema.Struct({
+    colorModes: Schema.Array(Schema.String),
+    documentFormats: Schema.Array(Schema.String),
+  }),
+});
 
 export type DiscoveredScanner = {
   readonly id: string;

@@ -1,4 +1,4 @@
-import { Context, type Effect } from 'effect';
+import { Context, Schema, type Effect } from 'effect';
 import type {
   ESCLCapabilitiesError,
   ESCLError,
@@ -14,6 +14,13 @@ export type ScanSettings = {
   readonly format: 'pdf' | 'jpeg' | 'png';
   readonly inputSource: InputSource;
 };
+
+export const ScanSettingsSchema = Schema.Struct({
+  colorMode: Schema.Literal('color', 'grayscale', 'blackwhite'),
+  resolution: Schema.Number,
+  format: Schema.Literal('pdf', 'jpeg', 'png'),
+  inputSource: Schema.Literal('Platen', 'Adf'),
+});
 
 export type SourceCapabilities = {
   readonly resolutions: ReadonlyArray<number>;
