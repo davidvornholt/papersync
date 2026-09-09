@@ -1,5 +1,5 @@
 import { afterAll, afterEach, expect, it, spyOn } from 'bun:test';
-import { Effect, Schema } from 'effect';
+import { Effect, Either, Schema } from 'effect';
 import { ISODate, WeekId } from '@/shared/types/schemas';
 import { createGoogleVisionProvider } from './vision-google-provider';
 import { createOllamaVisionProvider } from './vision-ollama-provider';
@@ -52,12 +52,7 @@ it.each([
   ['rejects a missing dueDate', undefined, 'Left'],
   ['rejects an impossible date', '2026-02-30', 'Left'],
 ] as const)('enforces dueDate as date-or-null: %s', async (_, dueDate, tag) => {
-  const modelEntry: Record<string, unknown> = { ...entry };
-  if (dueDate === undefined) {
-    delete modelEntry.dueDate;
-  } else {
-    modelEntry.dueDate = dueDate;
-  }
+  const modelEntry = { ...entry, dueDate };
   fetchSpy.mockResolvedValue(
     googleResponse({ entries: [modelEntry], confidence: 1 }),
   );
@@ -67,9 +62,11 @@ it.each([
       .pipe(Effect.either),
   );
   expect(result._tag).toBe(tag);
-  if (result._tag === 'Right') {
-    expect(result.right.data.entries[0]?.dueDate).toBeUndefined();
-  }
+  expect(
+    Either.getOrNull(
+      Either.map(result, (value) => value.data.entries[0]?.dueDate),
+    ),
+  ).toBe(tag === 'Right' ? undefined : null);
   expect(fetchSpy).toHaveBeenCalledTimes(1);
 });
 it('rejects invalid Gemini output', async () => {

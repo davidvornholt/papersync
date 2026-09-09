@@ -28,16 +28,16 @@ afterEach(() => {
 });
 
 it('keeps browser OCR fixtures isolated from host and dotenv Vertex values', () => {
-  expect(defaultConfig.webServer?.env).toMatchObject({
-    GOOGLE_VERTEX_PROJECT: '',
-    GOOGLE_VERTEX_LOCATION: '',
-    GOOGLE_VERTEX_CREDENTIALS_JSON: '',
-  });
-  expect(managedConfig.webServer?.env).toMatchObject({
-    GOOGLE_VERTEX_PROJECT: 'browser-fixture-project',
-    GOOGLE_VERTEX_LOCATION: '',
-    GOOGLE_VERTEX_CREDENTIALS_JSON: '',
-  });
+  expect(vertexKeys.map((key) => defaultConfig.webServer?.env?.[key])).toEqual([
+    '',
+    '',
+    '',
+  ]);
+  expect(vertexKeys.map((key) => managedConfig.webServer?.env?.[key])).toEqual([
+    'browser-fixture-project',
+    '',
+    '',
+  ]);
 
   process.env.GOOGLE_VERTEX_PROJECT = '';
   process.env.GOOGLE_VERTEX_LOCATION = '';
