@@ -3,6 +3,7 @@ import { Effect, Schema } from 'effect';
 import { ISODate, WeekId } from '@/shared/types/schemas';
 import { createGoogleVisionProvider } from './vision-google-provider';
 import { createOllamaVisionProvider } from './vision-ollama-provider';
+import { OCRResponseJsonSchema } from './vision-schema';
 
 const fetchSpy = spyOn(globalThis, 'fetch');
 afterEach(() => fetchSpy.mockReset());
@@ -71,7 +72,7 @@ it('rejects invalid output from every Google model', async () => {
   );
   expect(result._tag).toBe('Left');
 });
-it('accepts an empty Ollama scan and rejects malformed model output', async () => {
+it('sends Ollama the OCR schema and rejects malformed model output', async () => {
   const provider = createOllamaVisionProvider('http://localhost:11434');
   fetchSpy.mockResolvedValue(
     Response.json({ response: '```json\n{"entries":[],"confidence":1}\n```' }),
@@ -80,6 +81,15 @@ it('accepts an empty Ollama scan and rejects malformed model output', async () =
     (await Effect.runPromise(provider.extractHandwriting(image, week, ''))).data
       .entries,
   ).toEqual([]);
+  const request = fetchSpy.mock.calls[0]?.[1];
+  const payload = JSON.parse(String(request?.body)) as {
+    format?: unknown;
+    prompt?: string;
+  };
+  expect(payload.format).toEqual(OCRResponseJsonSchema);
+  expect(payload.prompt).toContain('Use these exact camelCase key names');
+  expect(payload.prompt).toContain('isCompleted (optional)');
+  expect(payload.prompt).toContain('dueDate (optional)');
   fetchSpy.mockResolvedValue(Response.json({ response: 'unreadable' }));
   expect(
     (

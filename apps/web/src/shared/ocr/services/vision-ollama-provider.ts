@@ -9,7 +9,7 @@ import {
   createExtractionSystemPrompt,
   normalizeDayName,
 } from './vision-prompt';
-import { OCRResponseSchema } from './vision-schema';
+import { OCRResponseJsonSchema, OCRResponseSchema } from './vision-schema';
 
 const imageDataPattern = /^data:image\/\w+;base64,/u;
 const codeFencePattern = /```(?:json)?\n?/gu;
@@ -26,6 +26,7 @@ export const createOllamaVisionProvider = (
           model: 'qwen3-vl-4b',
           prompt: createExtractionSystemPrompt(weekId, existingContent),
           images: [imageBase64.replace(imageDataPattern, '')],
+          format: OCRResponseJsonSchema,
           stream: false,
         }),
       }).pipe(
