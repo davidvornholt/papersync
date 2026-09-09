@@ -1,12 +1,16 @@
 import { Effect, Schema } from 'effect';
 import { SettingsStorageError } from './settings-storage-error';
 import {
+  createDefaultTimetable,
   defaultSettings,
   type Settings,
   SettingsSchema,
 } from './use-settings-schema';
 
 const storageKey = 'papersync-settings';
+const storedSettingsSchema = Schema.parseJson(
+  Schema.Record({ key: Schema.String, value: Schema.Unknown }),
+);
 export const loadSettings = (): Effect.Effect<Settings> =>
   Effect.try({
     try: () => globalThis.localStorage.getItem(storageKey),
@@ -17,7 +21,16 @@ export const loadSettings = (): Effect.Effect<Settings> =>
   }).pipe(
     Effect.flatMap((stored) =>
       stored
-        ? Schema.decodeUnknown(Schema.parseJson(SettingsSchema))(stored)
+        ? Schema.decodeUnknown(storedSettingsSchema)(stored).pipe(
+            Effect.map((parsed) =>
+              'timetable' in parsed
+                ? parsed
+                : { ...parsed, timetable: createDefaultTimetable() },
+            ),
+            Effect.flatMap((migrated) =>
+              Schema.decodeUnknown(SettingsSchema)(migrated),
+            ),
+          )
         : Effect.succeed(defaultSettings),
     ),
     Effect.orElseSucceed(() => defaultSettings),

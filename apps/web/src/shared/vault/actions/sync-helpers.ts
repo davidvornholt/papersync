@@ -8,6 +8,7 @@ import type {
   WeeklyNote,
 } from '@/shared/types/schemas';
 import type { ExtractedEntry } from './sync-helpers-types';
+import { isValidDateRange, isValidISODate } from '../services/weekly-note-date';
 
 const dayNames = [
   'Monday',
@@ -57,7 +58,9 @@ export const convertEntriesToWeeklyNote = (
   existingNote: WeeklyNote | null,
 ): WeeklyNote => ({
   week: weekId,
-  dateRange: getWeekIsoDateRange(weekId),
+  dateRange: isValidDateRange(existingNote?.dateRange)
+    ? existingNote.dateRange
+    : getWeekIsoDateRange(weekId),
   syncedAt: new Date().toISOString() as ISODateTime,
   days: dayNames.flatMap((dayName) => {
     const existing = existingNote?.days.find((day) => day.dayName === dayName);
@@ -68,7 +71,16 @@ export const convertEntriesToWeeklyNote = (
     );
     const subjects = mergeSubjects(existing?.entries ?? [], incoming);
     return subjects.length > 0
-      ? [{ date: getDayDate(dayName, weekId), dayName, entries: subjects }]
+      ? [
+          {
+            date:
+              existing && isValidISODate(existing.date)
+                ? existing.date
+                : getDayDate(dayName, weekId),
+            dayName,
+            entries: subjects,
+          },
+        ]
       : [];
   }),
   generalTasks: mergeTasks(

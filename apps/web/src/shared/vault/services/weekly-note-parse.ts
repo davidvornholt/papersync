@@ -1,4 +1,3 @@
-import { getDayDate, getWeekIsoDateRange } from '@/shared/planner/week';
 import type {
   GeneralTask,
   ISODate,
@@ -6,6 +5,7 @@ import type {
   WeekId,
   WeeklyNote,
 } from '@/shared/types/schemas';
+import { getDayDateFromHeading, parseDateRange } from './weekly-note-date';
 
 const frontmatterPattern = /^---\r?\n(?<metadata>[\s\S]*?)\r?\n---/u;
 const sectionPattern =
@@ -15,7 +15,7 @@ const subjectPattern =
 const taskPattern = /^- \[(?<completed>[ xX])\]\s*(?<content>.+)$/gmu;
 const duePattern = /\[due::\s*(?<date>\d{4}-\d{2}-\d{2})\]/u;
 const dayPattern =
-  /^(?<day>Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)\b/u;
+  /^(?<day>Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)(?:,?\s+(?<date>.+))?$/u;
 const syncedAtPattern = /^synced_at:\s*(?<value>.+)$/mu;
 
 const parseTasks = (body: string): ReadonlyArray<GeneralTask> =>
@@ -38,12 +38,13 @@ export const parseWeeklyNoteMarkdown = (
   weekId: WeekId,
 ): WeeklyNote => {
   const metadata = frontmatterPattern.exec(content)?.groups?.metadata ?? '';
+  const dateRange = parseDateRange(metadata, weekId);
   const sections = [
     ...content.replace(frontmatterPattern, '').matchAll(sectionPattern),
   ];
   return {
     week: weekId,
-    dateRange: getWeekIsoDateRange(weekId),
+    dateRange,
     syncedAt: syncedAtPattern.exec(metadata)?.groups?.value as
       | ISODateTime
       | undefined,
@@ -52,13 +53,19 @@ export const parseWeeklyNoteMarkdown = (
       if (!groups) {
         return [];
       }
-      const dayName = dayPattern.exec(groups.heading)?.groups?.day;
+      const dayGroups = dayPattern.exec(groups.heading)?.groups;
+      const dayName = dayGroups?.day;
       if (!dayName) {
         return [];
       }
       return [
         {
-          date: getDayDate(dayName, weekId),
+          date: getDayDateFromHeading(
+            dayName,
+            dayGroups.date,
+            dateRange,
+            weekId,
+          ),
           dayName,
           entries: [...groups.body.matchAll(subjectPattern)].flatMap(
             (subject) =>
