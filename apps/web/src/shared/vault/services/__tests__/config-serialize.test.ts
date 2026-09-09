@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test';
 import type { ISODate, WeekId, WeeklyNote } from '@/shared/types/schemas';
-import { serializeWeeklyNoteToMarkdown } from '../config';
+import { serializeWeeklyNoteToMarkdown } from '@/shared/vault/services/weekly-note-serialize';
 
 describe('serializeWeeklyNoteToMarkdown', () => {
   it('should include YAML frontmatter', () => {

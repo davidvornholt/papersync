@@ -2,7 +2,8 @@
 
 import { EditorialHeader } from '@papersync/ui/editorial-header';
 import { motion } from 'motion/react';
-import { PageTransition, Spinner } from '@/shared/components/motion';
+import { PageTransition } from '@/shared/components/motion-layout';
+import { Spinner } from '@/shared/components/motion-loading';
 import { AddSubjectModal } from '../components/add-subject-modal';
 import { GitHubOAuthModal } from '../components/github-oauth-modal';
 import { RepositorySelectorModal } from '../components/repository-selector-modal';
@@ -13,7 +14,7 @@ import { SettingsSubjectsCard } from '../components/settings-subjects-card';
 import { SettingsVaultCard } from '../components/settings-vault-card';
 import { useSettingsScreenController } from './hooks/use-settings-screen-controller';
 
-const easeOut = [0.2, 0.6, 0.2, 1] as const;
+const easeOut = 'easeOut' as const;
 
 const SECTIONS = [
   {
@@ -39,7 +40,7 @@ export const SettingsScreen = (): React.ReactElement => {
   if (controller.isLoading) {
     return (
       <PageTransition>
-        <div className="shell page-shell flex items-center justify-center min-h-[60vh]">
+        <div className="shell page-shell flex min-h-[60vh] items-center justify-center">
           <Spinner size="lg" />
         </div>
       </PageTransition>
@@ -69,7 +70,7 @@ export const SettingsScreen = (): React.ReactElement => {
                     <p className="serif text-[18px] text-ink leading-tight">
                       {section.title}
                     </p>
-                    <p className="serif-italic text-[13px] text-graphite mt-0.5">
+                    <p className="serif-italic mt-0.5 text-[13px] text-graphite">
                       {section.italic}
                     </p>
                   </div>
@@ -79,15 +80,15 @@ export const SettingsScreen = (): React.ReactElement => {
           }
         />
 
-        <div className="mt-8 sm:mt-10 md:mt-14 max-w-3xl mx-auto space-y-12 sm:space-y-16">
+        <div className="mx-auto mt-8 max-w-3xl space-y-12 sm:mt-10 sm:space-y-16 md:mt-14">
           <motion.section
-            initial={{ opacity: 0, y: 16 }}
+            initial={false}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: '-60px' }}
             transition={{ duration: 0.7, ease: easeOut }}
           >
             <p className="section-number">01 — Vault</p>
-            <h2 className="mt-3 mb-5 sm:mb-6 text-[24px] sm:text-[28px]">
+            <h2 className="mt-3 mb-5 text-[24px] sm:mb-6 sm:text-[28px]">
               Where the notes <span className="serif-italic">come to rest</span>
               .
             </h2>
@@ -106,13 +107,13 @@ export const SettingsScreen = (): React.ReactElement => {
           </motion.section>
 
           <motion.section
-            initial={{ opacity: 0, y: 16 }}
+            initial={false}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: '-60px' }}
             transition={{ duration: 0.7, ease: easeOut }}
           >
             <p className="section-number">02 — Vision</p>
-            <h2 className="mt-3 mb-5 sm:mb-6 text-[24px] sm:text-[28px]">
+            <h2 className="mt-3 mb-5 text-[24px] sm:mb-6 sm:text-[28px]">
               The model that{' '}
               <span className="serif-italic ink">reads your hand</span>.
             </h2>
@@ -126,13 +127,13 @@ export const SettingsScreen = (): React.ReactElement => {
           </motion.section>
 
           <motion.section
-            initial={{ opacity: 0, y: 16 }}
+            initial={false}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: '-60px' }}
             transition={{ duration: 0.7, ease: easeOut }}
           >
             <p className="section-number">03 — Timetable</p>
-            <h2 className="mt-3 mb-5 sm:mb-6 text-[24px] sm:text-[28px]">
+            <h2 className="mt-3 mb-5 text-[24px] sm:mb-6 sm:text-[28px]">
               Subjects, slots, and{' '}
               <span className="serif-italic">the shape of a week</span>.
             </h2>
@@ -150,17 +151,17 @@ export const SettingsScreen = (): React.ReactElement => {
           </motion.section>
 
           <motion.div
-            initial={{ opacity: 0, y: 16 }}
+            initial={false}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: '-60px' }}
             transition={{ duration: 0.7, ease: easeOut }}
-            className="pt-8 border-t border-hairline"
+            className="border-hairline border-t pt-8"
           >
             <SettingsSaveAction
               isSaving={controller.isSaving}
               isSyncing={controller.isSyncing}
               isVaultConfigured={controller.isVaultConfigured}
-              onSave={() => void controller.handleSave()}
+              onSave={() => controller.handleSave()}
             />
           </motion.div>
         </div>

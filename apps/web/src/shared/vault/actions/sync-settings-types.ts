@@ -1,32 +1,11 @@
-import { Data } from 'effect';
 import type { SubjectsConfig } from '@/shared/types/schemas';
-import type { TimetableConfig } from '../services/config';
-
+import type { TimetableConfig } from '@/shared/vault/services/config-json';
 /**
  * Types and Error Classes for Settings Sync
  *
  * These are separated from the server actions file because
  * "use server" files can only export async functions.
  */
-
-// ============================================================================
-// Error Types
-// ============================================================================
-
-export class SyncSettingsValidationError extends Data.TaggedError(
-  'SyncSettingsValidationError',
-)<{
-  readonly message: string;
-}> {}
-
-export class GitHubSyncError extends Data.TaggedError('GitHubSyncError')<{
-  readonly message: string;
-  readonly cause?: unknown;
-}> {}
-
-// ============================================================================
-// Types
-// ============================================================================
 
 export type SettingsToSync = {
   readonly subjects: SubjectsConfig;
@@ -35,12 +14,8 @@ export type SettingsToSync = {
 
 export type VaultMethod = 'local' | 'github';
 
-// ============================================================================
-// Result Types (for server action responses)
-// ============================================================================
-
 export type SyncSettingsResult =
-  | { readonly success: true; readonly paths: readonly string[] }
+  | { readonly success: true; readonly paths: ReadonlyArray<string> }
   | { readonly success: false; readonly error: string };
 
 export type LoadSettingsResult =

@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'motion/react';
-import type { Subject } from '@/shared/hooks/use-settings';
+import type { Subject } from '@/shared/hooks/use-settings-schema';
 
 type SubjectListItemProps = {
   readonly subject: Subject;
@@ -15,30 +15,30 @@ export const SubjectListItem = ({
   onDelete,
 }: SubjectListItemProps): React.ReactElement => (
   <motion.li
-    layout
-    initial={{ opacity: 0, x: -10 }}
+    layout={true}
+    initial={false}
     animate={{ opacity: 1, x: 0 }}
     exit={{ opacity: 0, x: 10, height: 0 }}
-    className="flex items-center justify-between gap-3 px-1 py-3 border-b border-hairline last:border-b-0"
+    className="flex items-center justify-between gap-3 border-hairline border-b px-1 py-3 last:border-b-0"
   >
-    <span className="serif text-[16px] tracking-[-0.018em] text-ink min-w-0 truncate">
+    <span className="serif min-w-0 truncate text-[16px] text-ink tracking-[-0.018em]">
       {subject.name}
     </span>
-    <div className="flex items-center gap-1 shrink-0">
+    <div className="flex shrink-0 items-center gap-1">
       <button
         type="button"
         onClick={() => onEdit(subject.id)}
-        className="px-2 py-1 mono text-[10px] uppercase tracking-[0.18em] text-graphite hover:text-ink transition-colors cursor-pointer touch-manipulation"
+        className="mono cursor-pointer touch-manipulation px-2 py-1 text-[10px] text-graphite uppercase tracking-[0.18em] transition-colors hover:text-ink"
       >
         Edit
       </button>
-      <span aria-hidden className="text-graphite/40">
+      <span aria-hidden={true} className="text-graphite/40">
         ·
       </span>
       <button
         type="button"
         onClick={() => onDelete(subject.id)}
-        className="px-2 py-1 mono text-[10px] uppercase tracking-[0.18em] text-graphite hover:text-accent transition-colors cursor-pointer touch-manipulation"
+        className="mono cursor-pointer touch-manipulation px-2 py-1 text-[10px] text-graphite uppercase tracking-[0.18em] transition-colors hover:text-accent"
       >
         Delete
       </button>

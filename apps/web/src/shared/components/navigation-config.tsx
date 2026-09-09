@@ -4,8 +4,8 @@ export type NavItem = {
   readonly exact?: boolean;
 };
 
-export const NAV_ITEMS: readonly NavItem[] = [
-  { href: '/', label: 'Manifesto', exact: true },
+export const NAV_ITEMS: ReadonlyArray<NavItem> = [
+  { href: '/', label: 'Home', exact: true },
   { href: '/scan', label: 'Scan' },
   { href: '/planner', label: 'Planner' },
   { href: '/settings', label: 'Settings' },

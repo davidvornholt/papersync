@@ -1,5 +1,7 @@
 import { Effect } from 'effect';
 import type { AppConfig, SubjectsConfig } from '@/shared/types/schemas';
+import type { VaultError } from '@/shared/vault/errors/filesystem-errors';
+import { VaultService } from '@/shared/vault/services/filesystem-contract';
 import { writeConfig, writeSubjects } from './config-json';
 import {
   CONFIG_DIR,
@@ -8,8 +10,6 @@ import {
   PAPERSYNC_ROOT,
   WEEKLY_DIR,
 } from './config-paths';
-import { type VaultError, VaultService } from './filesystem';
-
 export const initializeVault = (): Effect.Effect<
   void,
   VaultError,

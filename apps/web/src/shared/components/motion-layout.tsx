@@ -3,6 +3,7 @@
 import { AnimatePresence, motion } from 'motion/react';
 import type { ReactNode } from 'react';
 
+const staggerSeconds = 0.08;
 type PageTransitionProps = {
   readonly children: ReactNode;
 };
@@ -11,10 +12,10 @@ export const PageTransition = ({
   children,
 }: PageTransitionProps): React.ReactElement => (
   <motion.div
-    initial={{ opacity: 0, y: 12 }}
+    initial={false}
     animate={{ opacity: 1, y: 0 }}
     exit={{ opacity: 0, y: -12 }}
-    transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+    transition={{ duration: 0.3, ease: 'easeOut' }}
   >
     {children}
   </motion.div>
@@ -29,11 +30,11 @@ type StaggerContainerProps = {
 export const StaggerContainer = ({
   children,
   className = '',
-  staggerDelay = 0.08,
+  staggerDelay = staggerSeconds,
 }: StaggerContainerProps): React.ReactElement => (
   <motion.div
     className={className}
-    initial="hidden"
+    initial={false}
     animate="visible"
     variants={{
       hidden: { opacity: 0 },
@@ -67,7 +68,7 @@ export const StaggerItem = ({
         y: 0,
         transition: {
           duration: 0.4,
-          ease: [0.4, 0, 0.2, 1],
+          ease: 'easeOut',
         },
       },
     }}
@@ -91,7 +92,7 @@ export const HoverScale = ({
     className={className}
     whileHover={{
       scale,
-      transition: { duration: 0.2, ease: [0.4, 0, 0.2, 1] },
+      transition: { duration: 0.2, ease: 'easeOut' },
     }}
     whileTap={{ scale: 0.98 }}
   >
@@ -114,9 +115,9 @@ export const FadeIn = ({
 }: FadeInProps): React.ReactElement => (
   <motion.div
     className={className}
-    initial={{ opacity: 0 }}
+    initial={false}
     animate={{ opacity: 1 }}
-    transition={{ duration, delay, ease: [0.4, 0, 0.2, 1] }}
+    transition={{ duration, delay, ease: 'easeOut' }}
   >
     {children}
   </motion.div>
@@ -144,14 +145,14 @@ export const SlideIn = ({
   direction = 'up',
   delay = 0,
 }: SlideInProps): React.ReactElement => {
-  const offset = slideOffsets[direction];
+  const _offset = slideOffsets[direction];
 
   return (
     <motion.div
       className={className}
-      initial={{ opacity: 0, x: offset.x, y: offset.y }}
+      initial={false}
       animate={{ opacity: 1, x: 0, y: 0 }}
-      transition={{ duration: 0.5, delay, ease: [0.4, 0, 0.2, 1] }}
+      transition={{ duration: 0.5, delay, ease: 'easeOut' }}
     >
       {children}
     </motion.div>
@@ -168,15 +169,15 @@ export const PresenceContainer = ({
   show,
 }: PresenceContainerProps): React.ReactElement => (
   <AnimatePresence mode="wait">
-    {show && (
+    {show ? (
       <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
+        initial={false}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.95 }}
         transition={{ duration: 0.2 }}
       >
         {children}
       </motion.div>
-    )}
+    ) : null}
   </AnimatePresence>
 );

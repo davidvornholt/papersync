@@ -1,63 +1,63 @@
 import { Effect, Schema } from 'effect';
-import type { OCRResponse, WeekId } from '@/shared/types/schemas';
+import { fetchJson } from '@/shared/http/json';
+import {
+  VisionError,
+  VisionValidationError,
+} from '@/shared/ocr/errors/vision-contract';
 import type { VisionProvider } from './vision-contract';
-import { VisionError, VisionValidationError } from './vision-contract';
 import {
   createExtractionSystemPrompt,
   normalizeDayName,
 } from './vision-prompt';
-import { OCRResponseSchema } from './vision-schema';
+import { OCRResponseJsonSchema, OCRResponseSchema } from './vision-schema';
 
+const imageDataPattern = /^data:image\/\w+;base64,/u;
+const codeFencePattern = /```(?:json)?\n?/gu;
+const responseSchema = Schema.Struct({ response: Schema.String });
 export const createOllamaVisionProvider = (
   endpoint: string,
 ): VisionProvider => ({
-  extractHandwriting: (
-    imageBase64: string,
-    weekId: WeekId,
-    existingContent: string,
-  ) =>
+  extractHandwriting: (imageBase64, weekId, existingContent) =>
     Effect.gen(function* () {
-      const response = yield* Effect.tryPromise({
-        try: () =>
-          fetch(`${endpoint}/api/generate`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              model: 'qwen3-vl-4b',
-              prompt: createExtractionSystemPrompt(weekId, existingContent),
-              images: [imageBase64.replace(/^data:image\/\w+;base64,/, '')],
-              stream: false,
+      const body = yield* fetchJson(`${endpoint}/api/generate`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          model: 'qwen3-vl-4b',
+          prompt: createExtractionSystemPrompt(weekId, existingContent),
+          images: [imageBase64.replace(imageDataPattern, '')],
+          format: OCRResponseJsonSchema,
+          stream: false,
+        }),
+      }).pipe(
+        Effect.mapError(
+          (cause) =>
+            new VisionError({
+              message: 'Failed to call Ollama Vision API',
+              cause,
             }),
-          }).then((res) => {
-            if (!res.ok) {
-              return Promise.reject(
-                new Error(`Ollama API error: ${res.status}`),
-              );
-            }
-            return res.json().then((data) => data.response as string);
-          }),
-        catch: (error) =>
-          new VisionError({
-            message: 'Failed to call Ollama Vision API',
-            cause: error,
-          }),
-      });
-
+        ),
+      );
+      const response = yield* Schema.decodeUnknown(responseSchema)(body).pipe(
+        Effect.mapError(
+          (cause) =>
+            new VisionValidationError({
+              message: 'Ollama returned an invalid response envelope.',
+              raw: String(cause),
+            }),
+        ),
+      );
       const parsed = yield* Effect.try({
-        try: () => {
-          const cleaned = response
-            .replace(/```json\n?/g, '')
-            .replace(/```\n?/g, '')
-            .trim();
-          return JSON.parse(cleaned);
-        },
+        try: () =>
+          JSON.parse(
+            response.response.replace(codeFencePattern, '').trim(),
+          ) as unknown,
         catch: () =>
           new VisionValidationError({
             message: 'Failed to parse Ollama response as JSON',
-            raw: response,
+            raw: response.response,
           }),
       });
-
       const validated = yield* Schema.decodeUnknown(OCRResponseSchema)(
         parsed,
       ).pipe(
@@ -65,26 +65,24 @@ export const createOllamaVisionProvider = (
           () =>
             new VisionValidationError({
               message: 'Ollama response failed schema validation',
-              raw: response,
+              raw: response.response,
             }),
         ),
       );
-
       return {
         data: {
           entries: validated.entries.map((entry) => ({
             day: normalizeDayName(entry.day),
             subject: entry.subject,
             content: entry.content,
-            isTask: entry.is_task,
-            isCompleted: false,
+            isTask: entry.isTask,
+            isCompleted: entry.isCompleted,
             action: 'add' as const,
-            dueDate:
-              entry.due_date as OCRResponse['entries'][number]['dueDate'],
+            dueDate: entry.dueDate,
           })),
           confidence: validated.confidence,
           notes: validated.notes,
-        } as OCRResponse,
+        },
         modelUsed: 'qwen3-vl-4b',
       };
     }),

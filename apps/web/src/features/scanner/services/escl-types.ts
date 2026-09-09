@@ -1,6 +1,9 @@
-import { Context, Data, type Effect } from 'effect';
-import type { DiscoveredScanner } from './scanner-discovery';
-
+import { Context, type Effect, Schema } from 'effect';
+import type {
+  ESCLCapabilitiesError,
+  ESCLError,
+} from '@/features/scanner/errors/escl-types';
+import type { DiscoveredScanner } from '@/features/scanner/services/scanner-discovery-types';
 export type ColorMode = 'color' | 'grayscale' | 'blackwhite';
 
 export type InputSource = 'Platen' | 'Adf';
@@ -12,17 +15,24 @@ export type ScanSettings = {
   readonly inputSource: InputSource;
 };
 
+export const ScanSettingsSchema = Schema.Struct({
+  colorMode: Schema.Literal('color', 'grayscale', 'blackwhite'),
+  resolution: Schema.Number,
+  format: Schema.Literal('pdf', 'jpeg', 'png'),
+  inputSource: Schema.Literal('Platen', 'Adf'),
+});
+
 export type SourceCapabilities = {
-  readonly resolutions: readonly number[];
-  readonly colorModes: readonly ColorMode[];
+  readonly resolutions: ReadonlyArray<number>;
+  readonly colorModes: ReadonlyArray<ColorMode>;
 };
 
 export type ScannerCapabilities = {
-  readonly inputSources: readonly InputSource[];
+  readonly inputSources: ReadonlyArray<InputSource>;
   readonly sourceCapabilities: Readonly<
     Record<InputSource, SourceCapabilities>
   >;
-  readonly formats: readonly string[];
+  readonly formats: ReadonlyArray<string>;
   readonly maxWidth: number;
   readonly maxHeight: number;
   readonly minWidth: number;
@@ -33,19 +43,6 @@ export type ScanJob = {
   readonly jobUrl: string;
   readonly status: 'pending' | 'processing' | 'completed' | 'failed';
 };
-
-export class ESCLError extends Data.TaggedError('ESCLError')<{
-  readonly message: string;
-  readonly statusCode?: number;
-  readonly cause?: unknown;
-}> {}
-
-export class ESCLCapabilitiesError extends Data.TaggedError(
-  'ESCLCapabilitiesError',
-)<{
-  readonly message: string;
-  readonly cause?: unknown;
-}> {}
 
 export type ESCLClient = {
   readonly getCapabilities: (

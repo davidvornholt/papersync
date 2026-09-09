@@ -1,0 +1,24 @@
+{
+  "name": "@papersync/super-productivity-plugin",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check-types": "tsc --noEmit",
+    "lint": "biome check --error-on-warnings .",
+    "lint:fix": "biome check --write --error-on-warnings .",
+    "test": "bun test",
+    "build": "bun run src/build.ts"
+  },
+  "dependencies": {
+    "@papersync/homework": "workspace:*",
+    "effect": "^3.22.2"
+  },
+  "devDependencies": {
+    "@davidvornholt/typescript-config": "workspace:*",
+    "@types/bun": "^1.4.2",
+    "@types/node": "^26.5.0",
+    "fflate": "^0.8.3",
+    "typescript": "^7.0.2"
+  }
+}

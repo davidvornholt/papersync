@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test';
 import { createElement, isValidElement } from 'react';
-import { Button, buttonClassName } from './button';
+import { Button } from './button';
 
 type AnyProps = {
   readonly className?: string;
@@ -14,22 +14,6 @@ const asElement = (node: unknown) => {
   }
   return node;
 };
-
-describe('buttonClassName', () => {
-  it('defaults to primary + md', () => {
-    expect(buttonClassName()).toBe('btn-ink btn-md');
-  });
-
-  it('composes variant, size, and an extra class', () => {
-    expect(buttonClassName('secondary', 'lg', 'w-full')).toBe(
-      'btn-quiet btn-lg w-full',
-    );
-  });
-
-  it('omits an empty extra class without leaving a trailing space', () => {
-    expect(buttonClassName('ghost', 'sm')).toBe('btn-ghost btn-sm');
-  });
-});
 
 describe('Button', () => {
   it('renders a <button> with the editorial primary styling by default', () => {

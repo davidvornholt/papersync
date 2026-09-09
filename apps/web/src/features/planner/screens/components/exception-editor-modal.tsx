@@ -1,7 +1,7 @@
 'use client';
 
 import { Button } from '@papersync/ui/button';
-import { useEffect, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 import { Modal } from '@/shared/components/modal';
 import type { DayOfWeek, ISODate, Subject } from '@/shared/types/schemas';
 import type { ScheduleException } from '../planner-screen-types';
@@ -12,7 +12,7 @@ type ExceptionEditorModalProps = {
   readonly onClose: () => void;
   readonly date: Date;
   readonly dayOfWeek: DayOfWeek;
-  readonly subjects: readonly Subject[];
+  readonly subjects: ReadonlyArray<Subject>;
   readonly defaultSlots: Array<{ id: string; subjectId: string }>;
   readonly exception: ScheduleException | null;
   readonly onSave: (exception: Omit<ScheduleException, 'id'>) => void;
@@ -30,6 +30,7 @@ export const ExceptionEditorModal = ({
   onSave,
   onRemove,
 }: ExceptionEditorModalProps): React.ReactElement => {
+  const instanceId = useId();
   const [slots, setSlots] = useState(exception?.slots ?? defaultSlots);
   const [reason, setReason] = useState(exception?.reason ?? '');
 
@@ -55,18 +56,18 @@ export const ExceptionEditorModal = ({
       size="md"
       footer={
         <>
-          {exception && (
+          {exception ? (
             <Button
               variant="ghost"
               onClick={() => {
                 onRemove();
                 onClose();
               }}
-              className="sm:mr-auto text-accent"
+              className="text-accent sm:mr-auto"
             >
               Remove exception
             </Button>
-          )}
+          ) : null}
           <Button variant="secondary" onClick={onClose}>
             Cancel
           </Button>
@@ -89,11 +90,14 @@ export const ExceptionEditorModal = ({
     >
       <div className="space-y-5">
         <div>
-          <label htmlFor="exception-reason" className="field-label">
+          <label
+            htmlFor={`${instanceId}-exception-reason`}
+            className="field-label"
+          >
             Reason (optional)
           </label>
           <input
-            id="exception-reason"
+            id={`${instanceId}-exception-reason`}
             type="text"
             value={reason}
             onChange={(e) => setReason(e.target.value)}

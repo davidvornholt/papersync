@@ -1,30 +1,19 @@
+import { DueDate, Week } from '@papersync/homework/contract';
 import { Schema } from 'effect';
 
-// ============================================================================
-// Week & Date Schemas
-// ============================================================================
-
-export const WeekId = Schema.String.pipe(
-  Schema.pattern(/^\d{4}-W\d{2}$/),
-  Schema.brand('WeekId'),
-);
+const minimumSubjectsPerDay = 3;
+const maximumSubjectsPerDay = 6;
+export const WeekId = Week.pipe(Schema.brand('WeekId'));
 export type WeekId = typeof WeekId.Type;
 
-export const ISODate = Schema.String.pipe(
-  Schema.pattern(/^\d{4}-\d{2}-\d{2}$/),
-  Schema.brand('ISODate'),
-);
+export const ISODate = DueDate.pipe(Schema.brand('ISODate'));
 export type ISODate = typeof ISODate.Type;
 
 export const ISODateTime = Schema.String.pipe(
-  Schema.pattern(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/),
+  Schema.pattern(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/u),
   Schema.brand('ISODateTime'),
 );
 export type ISODateTime = typeof ISODateTime.Type;
-
-// ============================================================================
-// Subject Schema
-// ============================================================================
 
 export const Subject = Schema.Struct({
   id: Schema.String,
@@ -35,10 +24,6 @@ export type Subject = typeof Subject.Type;
 
 export const SubjectsConfig = Schema.Array(Subject);
 export type SubjectsConfig = typeof SubjectsConfig.Type;
-
-// ============================================================================
-// Timetable Configuration Schema
-// ============================================================================
 
 export const DayOfWeek = Schema.Literal(
   'monday',
@@ -83,10 +68,6 @@ export const Timetable = Schema.Struct({
 });
 export type Timetable = typeof Timetable.Type;
 
-// ============================================================================
-// Task Entry Schema
-// ============================================================================
-
 export const TaskAction = Schema.Literal('add', 'modify', 'complete');
 export type TaskAction = typeof TaskAction.Type;
 
@@ -110,10 +91,6 @@ export const OCRResponse = Schema.Struct({
   notes: Schema.optional(Schema.String),
 });
 export type OCRResponse = typeof OCRResponse.Type;
-
-// ============================================================================
-// Weekly Note Schema
-// ============================================================================
 
 export const DayEntry = Schema.Struct({
   subject: Schema.String,
@@ -157,20 +134,12 @@ export const WeeklyNote = Schema.Struct({
 });
 export type WeeklyNote = typeof WeeklyNote.Type;
 
-// ============================================================================
-// QR Code Payload Schema
-// ============================================================================
-
 export const QRPayload = Schema.Struct({
   week: WeekId,
   checksum: Schema.String,
   version: Schema.Literal(1),
 });
 export type QRPayload = typeof QRPayload.Type;
-
-// ============================================================================
-// App Configuration Schema
-// ============================================================================
 
 export const VaultAccessMethod = Schema.Literal('local', 'github');
 export type VaultAccessMethod = typeof VaultAccessMethod.Type;
@@ -186,8 +155,8 @@ export const AppConfig = Schema.Struct({
   githubRepo: Schema.optional(Schema.String),
   ollamaEndpoint: Schema.optional(Schema.String),
   subjectsPerDay: Schema.Number.pipe(
-    Schema.greaterThanOrEqualTo(3),
-    Schema.lessThanOrEqualTo(6),
+    Schema.greaterThanOrEqualTo(minimumSubjectsPerDay),
+    Schema.lessThanOrEqualTo(maximumSubjectsPerDay),
   ),
 });
 export type AppConfig = typeof AppConfig.Type;

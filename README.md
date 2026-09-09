@@ -1,40 +1,34 @@
 # PaperSync
 
-PaperSync is a free and open source self-hosted tool for turning scanned schoolwork into an organized local-first homework workflow.
+> Built on [davidvornholt/standards](https://github.com/davidvornholt/standards).
 
-PaperSync is bring-your-own-key only: you provide any third-party API keys or local model endpoints you choose to use. There is no PaperSync monthly subscription, hosted SaaS plan, or vendor-hosted account requirement. Everybody can self-host PaperSync on their own hardware.
+Write homework on paper at school. At home, scan the sheet, check the recognized text and deadlines, and approve the tasks for Super Productivity. A plugin imports them while Super Productivity is open; SuperSync distributes the imported tasks to your other devices.
 
-## Workspace layout
+PaperSync is open source and can be self-hosted. The web app requires PostgreSQL and a GitHub OAuth application restricted to one account. OCR uses your Google API key or an Ollama endpoint reachable from the server. Local Obsidian vaults and network scanners also resolve from the server running PaperSync.
 
-- `apps/web`: Next.js application
-- `packages/ui`: Shared editorial design system and UI primitives
-- `packages/typescript-config`: Shared TypeScript configuration
+The included Super Productivity plugin targets `papersync.vornholt.online`. Hosting that integration at another address currently requires changing its request URL and manifest host permission before building the plugin. Configurable plugin destinations are deferred.
 
-## Getting started
+## Development
 
-Install dependencies:
+Use Bun 1.4.2 and follow [the web app setup](apps/web/README.md) to start the database, generate the development environment, configure GitHub OAuth, and run migrations before starting the app.
 
 ```bash
 bun install
-```
-
-Run the web app in development:
-
-```bash
 bun run dev:web
 ```
 
-Run checks (Biome, type-checking, and tests) across the workspace:
+Run `bun run check:fix` for formatting, lint, type checks, tests, production builds, and browser accessibility checks. The database must be running for integration tests.
 
-```bash
-bun run check
-```
+## Workspace layout
 
-Apply safe formatting/import fixes, then type-check and test:
+- `apps/web`: Next.js application, scan review, authentication, and import queue API
+- `apps/super-productivity-plugin`: task importer and installable ZIP
+- `packages/db`: database schema, runtime, and generated migrations
+- `packages/homework`: validated import contract and task identity
+- `packages/ui`: shared components and theme
+- `packages/typescript-config` and `packages/a11y-testing`: adopted standards packages
 
-```bash
-bun run check:fix
-```
+Production configuration, secrets, DNS, and digest-pinned deployment belong to [personal-infra](https://github.com/davidvornholt/personal-infra). PR preview sites are omitted by decision.
 
 ## License
 

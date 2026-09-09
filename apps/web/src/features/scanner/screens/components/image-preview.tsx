@@ -3,13 +3,14 @@
 import { Button } from '@papersync/ui/button';
 import { motion } from 'motion/react';
 import Image from 'next/image';
-import { Spinner } from '@/shared/components/motion';
+import { Spinner } from '@/shared/components/motion-loading';
 
 type ImagePreviewProps = {
   readonly preview: string;
   readonly onClear: () => void;
   readonly onProcess: () => void;
   readonly isProcessing: boolean;
+  readonly canProcess: boolean;
 };
 
 export const ImagePreview = ({
@@ -17,9 +18,10 @@ export const ImagePreview = ({
   onClear,
   onProcess,
   isProcessing,
+  canProcess,
 }: ImagePreviewProps): React.ReactElement => (
   <motion.div
-    initial={{ opacity: 0, y: 20 }}
+    initial={false}
     animate={{ opacity: 1, y: 0 }}
     className="space-y-4"
   >
@@ -27,19 +29,19 @@ export const ImagePreview = ({
       <Image
         src={preview}
         alt="Scanned planner preview"
-        className="w-full h-auto"
+        className="h-auto w-full"
         width={800}
         height={600}
-        unoptimized
+        unoptimized={true}
       />
     </div>
-    <div className="flex flex-col-reverse sm:flex-row gap-2 sm:gap-3">
+    <div className="flex flex-col-reverse gap-2 sm:flex-row sm:gap-3">
       <Button variant="secondary" onClick={onClear} className="sm:flex-1">
         Change image
       </Button>
       <Button
         onClick={onProcess}
-        disabled={isProcessing}
+        disabled={isProcessing || !canProcess}
         className="sm:flex-[2]"
       >
         {isProcessing ? (

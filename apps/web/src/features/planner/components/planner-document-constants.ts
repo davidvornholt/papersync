@@ -1,5 +1,4 @@
 import type { TimetableDay } from './planner-document-types';
-
 export const colors = {
   black: '#000000',
   darkGray: '#444444',

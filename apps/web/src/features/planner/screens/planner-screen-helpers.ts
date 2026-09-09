@@ -1,4 +1,4 @@
-import type { TimetableDay } from '@/shared/hooks/use-settings';
+import type { TimetableDay } from '@/shared/hooks/use-settings-schema';
 import type { DayOfWeek, ISODate, Subject } from '@/shared/types/schemas';
 import type { PlannerState } from '../hooks/use-planner';
 import type {
@@ -6,7 +6,6 @@ import type {
   ScheduleException,
 } from './planner-screen-types';
 import { WEEKDAYS } from './planner-screen-types';
-
 export const formatDateRange = (start: Date, end: Date): string => {
   const options: Intl.DateTimeFormatOptions = {
     month: 'long',
@@ -37,10 +36,10 @@ export const getPreviewState = (
 };
 
 export const getSubjectsForWeek = (
-  timetable: readonly TimetableDay[],
-  subjects: readonly Subject[],
-  exceptions: readonly ScheduleException[],
-): readonly Subject[] => {
+  timetable: ReadonlyArray<TimetableDay>,
+  subjects: ReadonlyArray<Subject>,
+  exceptions: ReadonlyArray<ScheduleException>,
+): ReadonlyArray<Subject> => {
   const subjectIds = new Set<string>();
 
   for (const day of timetable) {
@@ -63,11 +62,11 @@ export const getSubjectsForWeek = (
 };
 
 export const applyExceptionsToTimetable = (
-  timetable: readonly TimetableDay[],
+  timetable: ReadonlyArray<TimetableDay>,
   weekStartDate: Date,
-  exceptions: readonly ScheduleException[],
-): readonly TimetableDay[] => {
-  return timetable
+  exceptions: ReadonlyArray<ScheduleException>,
+): ReadonlyArray<TimetableDay> =>
+  timetable
     .filter((day) => WEEKDAYS.includes(day.day))
     .map((daySchedule) => {
       const dayIndex = WEEKDAYS.indexOf(daySchedule.day);
@@ -85,10 +84,9 @@ export const applyExceptionsToTimetable = (
         slots: exception.slots,
       };
     });
-};
 
 export const getDefaultSlotsForDay = (
-  timetable: readonly TimetableDay[],
+  timetable: ReadonlyArray<TimetableDay>,
   dayOfWeek: DayOfWeek,
 ): Array<{ id: string; subjectId: string }> => {
   const daySchedule = timetable.find((day) => day.day === dayOfWeek);
@@ -96,7 +94,7 @@ export const getDefaultSlotsForDay = (
 };
 
 export const getExceptionForDate = (
-  exceptions: readonly ScheduleException[],
+  exceptions: ReadonlyArray<ScheduleException>,
   date: Date,
 ): ScheduleException | null => {
   const isoDate = date.toISOString().split('T')[0] as ISODate;
@@ -104,9 +102,9 @@ export const getExceptionForDate = (
 };
 
 export const upsertException = (
-  exceptions: readonly ScheduleException[],
+  exceptions: ReadonlyArray<ScheduleException>,
   exceptionData: Omit<ScheduleException, 'id'>,
-): ScheduleException[] => {
+): Array<ScheduleException> => {
   const existing = exceptions.find(
     (entry) => entry.date === exceptionData.date,
   );

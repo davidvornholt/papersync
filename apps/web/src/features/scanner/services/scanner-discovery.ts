@@ -1,3 +1,4 @@
+// biome-ignore lint/correctness/noUnresolvedImports: Biome cannot resolve this conditional CommonJS export; TypeScript and the production build verify it.
 import Bonjour, { type Service } from 'bonjour-service';
 import { Effect, Layer } from 'effect';
 import { serviceToScanner } from './scanner-discovery-mappers';
@@ -7,15 +8,9 @@ import {
   ScannerDiscoveryService as ScannerDiscoveryServiceTag,
 } from './scanner-discovery-types';
 
-export {
-  type DiscoveredScanner,
-  ScannerDiscoveryError,
-  ScannerDiscoveryService,
-  type ScannerProtocol,
-} from './scanner-discovery-types';
-
+const discoveryRefreshMilliseconds = 500;
 const createMdnsDiscoveryService = (): ScannerDiscoveryServiceContract => ({
-  discover: (timeoutMs = 10000) =>
+  discover: (timeoutMs = 10_000) =>
     Effect.tryPromise({
       try: () => {
         const scanners = new Map<string, ReturnType<typeof serviceToScanner>>();
@@ -29,17 +24,22 @@ const createMdnsDiscoveryService = (): ScannerDiscoveryServiceContract => ({
           }
         };
 
-        return new Promise<readonly ReturnType<typeof serviceToScanner>[]>(
+        return new Promise<ReadonlyArray<ReturnType<typeof serviceToScanner>>>(
           (resolve) => {
             let resolved = false;
             let earlyFinishTimer: NodeJS.Timeout | null = null;
-            const EARLY_FINISH_DELAY = 1500;
+            const EarlyFinishDelay = 1500;
 
             const finishDiscovery = () => {
-              if (resolved) return;
+              if (resolved) {
+                return;
+              }
               resolved = true;
-              if (earlyFinishTimer) clearTimeout(earlyFinishTimer);
+              if (earlyFinishTimer) {
+                clearTimeout(earlyFinishTimer);
+              }
               clearInterval(refreshInterval);
+              clearTimeout(discoveryTimer);
               httpBrowser.stop();
               httpsBrowser.stop();
               bonjour.destroy();
@@ -50,7 +50,7 @@ const createMdnsDiscoveryService = (): ScannerDiscoveryServiceContract => ({
               if (!earlyFinishTimer && scanners.size > 0) {
                 earlyFinishTimer = setTimeout(
                   finishDiscovery,
-                  EARLY_FINISH_DELAY,
+                  EarlyFinishDelay,
                 );
               }
             };
@@ -72,11 +72,11 @@ const createMdnsDiscoveryService = (): ScannerDiscoveryServiceContract => ({
                 httpBrowser.update();
                 httpsBrowser.update();
               } catch {
-                return;
+                finishDiscovery();
               }
-            }, 500);
+            }, discoveryRefreshMilliseconds);
 
-            setTimeout(finishDiscovery, timeoutMs);
+            const discoveryTimer = setTimeout(finishDiscovery, timeoutMs);
           },
         );
       },

@@ -1,10 +1,12 @@
 'use client';
 
 import { Button } from '@papersync/ui/button';
+import { Effect } from 'effect';
 import { ChevronRight, Loader2, RefreshCw, Search } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Modal } from '@/shared/components/modal';
+import { requestAction } from '@/shared/http/action';
 import { listGitHubRepositories } from '../actions/github-oauth';
 import type { GitHubRepository } from '../actions/github-oauth-types';
 import {
@@ -26,7 +28,7 @@ export const RepositorySelectorModal = ({
   onSelect,
   accessToken,
 }: RepositorySelectorModalProps): React.ReactElement => {
-  const [repositories, setRepositories] = useState<GitHubRepository[]>([]);
+  const [repositories, setRepositories] = useState<Array<GitHubRepository>>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -35,14 +37,23 @@ export const RepositorySelectorModal = ({
     setIsLoading(true);
     setError(null);
 
-    listGitHubRepositories(accessToken).then((result) => {
-      if (result.success) {
-        setRepositories([...result.repositories]);
-      } else {
-        setError(result.error);
-      }
-      setIsLoading(false);
-    });
+    Effect.runFork(
+      requestAction(() => listGitHubRepositories(accessToken)).pipe(
+        Effect.tap((result) =>
+          Effect.sync(() => {
+            if (result.success) {
+              setRepositories([...result.repositories]);
+            } else {
+              setError(result.error);
+            }
+          }),
+        ),
+        Effect.catchAll((failure) =>
+          Effect.sync(() => setError(failure.message)),
+        ),
+        Effect.ensuring(Effect.sync(() => setIsLoading(false))),
+      ),
+    );
   }, [accessToken]);
 
   useEffect(() => {
@@ -79,18 +90,18 @@ export const RepositorySelectorModal = ({
       size="lg"
     >
       <div className="flex flex-col gap-4">
-        <div className="flex items-end gap-2 pb-2 border-b border-hairline-strong">
+        <div className="flex items-end gap-2 border-hairline-strong border-b pb-2">
           <div className="relative flex-1">
             <Search
-              aria-hidden
-              className="absolute left-0 top-1/2 -translate-y-1/2 w-4 h-4 text-graphite"
+              aria-hidden={true}
+              className="absolute top-1/2 left-0 size-4 -translate-y-1/2 text-graphite"
             />
             <input
               type="text"
               placeholder="Search repositories…"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-transparent pl-7 pr-2 py-2 text-[14px] text-ink placeholder:text-mute border-0 focus:outline-none"
+              className="w-full border-0 bg-transparent py-2 pr-2 pl-7 text-[14px] text-ink placeholder:text-mute focus:outline-none"
               aria-label="Search repositories"
             />
           </div>
@@ -98,64 +109,65 @@ export const RepositorySelectorModal = ({
             type="button"
             onClick={fetchRepositories}
             disabled={isLoading}
-            className="p-2 text-graphite hover:text-ink transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
+            className="cursor-pointer touch-manipulation p-2 text-graphite transition-colors hover:text-ink disabled:cursor-not-allowed disabled:opacity-50"
             title="Refresh repositories"
             aria-label="Refresh repositories"
           >
             {isLoading ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
+              <Loader2 className="size-4 animate-spin" />
             ) : (
-              <RefreshCw className="w-4 h-4" />
+              <RefreshCw className="size-4" />
             )}
           </button>
         </div>
 
-        <div className="max-h-[60vh] sm:max-h-[400px] overflow-y-auto -mx-1">
-          {isLoading ? (
-            <RepositoryLoadingState />
-          ) : error ? (
+        <div className="-mx-1 max-h-[60vh] overflow-y-auto sm:max-h-[400px]">
+          {isLoading ? <RepositoryLoadingState /> : null}
+          {!isLoading && error ? (
             <RepositoryErrorState error={error} onRetry={fetchRepositories} />
-          ) : filteredRepositories.length === 0 ? (
+          ) : null}
+          {!(isLoading || error) && filteredRepositories.length === 0 ? (
             <RepositoryEmptyState hasSearchQuery={searchQuery.length > 0} />
-          ) : (
+          ) : null}
+          {!(isLoading || error) && filteredRepositories.length > 0 ? (
             <ul>
               <AnimatePresence mode="popLayout">
                 {filteredRepositories.map((repo) => (
                   <motion.li
                     key={repo.id}
-                    initial={{ opacity: 0, y: 10 }}
+                    initial={false}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0 }}
                   >
                     <button
                       type="button"
                       onClick={() => handleSelect(repo)}
-                      className="w-full text-left px-4 py-3 border-b border-hairline last:border-b-0 hover:bg-paper-deep/60 focus-visible:bg-paper-deep/60 transition-colors cursor-pointer touch-manipulation group"
+                      className="group w-full cursor-pointer touch-manipulation border-hairline border-b px-4 py-3 text-left transition-colors last:border-b-0 hover:bg-paper-deep/60 focus-visible:bg-paper-deep/60"
                     >
                       <div className="flex items-start justify-between gap-3">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="serif text-[16px] tracking-[-0.018em] text-ink group-hover:text-accent transition-colors truncate">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="serif truncate text-[16px] text-ink tracking-[-0.018em] transition-colors group-hover:text-accent">
                               {repo.name}
                             </span>
-                            {repo.private && (
-                              <span className="mono text-[10px] uppercase tracking-[0.18em] text-graphite border border-hairline-strong px-1.5 py-0.5">
+                            {repo.private ? (
+                              <span className="mono border border-hairline-strong px-1.5 py-0.5 text-[10px] text-graphite uppercase tracking-[0.18em]">
                                 Private
                               </span>
-                            )}
+                            ) : null}
                           </div>
-                          <p className="mono text-[11px] text-graphite mt-0.5 truncate">
+                          <p className="mono mt-0.5 truncate text-[11px] text-graphite">
                             {repo.fullName}
                           </p>
-                          {repo.description && (
-                            <p className="text-[13px] text-graphite mt-1 line-clamp-2">
+                          {repo.description ? (
+                            <p className="mt-1 line-clamp-2 text-[13px] text-graphite">
                               {repo.description}
                             </p>
-                          )}
+                          ) : null}
                         </div>
                         <ChevronRight
-                          aria-hidden
-                          className="w-4 h-4 text-graphite group-hover:text-accent transition-colors flex-shrink-0 mt-1"
+                          aria-hidden={true}
+                          className="mt-1 size-4 flex-shrink-0 text-graphite transition-colors group-hover:text-accent"
                         />
                       </div>
                     </button>
@@ -163,10 +175,10 @@ export const RepositorySelectorModal = ({
                 ))}
               </AnimatePresence>
             </ul>
-          )}
+          ) : null}
         </div>
 
-        <div className="flex justify-end pt-2 border-t border-hairline">
+        <div className="flex justify-end border-hairline border-t pt-2">
           <Button variant="secondary" onClick={onClose}>
             Cancel
           </Button>

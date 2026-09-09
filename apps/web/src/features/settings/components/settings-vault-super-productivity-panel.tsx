@@ -1,162 +1,157 @@
 'use client';
 
-import { Button } from '@papersync/ui/button';
-import { Spinner } from '@/shared/components/motion';
-import { InputField } from './settings-controls';
+import { Effect, Fiber } from 'effect';
+import { useEffect, useState } from 'react';
+import {
+  createConnectionKey,
+  getConnectionStatus,
+  removeConnectionKey,
+} from '@/shared/homework/actions';
+import { HomeworkError } from '@/shared/homework/error';
 
-export type SuperProductivityConnectionStatus =
-  | 'idle'
-  | 'testing'
-  | 'ok'
-  | 'failed';
-
-type SettingsVaultSuperProductivityPanelProps = {
-  readonly endpoint: string;
+type PanelProps = {
   readonly projectId: string;
   readonly tagIdsInput: string;
-  readonly status: SuperProductivityConnectionStatus;
-  readonly errorMessage: string | null;
-  readonly onChangeEndpoint: (endpoint: string) => void;
-  readonly onChangeProjectId: (projectId: string) => void;
-  readonly onChangeTagIds: (tagIds: string) => void;
-  readonly onTestConnection: () => void;
+  readonly onChangeProjectId: (value: string) => void;
+  readonly onChangeTagIds: (value: string) => void;
 };
-
-const StatusLine = ({
-  status,
-  endpoint,
-  errorMessage,
-}: {
-  readonly status: SuperProductivityConnectionStatus;
-  readonly endpoint: string;
-  readonly errorMessage: string | null;
-}): React.ReactElement => {
-  if (status === 'testing') {
-    return (
-      <span className="flex items-center gap-2 text-[13px] text-graphite">
-        <Spinner size="sm" />
-        <span>Reaching the local app…</span>
-      </span>
-    );
-  }
-
-  if (status === 'ok') {
-    return (
-      <span className="flex items-baseline gap-2 text-[13px]">
-        <span aria-hidden className="mono text-[11px] text-positive">
-          ●
-        </span>
-        <span className="text-ink">
-          <span className="serif-italic">Reachable</span>
-          <span className="text-graphite">{` at `}</span>
-          <span className="mono text-[12px] text-graphite">
-            {endpoint || 'http://127.0.0.1:3876'}
-          </span>
-        </span>
-      </span>
-    );
-  }
-
-  if (status === 'failed') {
-    return (
-      <span className="flex flex-col gap-0.5 text-[13px]">
-        <span className="flex items-baseline gap-2">
-          <span aria-hidden className="mono text-[11px] text-accent">
-            ●
-          </span>
-          <span className="serif-italic text-accent">Unreachable</span>
-        </span>
-        {errorMessage && (
-          <span className="mono text-[11px] text-graphite leading-relaxed pl-4">
-            {errorMessage}
-          </span>
-        )}
-      </span>
-    );
-  }
-
-  return (
-    <span className="text-[13px] text-graphite">
-      Test the connection before saving.
-    </span>
-  );
-};
-
 export const SettingsVaultSuperProductivityPanel = ({
-  endpoint,
   projectId,
   tagIdsInput,
-  status,
-  errorMessage,
-  onChangeEndpoint,
   onChangeProjectId,
   onChangeTagIds,
-  onTestConnection,
-}: SettingsVaultSuperProductivityPanelProps): React.ReactElement => (
-  <div className="space-y-5">
-    <p className="text-[13px] text-graphite leading-relaxed measure">
-      Super Productivity is a{' '}
-      <span className="serif-italic text-ink">local-first task app</span>. Open
-      the desktop app and enable the REST API under{' '}
-      <span className="mono text-[12px] text-ink">
-        Settings → General → Misc settings
-      </span>
-      , then point PaperSync at it. Your tasks never leave your machine.
-    </p>
-
-    <InputField
-      id="sp-endpoint"
-      label="Endpoint"
-      value={endpoint}
-      onChange={onChangeEndpoint}
-      placeholder="http://127.0.0.1:3876"
-    />
-
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-      <InputField
-        id="sp-project-id"
-        label="Project id (optional)"
-        value={projectId}
-        onChange={onChangeProjectId}
-        placeholder="proj-…"
-      />
-      <InputField
-        id="sp-tag-ids"
-        label="Tag ids (optional)"
-        value={tagIdsInput}
-        onChange={onChangeTagIds}
-        placeholder="tag-a, tag-b"
-      />
+}: PanelProps) => {
+  const [token, setToken] = useState<string | null>(null);
+  const [status, setStatus] = useState<{
+    readonly isConnected: boolean;
+    readonly pendingCount: number;
+  } | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [isBusy, setIsBusy] = useState(false);
+  const run = (operation: () => Promise<unknown>) => {
+    setIsBusy(true);
+    setError(null);
+    Effect.runFork(
+      Effect.tryPromise({
+        try: operation,
+        catch: (cause) =>
+          new HomeworkError({
+            message: 'Could not change the plugin connection. Retry shortly.',
+            cause,
+          }),
+      }).pipe(
+        Effect.catchAll((cause) => Effect.sync(() => setError(cause.message))),
+        Effect.ensuring(Effect.sync(() => setIsBusy(false))),
+      ),
+    );
+  };
+  useEffect(() => {
+    const fiber = Effect.runFork(
+      Effect.tryPromise({
+        try: getConnectionStatus,
+        catch: (cause) =>
+          new HomeworkError({
+            message: 'Could not check the homework queue. Reload to try again.',
+            cause,
+          }),
+      }).pipe(
+        Effect.tap((value) => Effect.sync(() => setStatus(value))),
+        Effect.catchAll((cause) => Effect.sync(() => setError(cause.message))),
+      ),
+    );
+    return () => {
+      Effect.runFork(Fiber.interrupt(fiber));
+    };
+  }, []);
+  return (
+    <div className="space-y-4">
+      <p>
+        Install the PaperSync plugin in Super Productivity, then paste a
+        connection key into its settings. Approved tasks wait here until the
+        plugin imports them.
+      </p>
+      <a href="/api/plugin" className="inline-block underline">
+        Get the PaperSync plugin ZIP
+      </a>
+      {status ? (
+        <p role="status">
+          {status.isConnected
+            ? 'Connection key active.'
+            : 'No plugin connection yet.'}{' '}
+          {status.pendingCount} tasks waiting to import.
+        </p>
+      ) : null}
+      {error ? <p role="alert">{error}</p> : null}
+      <fieldset disabled={isBusy} className="space-y-3">
+        <div className="flex flex-wrap gap-3">
+          <button
+            type="button"
+            className="btn-ink btn-md"
+            onClick={() =>
+              run(() =>
+                createConnectionKey().then((value) => {
+                  setToken(value);
+                  setStatus((previous) => ({
+                    isConnected: true,
+                    pendingCount: previous?.pendingCount ?? 0,
+                  }));
+                }),
+              )
+            }
+          >
+            Create connection key
+          </button>
+          <button
+            type="button"
+            className="btn-quiet btn-md"
+            onClick={() =>
+              run(() =>
+                removeConnectionKey().then(() => {
+                  setToken(null);
+                  setStatus((previous) => ({
+                    isConnected: false,
+                    pendingCount: previous?.pendingCount ?? 0,
+                  }));
+                }),
+              )
+            }
+          >
+            Revoke connection
+          </button>
+        </div>
+        <p className="text-graphite text-sm">
+          Creating a key replaces the previous key. Connect one Super
+          Productivity installation; SuperSync shares its imported tasks with
+          your other devices.
+        </p>
+        {token ? (
+          <label className="block text-sm">
+            Connection key, shown once
+            <input
+              readOnly={true}
+              value={token}
+              className="mt-1 w-full border border-hairline bg-paper p-2"
+              onFocus={(event) => event.target.select()}
+            />
+          </label>
+        ) : null}
+        <label className="block text-sm">
+          Project ID (optional)
+          <input
+            value={projectId}
+            onChange={(event) => onChangeProjectId(event.target.value)}
+            className="mt-1 w-full border border-hairline bg-paper p-2"
+          />
+        </label>
+        <label className="block text-sm">
+          Tag IDs (optional, comma separated)
+          <input
+            value={tagIdsInput}
+            onChange={(event) => onChangeTagIds(event.target.value)}
+            className="mt-1 w-full border border-hairline bg-paper p-2"
+          />
+        </label>
+      </fieldset>
     </div>
-
-    <p className="mono-tag pt-1">
-      Find these in Super Productivity → Project / Tag settings. Comma-separate
-      multiple tags.
-    </p>
-
-    <div className="flex flex-col gap-3 pt-1 sm:flex-row sm:items-center sm:justify-between">
-      <Button
-        variant="secondary"
-        size="sm"
-        onClick={onTestConnection}
-        disabled={status === 'testing'}
-      >
-        {status === 'testing' ? (
-          <>
-            <Spinner size="sm" className="mr-2" />
-            Testing…
-          </>
-        ) : status === 'ok' ? (
-          'Test again'
-        ) : (
-          'Test connection'
-        )}
-      </Button>
-      <StatusLine
-        status={status}
-        endpoint={endpoint}
-        errorMessage={errorMessage}
-      />
-    </div>
-  </div>
-);
+  );
+};

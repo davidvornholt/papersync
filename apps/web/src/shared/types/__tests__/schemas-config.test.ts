@@ -6,6 +6,8 @@ import {
   VaultAccessMethod,
 } from '@/shared/types/schemas';
 
+const expectedSubjectCount = 4;
+
 describe('AppConfig Schema', () => {
   it('should accept valid app config', () => {
     const config = Schema.decodeUnknownSync(AppConfig)({
@@ -18,7 +20,7 @@ describe('AppConfig Schema', () => {
     expect(config.vaultPath).toBe('/path/to/vault');
     expect(config.vaultAccessMethod).toBe('local');
     expect(config.aiProvider).toBe('google');
-    expect(config.subjectsPerDay).toBe(4);
+    expect(config.subjectsPerDay).toBe(expectedSubjectCount);
   });
 
   it('should accept github vault method with tokens', () => {

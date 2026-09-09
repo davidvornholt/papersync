@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'bun:test';
+import { describe, expect, it } from 'bun:test';
 import { defaultSettings } from '@/shared/hooks/use-settings-schema';
 import {
   getConfiguredDaysCount,
@@ -6,7 +6,7 @@ import {
 } from '../settings-screen-helpers';
 
 describe('settings-screen-helpers', () => {
-  test('isVaultConfigured returns true for local vault with path', () => {
+  it('isVaultConfigured returns true for local vault with path', () => {
     const settings = {
       ...defaultSettings,
       vault: {
@@ -19,7 +19,7 @@ describe('settings-screen-helpers', () => {
     expect(isVaultConfigured(settings)).toBe(true);
   });
 
-  test('isVaultConfigured returns false when github repository is missing', () => {
+  it('isVaultConfigured returns false when github repository is missing', () => {
     const settings = {
       ...defaultSettings,
       vault: {
@@ -33,33 +33,16 @@ describe('settings-screen-helpers', () => {
     expect(isVaultConfigured(settings)).toBe(false);
   });
 
-  test('isVaultConfigured returns true for super-productivity with an endpoint', () => {
-    const settings = {
-      ...defaultSettings,
-      vault: {
-        ...defaultSettings.vault,
-        method: 'super-productivity' as const,
-        superProductivityEndpoint: 'http://127.0.0.1:3876',
-      },
-    };
-
-    expect(isVaultConfigured(settings)).toBe(true);
+  it('the hosted Super Productivity queue needs no local endpoint', () => {
+    expect(
+      isVaultConfigured({
+        ...defaultSettings,
+        vault: { method: 'super-productivity' },
+      }),
+    ).toBe(true);
   });
 
-  test('isVaultConfigured returns false for super-productivity without an endpoint', () => {
-    const settings = {
-      ...defaultSettings,
-      vault: {
-        ...defaultSettings.vault,
-        method: 'super-productivity' as const,
-        superProductivityEndpoint: '   ',
-      },
-    };
-
-    expect(isVaultConfigured(settings)).toBe(false);
-  });
-
-  test('getConfiguredDaysCount counts only days that have slots', () => {
+  it('getConfiguredDaysCount counts only days that have slots', () => {
     const timetable = [
       { day: 'monday', slots: [{ id: 'slot-1', subjectId: '1' }] },
       { day: 'tuesday', slots: [] },
@@ -69,7 +52,7 @@ describe('settings-screen-helpers', () => {
     expect(getConfiguredDaysCount(timetable)).toBe(2);
   });
 
-  test('getConfiguredDaysCount returns zero when timetable is empty', () => {
+  it('getConfiguredDaysCount returns zero when timetable is empty', () => {
     expect(getConfiguredDaysCount([])).toBe(0);
   });
 });

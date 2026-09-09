@@ -2,7 +2,7 @@
 
 import { Card, CardContent } from '@papersync/ui/card';
 import { AnimatePresence } from 'motion/react';
-import type { ExtractedEntry } from '../../hooks/use-scan';
+import type { ExtractedEntry } from '@/features/scanner/hooks/use-scan-types';
 import type { ResultsPanelState } from '../scan-screen-types';
 import { ResultsPanelComplete } from './results-panel-complete';
 import {
@@ -14,7 +14,7 @@ import {
 
 type ResultsPanelProps = {
   readonly state: ResultsPanelState;
-  readonly entries: readonly ExtractedEntry[];
+  readonly entries: ReadonlyArray<ExtractedEntry>;
   readonly confidence: number;
   readonly modelUsed?: string;
   readonly errorMessage?: string;
@@ -38,10 +38,10 @@ export const ResultsPanel = ({
   onSync,
   isSyncing,
 }: ResultsPanelProps): React.ReactElement => (
-  <Card className="h-full flex flex-col min-h-[360px] sm:min-h-[420px]">
-    <CardContent className="flex-1 flex flex-col min-h-0">
+  <Card className="flex h-full min-h-[360px] flex-col sm:min-h-[420px]">
+    <CardContent className="flex min-h-0 flex-1 flex-col">
       <AnimatePresence mode="wait">
-        {state === 'complete' && entries.length > 0 && (
+        {state === 'complete' && entries.length > 0 ? (
           <ResultsPanelComplete
             entries={entries}
             confidence={confidence}
@@ -51,16 +51,20 @@ export const ResultsPanel = ({
             onSync={onSync}
             isSyncing={isSyncing}
           />
-        )}
+        ) : null}
 
-        {state === 'complete' && entries.length === 0 && <ResultsEmptyState />}
-        {state === 'processing' && <ResultsProcessingState />}
-        {(state === 'idle' || state === 'uploading') && <ResultsIdleState />}
-        {state === 'error' && (
+        {state === 'complete' && entries.length === 0 ? (
+          <ResultsEmptyState />
+        ) : null}
+        {state === 'processing' ? <ResultsProcessingState /> : null}
+        {state === 'idle' || state === 'uploading' ? (
+          <ResultsIdleState />
+        ) : null}
+        {state === 'error' ? (
           <ResultsErrorState
             message={errorMessage ?? 'An unexpected error occurred'}
           />
-        )}
+        ) : null}
       </AnimatePresence>
     </CardContent>
   </Card>

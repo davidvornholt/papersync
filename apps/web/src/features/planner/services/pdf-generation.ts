@@ -1,21 +1,14 @@
+// biome-ignore lint/correctness/noUnresolvedImports: Biome cannot resolve this conditional CommonJS export; TypeScript and the production build verify it.
 import { pdf } from '@react-pdf/renderer';
-import { Data, Effect } from 'effect';
+import { Effect } from 'effect';
+import {
+  PdfGenerationError,
+  RequestValidationError,
+} from '@/features/planner/errors/pdf-generation';
+import { encodeQRPayload } from '@/shared/planner/qr';
+import { getWeekDateRange, getWeekId } from '@/shared/planner/week';
 import type { Subject, WeekId } from '@/shared/types/schemas';
 import { PlannerDocument } from '../components/planner-document';
-import { getWeekDateRange, getWeekId } from './generator';
-import { encodeQRPayload } from './qr';
-
-export class RequestValidationError extends Data.TaggedError(
-  'RequestValidationError',
-)<{
-  readonly message: string;
-  readonly status: number;
-}> {}
-
-export class PdfGenerationError extends Data.TaggedError('PdfGenerationError')<{
-  readonly message: string;
-  readonly cause?: unknown;
-}> {}
 
 type TimetableSlot = {
   readonly id: string;
@@ -24,13 +17,13 @@ type TimetableSlot = {
 
 type TimetableDay = {
   readonly day: 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday';
-  readonly slots: readonly TimetableSlot[];
+  readonly slots: ReadonlyArray<TimetableSlot>;
 };
 
 export type GeneratePdfRequest = {
   readonly weekId?: WeekId;
-  readonly subjects: readonly Subject[];
-  readonly timetable: readonly TimetableDay[];
+  readonly subjects: ReadonlyArray<Subject>;
+  readonly timetable: ReadonlyArray<TimetableDay>;
 };
 
 export const parseGeneratePdfRequestBody = (
@@ -100,8 +93,8 @@ export const generatePlannerPdfBufferEffect = (
     const document = PlannerDocument({
       weekId,
       dateRange,
-      subjects: validatedBody.subjects as Subject[],
-      timetable: validatedBody.timetable as TimetableDay[],
+      subjects: validatedBody.subjects as Array<Subject>,
+      timetable: validatedBody.timetable as Array<TimetableDay>,
       qrDataUrl,
     });
 

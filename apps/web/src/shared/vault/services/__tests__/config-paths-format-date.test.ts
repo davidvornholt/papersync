@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'bun:test';
 import type { WeekId } from '@/shared/types/schemas';
 import {
-  formatDate,
   getConfigPath,
   getSubjectsPath,
   getWeeklyNotePath,
-} from '../config';
+} from '@/shared/vault/services/config-paths';
+import { formatDate } from '@/shared/vault/services/weekly-note-date';
 
 describe('Config Path Utilities', () => {
   describe('getConfigPath', () => {

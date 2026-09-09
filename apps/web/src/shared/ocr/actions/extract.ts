@@ -1,18 +1,20 @@
 'use server';
 
 import { Effect } from 'effect';
+import { requireSession } from '@/shared/auth/session';
+import type {
+  VisionError,
+  VisionValidationError,
+} from '@/shared/ocr/errors/vision-contract';
+import { VisionProvider } from '@/shared/ocr/services/vision-contract';
 import type { OCRResponse, WeekId } from '@/shared/types/schemas';
-import { getWeeklyNotePath } from '@/shared/vault/services/config';
-import {
-  makeLocalVaultLayer,
-  VaultService,
-} from '@/shared/vault/services/filesystem';
+import { getWeeklyNotePath } from '@/shared/vault/services/config-paths';
+import { makeLocalVaultLayer } from '@/shared/vault/services/filesystem';
+import { VaultService } from '@/shared/vault/services/filesystem-contract';
+import { githubService } from '@/shared/vault/services/github';
 import {
   makeGoogleVisionLayer,
   makeOllamaVisionLayer,
-  type VisionError,
-  VisionProvider,
-  type VisionValidationError,
 } from '../services/vision-provider';
 import {
   type ExtractionOptions,
@@ -28,10 +30,6 @@ import {
  * "use server" files can only export async functions.
  */
 
-// ============================================================================
-// Effect-Based Implementations
-// ============================================================================
-
 const fetchExistingContentFromLocal = (
   weekId: WeekId,
   localPath: string,
@@ -40,7 +38,9 @@ const fetchExistingContentFromLocal = (
     const vault = yield* VaultService;
     const notePath = getWeeklyNotePath(weekId);
     const exists = yield* vault.fileExists(notePath);
-    if (!exists) return '';
+    if (!exists) {
+      return '';
+    }
     return yield* vault.readFile(notePath);
   }).pipe(
     Effect.provide(makeLocalVaultLayer(localPath)),
@@ -53,31 +53,12 @@ const fetchExistingContentFromGitHub = (
   owner: string,
   repo: string,
 ): Effect.Effect<string, never> =>
-  Effect.tryPromise({
-    try: () => {
-      const notePath = getWeeklyNotePath(weekId);
-      return fetch(
-        `https://api.github.com/repos/${owner}/${repo}/contents/${notePath}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            Accept: 'application/vnd.github.v3+json',
-          },
-        },
-      ).then((response) => {
-        if (!response.ok) {
-          return '';
-        }
-        return response.json().then((data) => {
-          if (!data.content) {
-            return '';
-          }
-          return Buffer.from(data.content, 'base64').toString('utf-8');
-        });
-      });
-    },
-    catch: () => '',
-  }).pipe(Effect.catchAll(() => Effect.succeed('')));
+  githubService
+    .getFile({ token, owner, repo, path: getWeeklyNotePath(weekId) })
+    .pipe(
+      Effect.map((file) => file?.content ?? ''),
+      Effect.orElseSucceed(() => ''),
+    );
 
 const fetchExistingContentEffect = (
   weekId: WeekId,
@@ -97,7 +78,7 @@ const fetchExistingContentEffect = (
     vaultSettings.githubRepo
   ) {
     const [owner, repo] = vaultSettings.githubRepo.split('/');
-    if (!owner || !repo) {
+    if (!(owner && repo)) {
       return Effect.succeed('');
     }
     return fetchExistingContentFromGitHub(
@@ -166,14 +147,11 @@ const extractHandwritingEffect = (
     return { data: result.data, modelUsed: result.modelUsed };
   });
 
-// ============================================================================
-// Server Action (Public API)
-// ============================================================================
-
 export const extractHandwriting = async (
   options: ExtractionOptions,
-): Promise<ExtractionResult> =>
-  Effect.runPromise(
+): Promise<ExtractionResult> => {
+  await requireSession();
+  return Effect.runPromise(
     extractHandwritingEffect(options).pipe(
       Effect.map((result) => ({
         success: true as const,
@@ -185,3 +163,4 @@ export const extractHandwriting = async (
       ),
     ),
   );
+};

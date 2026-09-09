@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, mock } from 'bun:test';
 
+const colorPattern = /^#[0-9A-Fa-f]{6}$/u;
+
 // Mock localStorage only if window exists (jsdom environment)
 const localStorageMock = (() => {
   let store: Record<string, string> = {};
@@ -19,8 +21,8 @@ const localStorageMock = (() => {
 
 // Setup mock in beforeEach to ensure window exists
 beforeEach(() => {
-  if (typeof window !== 'undefined') {
-    Object.defineProperty(window, 'localStorage', {
+  if (typeof globalThis.localStorage !== 'undefined') {
+    Object.defineProperty(globalThis, 'localStorage', {
       value: localStorageMock,
       writable: true,
     });
@@ -107,7 +109,7 @@ describe('Settings Persistence', () => {
     });
 
     it('should validate subject color format', () => {
-      const hexColorRegex = /^#[0-9A-Fa-f]{6}$/;
+      const hexColorRegex = colorPattern;
       expect(hexColorRegex.test('#3B82F6')).toBe(true);
       expect(hexColorRegex.test('#abc')).toBe(false);
       expect(hexColorRegex.test('red')).toBe(false);

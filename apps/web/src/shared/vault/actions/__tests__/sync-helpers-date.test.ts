@@ -1,16 +1,22 @@
 import { describe, expect, it } from 'bun:test';
-import type { WeekId } from '@/shared/types/schemas';
 import {
-  getCurrentWeekId,
+  getWeekId as getCurrentWeekId,
   getDayDate,
-  getWeekDateRange,
-} from '../sync-helpers';
+  getWeekIsoDateRange as getWeekDateRange,
+} from '@/shared/planner/week';
+import type { WeekId } from '@/shared/types/schemas';
+
+const weekPattern = /^\d{4}-W\d{2}$/u;
+const datePattern = /^\d{4}-\d{2}-\d{2}$/u;
+
+const lastDayOffset = 6;
+const millisecondsPerDay = 86_400_000;
 
 describe('Sync Helper Functions', () => {
   describe('getCurrentWeekId', () => {
     it('should return ISO week format YYYY-Www', () => {
       const result = getCurrentWeekId();
-      expect(result).toMatch(/^\d{4}-W\d{2}$/);
+      expect(result).toMatch(weekPattern);
     });
   });
 
@@ -18,8 +24,8 @@ describe('Sync Helper Functions', () => {
     it('should return start and end ISO dates', () => {
       const result = getWeekDateRange('2026-W05' as WeekId);
 
-      expect(result.start).toMatch(/^\d{4}-\d{2}-\d{2}$/);
-      expect(result.end).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+      expect(result.start).toMatch(datePattern);
+      expect(result.end).toMatch(datePattern);
     });
 
     it('should have start before end with correct gap', () => {
@@ -28,8 +34,8 @@ describe('Sync Helper Functions', () => {
       const endDate = new Date(result.end);
 
       expect(startDate.getTime()).toBeLessThan(endDate.getTime());
-      expect(startDate.toString()).not.toBe('Invalid Date');
-      expect(endDate.toString()).not.toBe('Invalid Date');
+      expect(Number.isFinite(startDate.getTime())).toBe(true);
+      expect(Number.isFinite(endDate.getTime())).toBe(true);
     });
 
     it('should have 6 days between start and end', () => {
@@ -37,10 +43,10 @@ describe('Sync Helper Functions', () => {
       const startDate = new Date(result.start);
       const endDate = new Date(result.end);
       const diffDays = Math.round(
-        (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24),
+        (endDate.getTime() - startDate.getTime()) / millisecondsPerDay,
       );
 
-      expect(diffDays).toBe(6);
+      expect(diffDays).toBe(lastDayOffset);
     });
   });
 
@@ -64,10 +70,10 @@ describe('Sync Helper Functions', () => {
       const wednesdayDate = new Date(wednesday);
 
       expect(tuesdayDate.getTime() - mondayDate.getTime()).toBe(
-        24 * 60 * 60 * 1000,
+        millisecondsPerDay,
       );
       expect(wednesdayDate.getTime() - tuesdayDate.getTime()).toBe(
-        24 * 60 * 60 * 1000,
+        millisecondsPerDay,
       );
     });
 

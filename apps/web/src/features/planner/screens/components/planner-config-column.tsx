@@ -1,5 +1,8 @@
-import { StaggerContainer, StaggerItem } from '@/shared/components/motion';
-import type { TimetableDay } from '@/shared/hooks/use-settings';
+import {
+  StaggerContainer,
+  StaggerItem,
+} from '@/shared/components/motion-layout';
+import type { TimetableDay } from '@/shared/hooks/use-settings-schema';
 import type { DayOfWeek, Subject } from '@/shared/types/schemas';
 import type { ScheduleException } from '../planner-screen-types';
 import { GeneratePlannerButton } from './generate-planner-button';
@@ -11,9 +14,9 @@ type PlannerConfigColumnProps = {
   readonly dateRangeStr: string;
   readonly onOpenWeekModal: () => void;
   readonly weekStartDate: Date;
-  readonly timetable: readonly TimetableDay[];
-  readonly exceptions: readonly ScheduleException[];
-  readonly subjects: readonly Subject[];
+  readonly timetable: ReadonlyArray<TimetableDay>;
+  readonly exceptions: ReadonlyArray<ScheduleException>;
+  readonly subjects: ReadonlyArray<Subject>;
   readonly hasTimetableConfigured: boolean;
   readonly onEditException: (date: Date, dayOfWeek: DayOfWeek) => void;
   readonly onGenerate: () => void;

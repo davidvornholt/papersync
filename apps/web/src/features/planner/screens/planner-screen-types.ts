@@ -1,5 +1,4 @@
 import type { DayOfWeek, ISODate } from '@/shared/types/schemas';
-
 export type ScheduleException = {
   id: string;
   date: ISODate;
@@ -8,7 +7,7 @@ export type ScheduleException = {
   slots: Array<{ id: string; subjectId: string }>;
 };
 
-export const WEEKDAYS: DayOfWeek[] = [
+export const WEEKDAYS: Array<DayOfWeek> = [
   'monday',
   'tuesday',
   'wednesday',

@@ -2,10 +2,6 @@
 
 import { useCallback, useEffect } from 'react';
 
-// ============================================================================
-// Types
-// ============================================================================
-
 type KeyboardShortcut = {
   readonly key: string;
   readonly ctrl?: boolean;
@@ -16,23 +12,23 @@ type KeyboardShortcut = {
 
 type ShortcutHandler = () => void;
 
-// ============================================================================
-// Utility to create shortcut key
-// ============================================================================
-
 const serializeShortcut = (shortcut: KeyboardShortcut): string => {
-  const parts: string[] = [];
-  if (shortcut.ctrl) parts.push('ctrl');
-  if (shortcut.alt) parts.push('alt');
-  if (shortcut.shift) parts.push('shift');
-  if (shortcut.meta) parts.push('meta');
+  const parts: Array<string> = [];
+  if (shortcut.ctrl) {
+    parts.push('ctrl');
+  }
+  if (shortcut.alt) {
+    parts.push('alt');
+  }
+  if (shortcut.shift) {
+    parts.push('shift');
+  }
+  if (shortcut.meta) {
+    parts.push('meta');
+  }
   parts.push(shortcut.key.toLowerCase());
   return parts.join('+');
 };
-
-// ============================================================================
-// Hook
-// ============================================================================
 
 type UseKeyboardShortcutsOptions = {
   readonly shortcuts: ReadonlyArray<{
@@ -49,7 +45,9 @@ export const useKeyboardShortcuts = ({
 }: UseKeyboardShortcutsOptions): void => {
   const handleKeyDown = useCallback(
     (event: KeyboardEvent) => {
-      if (!enabled) return;
+      if (!enabled) {
+        return;
+      }
 
       // Don't trigger shortcuts when typing in inputs
       const target = event.target as HTMLElement;
@@ -83,21 +81,19 @@ export const useKeyboardShortcuts = ({
   );
 
   useEffect(() => {
-    if (!enabled) return;
+    if (!enabled) {
+      return;
+    }
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [handleKeyDown, enabled]);
 };
 
-// ============================================================================
-// Common Shortcuts
-// ============================================================================
-
 export const SHORTCUTS = {
-  GENERATE: { key: 'g', ctrl: true } as KeyboardShortcut,
-  SETTINGS: { key: ',', ctrl: true } as KeyboardShortcut,
-  ESCAPE: { key: 'Escape' } as KeyboardShortcut,
-  ENTER: { key: 'Enter' } as KeyboardShortcut,
-  HOME: { key: 'h', ctrl: true } as KeyboardShortcut,
+  generate: { key: 'g', ctrl: true } as KeyboardShortcut,
+  settings: { key: ',', ctrl: true } as KeyboardShortcut,
+  escape: { key: 'Escape' } as KeyboardShortcut,
+  enter: { key: 'Enter' } as KeyboardShortcut,
+  home: { key: 'h', ctrl: true } as KeyboardShortcut,
 } as const;

@@ -3,7 +3,7 @@ import type {
   Settings,
   Subject,
   TimetableDay,
-} from '@/shared/hooks/use-settings';
+} from '@/shared/hooks/use-settings-schema';
 import { loadSettingsFromVault } from '@/shared/vault/actions/sync-settings';
 import type { GitHubRepository } from '../../actions/github-oauth-types';
 
@@ -19,8 +19,8 @@ type AddToast = (
 ) => void;
 
 type ApplyLoadedSettings = (
-  subjects: readonly Subject[],
-  timetable: readonly TimetableDay[],
+  subjects: ReadonlyArray<Subject>,
+  timetable: ReadonlyArray<TimetableDay>,
 ) => void;
 
 export const createOAuthSuccessEffect = ({
@@ -117,8 +117,8 @@ export const createRepoSelectEffect = ({
           return;
         }
         applyLoadedSettings(
-          result.subjects as Subject[],
-          result.timetable as TimetableDay[],
+          result.subjects as Array<Subject>,
+          result.timetable as Array<TimetableDay>,
         );
         addToast(
           `Connected to ${repo.fullName} and loaded settings from vault`,

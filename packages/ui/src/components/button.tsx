@@ -1,12 +1,12 @@
 import {
   type ButtonHTMLAttributes,
+  // biome-ignore lint/correctness/noUnresolvedImports: React exposes Children at runtime and in its types; Biome cannot resolve the conditional CommonJS export.
   Children,
   cloneElement,
   isValidElement,
   type ReactElement,
   type ReactNode,
 } from 'react';
-
 export type ButtonVariant = 'primary' | 'secondary' | 'ghost';
 export type ButtonSize = 'sm' | 'md' | 'lg';
 
@@ -48,7 +48,7 @@ const sizeClass: Record<ButtonSize, string> = {
  * needs to tag a third-party trigger that already has its own component
  * shape.
  */
-export const buttonClassName = (
+const buttonClassName = (
   variant: ButtonVariant = 'primary',
   size: ButtonSize = 'md',
   extra = '',
@@ -77,6 +77,7 @@ export const Button = (props: ButtonProps): ReactElement => {
     );
     if (!isValidElement<{ readonly className?: string }>(child)) {
       throw new Error(
+        // biome-ignore lint/security/noSecrets: Stable Effect discriminator or diagnostic text, not a credential.
         'Button(asChild) requires exactly one valid React element child.',
       );
     }

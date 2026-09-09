@@ -1,6 +1,4 @@
-import { Data } from 'effect';
 import type { WeekId } from '@/shared/types/schemas';
-
 /**
  * Types and Error Classes for Vault Sync
  *
@@ -9,31 +7,6 @@ import type { WeekId } from '@/shared/types/schemas';
  */
 
 // Re-export ExtractedEntry type for backward compatibility
-export type { ExtractedEntry } from './sync-helpers';
-
-// ============================================================================
-// Error Types
-// ============================================================================
-
-export class SyncValidationError extends Data.TaggedError(
-  'SyncValidationError',
-)<{
-  readonly message: string;
-}> {}
-
-export class GitHubFileError extends Data.TaggedError('GitHubFileError')<{
-  readonly message: string;
-  readonly status?: number;
-  readonly cause?: unknown;
-}> {}
-
-export class GitHubFileNotFound extends Data.TaggedError('GitHubFileNotFound')<{
-  readonly path: string;
-}> {}
-
-// ============================================================================
-// Types
-// ============================================================================
 
 export type VaultMethod = 'local' | 'github' | 'super-productivity';
 
@@ -42,15 +15,10 @@ export type SyncOptions = {
   readonly localPath?: string;
   readonly githubToken?: string;
   readonly githubRepo?: string;
-  readonly superProductivityEndpoint?: string;
   readonly superProductivityProjectId?: string;
-  readonly superProductivityTagIds?: readonly string[];
+  readonly superProductivityTagIds?: ReadonlyArray<string>;
   readonly weekId?: WeekId;
 };
-
-// ============================================================================
-// Result Types (for server action responses)
-// ============================================================================
 
 export type SyncResult =
   | { readonly success: true; readonly notePath: string }

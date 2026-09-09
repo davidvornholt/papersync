@@ -3,19 +3,23 @@
 import { motion } from 'motion/react';
 import { useCallback, useEffect, useState } from 'react';
 
+const pulseMinimumOpacity = 0.3;
+const staggerSeconds = 0.2;
+const feedbackMilliseconds = 2000;
+const millisecondsPerSecond = 1000;
 export const SuccessCheckmark = (): React.ReactElement => (
   <motion.svg
-    initial={{ scale: 0 }}
+    initial={false}
     animate={{ scale: 1 }}
     transition={{ type: 'spring', damping: 15, stiffness: 200, delay: 0.1 }}
-    className="w-14 h-14 text-positive"
+    className="size-14 text-positive"
     fill="none"
     viewBox="0 0 24 24"
     stroke="currentColor"
   >
     <title>Success</title>
     <motion.circle
-      initial={{ pathLength: 0 }}
+      initial={false}
       animate={{ pathLength: 1 }}
       transition={{ duration: 0.5 }}
       cx="12"
@@ -25,7 +29,7 @@ export const SuccessCheckmark = (): React.ReactElement => (
       className="stroke-positive/30"
     />
     <motion.path
-      initial={{ pathLength: 0 }}
+      initial={false}
       animate={{ pathLength: 1 }}
       transition={{ duration: 0.3, delay: 0.3 }}
       strokeLinecap="round"
@@ -41,12 +45,12 @@ export const LoadingDots = (): React.ReactElement => (
     {[0, 1, 2].map((i) => (
       <motion.span
         key={i}
-        className="w-1.5 h-1.5 bg-accent rounded-full"
-        animate={{ opacity: [0.3, 1, 0.3] }}
+        className="size-1.5 rounded-full bg-accent"
+        animate={{ opacity: [pulseMinimumOpacity, 1, pulseMinimumOpacity] }}
         transition={{
           duration: 1.2,
           repeat: Number.POSITIVE_INFINITY,
-          delay: i * 0.2,
+          delay: i * staggerSeconds,
         }}
       />
     ))}
@@ -58,7 +62,7 @@ export const CopyButton = ({ text }: { text: string }): React.ReactElement => {
 
   const markCopied = useCallback(() => {
     setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    setTimeout(() => setCopied(false), feedbackMilliseconds);
   }, []);
 
   const copyWithFallback = useCallback(() => {
@@ -80,7 +84,7 @@ export const CopyButton = ({ text }: { text: string }): React.ReactElement => {
       return;
     }
 
-    void navigator.clipboard
+    navigator.clipboard
       .writeText(text)
       .then(markCopied)
       .catch(() => {
@@ -91,7 +95,7 @@ export const CopyButton = ({ text }: { text: string }): React.ReactElement => {
 
   const renderCopiedIcon = (
     <svg
-      className="w-4 h-4"
+      className="size-4"
       fill="none"
       viewBox="0 0 24 24"
       stroke="currentColor"
@@ -108,7 +112,7 @@ export const CopyButton = ({ text }: { text: string }): React.ReactElement => {
 
   const renderCopyIcon = (
     <svg
-      className="w-4 h-4"
+      className="size-4"
       fill="none"
       viewBox="0 0 24 24"
       stroke="currentColor"
@@ -127,10 +131,10 @@ export const CopyButton = ({ text }: { text: string }): React.ReactElement => {
     <button
       type="button"
       onClick={handleCopy}
-      className={`px-3 py-2 mono text-[11px] uppercase tracking-[0.18em] border transition-colors cursor-pointer touch-manipulation ${
+      className={`mono cursor-pointer touch-manipulation border px-3 py-2 text-[11px] uppercase tracking-[0.18em] transition-colors ${
         copied
           ? 'border-positive text-positive'
-          : 'border-hairline-strong text-graphite hover:text-ink hover:border-ink'
+          : 'border-hairline-strong text-graphite hover:border-ink hover:text-ink'
       }`}
       aria-live="polite"
     >
@@ -157,17 +161,20 @@ export const CountdownTimer = ({
   readonly expiresAt: Date;
 }): React.ReactElement => {
   const [timeLeft, setTimeLeft] = useState<number>(
-    Math.max(0, Math.floor((expiresAt.getTime() - Date.now()) / 1000)),
+    Math.max(
+      0,
+      Math.floor((expiresAt.getTime() - Date.now()) / millisecondsPerSecond),
+    ),
   );
 
   useEffect(() => {
     const interval = setInterval(() => {
       const remaining = Math.max(
         0,
-        Math.floor((expiresAt.getTime() - Date.now()) / 1000),
+        Math.floor((expiresAt.getTime() - Date.now()) / millisecondsPerSecond),
       );
       setTimeLeft(remaining);
-    }, 1000);
+    }, millisecondsPerSecond);
 
     return () => clearInterval(interval);
   }, [expiresAt]);

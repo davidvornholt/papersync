@@ -1,61 +1,25 @@
-import { Context, Data, type Effect } from 'effect';
+import { Context, type Effect } from 'effect';
+import type { GitHubAPIError } from '@/shared/vault/errors/github-contract';
 
-export class GitHubAuthError extends Data.TaggedError('GitHubAuthError')<{
-  readonly message: string;
-  readonly cause?: unknown;
-}> {}
-
-export class GitHubAPIError extends Data.TaggedError('GitHubAPIError')<{
-  readonly message: string;
-  readonly status?: number;
-  readonly cause?: unknown;
-}> {}
-
-export type DeviceCodeResponse = {
-  readonly deviceCode: string;
-  readonly userCode: string;
-  readonly verificationUri: string;
-  readonly expiresIn: number;
-  readonly interval: number;
+export type GitHubFile = { readonly content: string; readonly sha: string };
+export type GitHubLocation = {
+  readonly token: string;
+  readonly owner: string;
+  readonly repo: string;
+  readonly path: string;
 };
-
-export type OAuthTokenResponse = {
-  readonly accessToken: string;
-  readonly tokenType: string;
-  readonly scope: string;
+export type GitHubFileChange = GitHubLocation & {
+  readonly content: string;
+  readonly message: string;
+  readonly sha?: string;
 };
-
 export type GitHubService = {
-  readonly initiateDeviceFlow: (
-    clientId: string,
-  ) => Effect.Effect<DeviceCodeResponse, GitHubAuthError>;
-  readonly pollForToken: (
-    clientId: string,
-    deviceCode: string,
-    interval: number,
-  ) => Effect.Effect<OAuthTokenResponse, GitHubAuthError>;
-  readonly getFileContent: (
-    token: string,
-    owner: string,
-    repo: string,
-    path: string,
-    ref?: string,
-  ) => Effect.Effect<string | null, GitHubAPIError>;
-  readonly createOrUpdateFile: (
-    token: string,
-    owner: string,
-    repo: string,
-    path: string,
-    content: string,
-    message: string,
-    sha?: string,
+  readonly getFile: (
+    location: GitHubLocation,
+  ) => Effect.Effect<GitHubFile | null, GitHubAPIError>;
+  readonly setFile: (
+    change: GitHubFileChange,
   ) => Effect.Effect<void, GitHubAPIError>;
-  readonly listRepositories: (
-    token: string,
-  ) => Effect.Effect<
-    ReadonlyArray<{ name: string; owner: string; fullName: string }>,
-    GitHubAPIError
-  >;
 };
-
+// biome-ignore lint/security/noSecrets: Effect service identity, not a credential.
 export const GitHubService = Context.GenericTag<GitHubService>('GitHubService');

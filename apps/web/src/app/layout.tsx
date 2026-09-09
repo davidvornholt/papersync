@@ -27,15 +27,14 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'PaperSync — paper meets your second brain',
+  title: 'PaperSync | Homework from paper to plan',
   description:
-    'A free, open source, self-hosted bridge between handwritten paper and your local vault. Bring your own keys. No subscriptions.',
+    'Scan your paper homework planner at home, review the reading, and send approved tasks to Super Productivity.',
 };
 
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 1,
 };
 
 type RootLayoutProps = {

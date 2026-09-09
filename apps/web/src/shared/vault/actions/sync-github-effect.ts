@@ -1,183 +1,56 @@
 import { Effect } from 'effect';
 import type { WeekId } from '@/shared/types/schemas';
+import type { ExtractedEntry } from '@/shared/vault/actions/sync-helpers-types';
+import { SyncValidationError } from '@/shared/vault/errors/sync-types';
 import {
-  generateOverviewContent,
   getOverviewPath,
   getWeeklyNotePath,
-  parseWeeklyNoteMarkdown,
-  serializeWeeklyNoteToMarkdown,
-} from '../services/config';
-import {
-  type GitHubAPIError,
-  GitHubService,
-  GitHubServiceLive,
-} from '../services/github';
-import {
-  convertEntriesToWeeklyNote,
-  type ExtractedEntry,
-} from './sync-helpers';
-import {
-  GitHubFileError,
-  GitHubFileNotFound,
-  SyncValidationError,
-} from './sync-types';
+} from '@/shared/vault/services/config-paths';
+import { GitHubServiceLive } from '@/shared/vault/services/github';
+import { GitHubService } from '@/shared/vault/services/github-contract';
+import { generateOverviewContent } from '@/shared/vault/services/overview-content';
+import { parseWeeklyNoteMarkdown } from '@/shared/vault/services/weekly-note-parse';
+import { serializeWeeklyNoteToMarkdown } from '@/shared/vault/services/weekly-note-serialize';
+import { convertEntriesToWeeklyNote } from './sync-helpers';
 
-type GitHubFileContent = {
-  readonly content: string;
-  readonly sha: string;
+type Destination = {
+  readonly token: string;
+  readonly owner: string;
+  readonly repo: string;
+  readonly weekId: WeekId;
 };
-
-const fetchGitHubFileEffect = (
-  token: string,
-  owner: string,
-  repo: string,
-  filePath: string,
-): Effect.Effect<GitHubFileContent, GitHubFileError | GitHubFileNotFound> =>
-  Effect.tryPromise({
-    try: () =>
-      fetch(
-        `https://api.github.com/repos/${owner}/${repo}/contents/${filePath}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            Accept: 'application/vnd.github.v3+json',
-          },
-        },
-      ).then((response) => {
-        if (response.status === 404) {
-          return Promise.reject({ _tag: 'not_found', path: filePath });
-        }
-        if (!response.ok) {
-          return response.text().then((errorText) =>
-            Promise.reject({
-              _tag: 'error',
-              status: response.status,
-              message: `GitHub API error: ${response.status} ${response.statusText}${errorText ? ` - ${errorText}` : ''}`,
-            }),
-          );
-        }
-
-        return response.json().then((data) => {
-          if (data.content && data.sha) {
-            return {
-              content: Buffer.from(data.content, 'base64').toString('utf-8'),
-              sha: data.sha,
-            };
-          }
-          return Promise.reject({
-            _tag: 'error',
-            message: 'Invalid response from GitHub API',
-          });
-        });
-      }),
-    catch: (error): GitHubFileError | GitHubFileNotFound => {
-      if (typeof error === 'object' && error !== null && '_tag' in error) {
-        const taggedError = error as {
-          _tag: string;
-          path?: string;
-          message?: string;
-          status?: number;
-        };
-        if (taggedError._tag === 'not_found' && taggedError.path) {
-          return new GitHubFileNotFound({ path: taggedError.path });
-        }
-        return new GitHubFileError({
-          message: taggedError.message ?? 'Unknown GitHub error',
-          status: taggedError.status,
-        });
-      }
-      return new GitHubFileError({
-        message: error instanceof Error ? error.message : 'Network error',
-        cause: error,
-      });
-    },
-  });
-
 export const syncToGitHubEffect = (
-  entries: readonly ExtractedEntry[],
-  token: string,
-  owner: string,
-  repo: string,
-  weekId: WeekId,
-): Effect.Effect<
-  string,
-  SyncValidationError | GitHubFileError | GitHubAPIError
-> =>
+  entries: ReadonlyArray<ExtractedEntry>,
+  destination: Destination,
+) =>
   Effect.gen(function* () {
     if (entries.length === 0) {
       return yield* Effect.fail(
         new SyncValidationError({ message: 'No entries to sync' }),
       );
     }
-
-    const notePath = getWeeklyNotePath(weekId);
-    const fileResult = yield* fetchGitHubFileEffect(
-      token,
-      owner,
-      repo,
-      notePath,
-    ).pipe(
-      Effect.map((content) => ({ found: true as const, ...content })),
-      Effect.catchTag('GitHubFileNotFound', () =>
-        Effect.succeed({
-          found: false as const,
-          content: null,
-          sha: undefined,
-        }),
-      ),
-    );
-
-    let existingNote = null;
-    if (fileResult.found && fileResult.content) {
-      existingNote = Effect.runSync(
-        Effect.try({
-          try: () => parseWeeklyNoteMarkdown(fileResult.content, weekId),
-          catch: () => null,
-        }),
-      );
-    }
-
-    const weeklyNote = convertEntriesToWeeklyNote(
-      entries,
-      weekId,
-      existingNote,
-    );
+    const { weekId } = destination;
     const github = yield* GitHubService;
-
-    yield* github.createOrUpdateFile(
-      token,
-      owner,
-      repo,
-      notePath,
-      serializeWeeklyNoteToMarkdown(weeklyNote),
-      `Update weekly note: ${weekId}`,
-      fileResult.found ? fileResult.sha : undefined,
-    );
-
-    const overviewPath = getOverviewPath();
-    const overviewResult = yield* fetchGitHubFileEffect(
-      token,
-      owner,
-      repo,
-      overviewPath,
-    ).pipe(
-      Effect.map(() => ({ found: true })),
-      Effect.catchTag('GitHubFileNotFound', () =>
-        Effect.succeed({ found: false }),
-      ),
-    );
-
-    if (!overviewResult.found) {
-      yield* github.createOrUpdateFile(
-        token,
-        owner,
-        repo,
-        overviewPath,
-        generateOverviewContent(),
-        'Create homework overview',
-        undefined,
-      );
+    const path = getWeeklyNotePath(weekId);
+    const file = yield* github.getFile({ ...destination, path });
+    const existingNote = file
+      ? parseWeeklyNoteMarkdown(file.content, weekId)
+      : null;
+    const note = convertEntriesToWeeklyNote(entries, weekId, existingNote);
+    yield* github.setFile({
+      ...destination,
+      path,
+      content: serializeWeeklyNoteToMarkdown(note),
+      message: `Update weekly note: ${weekId}`,
+      sha: file?.sha,
+    });
+    const overview = { ...destination, path: getOverviewPath() };
+    if (!(yield* github.getFile(overview))) {
+      yield* github.setFile({
+        ...overview,
+        content: generateOverviewContent(),
+        message: 'Create homework overview',
+      });
     }
-
-    return notePath;
+    return path;
   }).pipe(Effect.provide(GitHubServiceLive));

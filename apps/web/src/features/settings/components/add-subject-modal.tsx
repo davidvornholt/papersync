@@ -1,9 +1,9 @@
 'use client';
 
 import { Button } from '@papersync/ui/button';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useId, useState } from 'react';
 import { Modal } from '@/shared/components/modal';
-import type { Subject } from '@/shared/hooks/use-settings';
+import type { Subject } from '@/shared/hooks/use-settings-schema';
 
 type AddSubjectModalProps = {
   readonly isOpen: boolean;
@@ -11,7 +11,7 @@ type AddSubjectModalProps = {
   readonly onAdd: (name: string) => void;
   readonly editingSubject?: Subject | null;
   readonly onEdit?: (id: string, name: string) => void;
-  readonly existingSubjects: readonly Subject[];
+  readonly existingSubjects: ReadonlyArray<Subject>;
 };
 
 export const AddSubjectModal = ({
@@ -22,6 +22,7 @@ export const AddSubjectModal = ({
   onEdit,
   existingSubjects,
 }: AddSubjectModalProps): React.ReactElement => {
+  const instanceId = useId();
   const [name, setName] = useState(editingSubject?.name ?? '');
 
   const isDuplicate = useCallback(
@@ -83,11 +84,11 @@ export const AddSubjectModal = ({
       }
     >
       <div>
-        <label htmlFor="subject-name" className="field-label">
+        <label htmlFor={`${instanceId}-subject-name`} className="field-label">
           Subject name
         </label>
         <input
-          id="subject-name"
+          id={`${instanceId}-subject-name`}
           type="text"
           value={name}
           onChange={(e) => setName(e.target.value)}
@@ -96,11 +97,11 @@ export const AddSubjectModal = ({
             showError ? 'border-b-accent focus:border-b-accent' : ''
           }`}
         />
-        {showError && (
+        {showError ? (
           <p className="mt-2 text-[13px] text-accent">
             A subject named “{name.trim()}” already exists
           </p>
-        )}
+        ) : null}
       </div>
     </Modal>
   );

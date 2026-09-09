@@ -1,9 +1,7 @@
 import { describe, expect, it } from 'bun:test';
 import type { ISODate, WeekId, WeeklyNote } from '@/shared/types/schemas';
-import {
-  parseWeeklyNoteMarkdown,
-  serializeWeeklyNoteToMarkdown,
-} from '../config';
+import { parseWeeklyNoteMarkdown } from '@/shared/vault/services/weekly-note-parse';
+import { serializeWeeklyNoteToMarkdown } from '@/shared/vault/services/weekly-note-serialize';
 
 describe('Weekly note markdown round-trip', () => {
   it('should round-trip serialize and parse without losing data', () => {

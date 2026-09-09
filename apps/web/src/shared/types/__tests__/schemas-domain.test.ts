@@ -2,6 +2,8 @@ import { describe, expect, it } from 'bun:test';
 import { Schema } from 'effect';
 import { OCRResponse, QRPayload, WeeklyNote } from '@/shared/types/schemas';
 
+const expectedConfidence = 0.95;
+
 describe('OCRResponse Schema', () => {
   it('should accept valid OCR response', () => {
     const response = Schema.decodeUnknownSync(OCRResponse)({
@@ -19,7 +21,7 @@ describe('OCRResponse Schema', () => {
     });
 
     expect(response.entries).toHaveLength(1);
-    expect(response.confidence).toBe(0.95);
+    expect(response.confidence).toBe(expectedConfidence);
   });
 
   it('should accept optional notes', () => {

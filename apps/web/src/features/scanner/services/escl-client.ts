@@ -1,29 +1,20 @@
 import http from 'node:http';
 import https from 'node:https';
 import { Effect, Layer } from 'effect';
-import type { ESCLClient } from './escl-types';
 import {
   ESCLCapabilitiesError,
-  ESCLClient as ESCLClientTag,
   ESCLError,
-  type ScanSettings,
-} from './escl-types';
+} from '@/features/scanner/errors/escl-types';
+import type { DiscoveredScanner } from '@/features/scanner/services/scanner-discovery-types';
+import type { ESCLClient } from './escl-types';
+import { ESCLClient as ESCLClientTag, type ScanSettings } from './escl-types';
 import { getScannerResourceBaseUrl, resolveScannerLocation } from './escl-url';
 import { createScanRequestXml, parseCapabilitiesXml } from './escl-xml';
-import type { DiscoveredScanner } from './scanner-discovery';
 
-export {
-  type ColorMode,
-  ESCLCapabilitiesError,
-  ESCLClient,
-  ESCLError,
-  type InputSource,
-  type ScanJob,
-  type ScannerCapabilities,
-  type ScanSettings,
-  type SourceCapabilities,
-} from './escl-types';
-
+const successStatus = 200;
+const redirectStatus = 300;
+const createdStatus = 201;
+const scanWarmupMilliseconds = 2000;
 const insecureAgent = new https.Agent({ rejectUnauthorized: false });
 
 type ScannerRequestOptions = {
@@ -38,7 +29,7 @@ type ScannerResponse = {
   readonly body: Buffer;
 };
 
-const getHeaderValue = (value: string | string[] | undefined) =>
+const getHeaderValue = (value: string | Array<string> | undefined) =>
   Array.isArray(value) ? value[0] : value;
 
 const requestScanner = (
@@ -56,7 +47,7 @@ const requestScanner = (
         agent: parsedUrl.protocol === 'https:' ? insecureAgent : undefined,
       },
       (response) => {
-        const chunks: Buffer[] = [];
+        const chunks: Array<Buffer> = [];
         response.on('data', (chunk: Buffer) => chunks.push(chunk));
         response.on('end', () => {
           resolve({
@@ -82,7 +73,7 @@ const getCauseMessage = (error: unknown): string => {
     return String(error);
   }
 
-  const cause = error.cause;
+  const { cause } = error;
   if (cause instanceof Error && cause.message !== error.message) {
     return `${error.message}: ${cause.message}`;
   }
@@ -99,9 +90,12 @@ const createESCLClient = (): ESCLClient => ({
 
         return requestScanner(capabilitiesUrl, {
           method: 'GET',
-          headers: { Accept: 'text/xml, application/xml' },
+          headers: { accept: 'text/xml, application/xml' },
         }).then((response) => {
-          if (response.statusCode < 200 || response.statusCode >= 300) {
+          if (
+            response.statusCode < successStatus ||
+            response.statusCode >= redirectStatus
+          ) {
             return Promise.reject(new Error(`HTTP ${response.statusCode}`));
           }
           return parseCapabilitiesXml(response.body.toString('utf8'));
@@ -122,45 +116,54 @@ const createESCLClient = (): ESCLClient => ({
 
         return requestScanner(scanJobsUrl, {
           method: 'POST',
-          headers: { 'Content-Type': 'text/xml; charset=utf-8' },
+          headers: { 'content-type': 'text/xml; charset=utf-8' },
           body: createScanRequestXml(settings),
-        }).then((response) => {
-          if (response.statusCode !== 201) {
-            return Promise.reject(
-              new Error(
-                `Failed to create scan job: HTTP ${response.statusCode}`,
-              ),
-            );
-          }
-
-          const jobUrl = getHeaderValue(response.headers.location);
-          if (!jobUrl) {
-            return Promise.reject(
-              new Error('No job URL returned from scanner'),
-            );
-          }
-
-          return {
-            jobUrl: resolveScannerLocation(scanner, jobUrl),
-            status: 'pending' as const,
-          };
         });
       },
       catch: (error) =>
         new ESCLError({ message: 'Failed to start scan job', cause: error }),
-    }),
+    }).pipe(
+      Effect.flatMap((response) => {
+        if (response.statusCode !== createdStatus) {
+          return Effect.fail(
+            new ESCLError({
+              message: `Failed to create scan job: HTTP ${response.statusCode}`,
+            }),
+          );
+        }
+
+        const jobUrl = getHeaderValue(response.headers.location);
+        if (!jobUrl) {
+          return Effect.fail(
+            new ESCLError({ message: 'No job URL returned from scanner' }),
+          );
+        }
+
+        return resolveScannerLocation(scanner, jobUrl).pipe(
+          Effect.map((resolvedJobUrl) => ({
+            jobUrl: resolvedJobUrl,
+            status: 'pending' as const,
+          })),
+        );
+      }),
+    ),
 
   getScanResult: (jobUrl: string) =>
     Effect.tryPromise({
-      try: () => {
-        return new Promise<void>((resolve) => setTimeout(resolve, 2000))
+      try: () =>
+        new Promise<void>((resolve) =>
+          setTimeout(resolve, scanWarmupMilliseconds),
+        )
           .then(() =>
             requestScanner(`${jobUrl}/NextDocument`, {
               method: 'GET',
             }),
           )
           .then((response) => {
-            if (response.statusCode < 200 || response.statusCode >= 300) {
+            if (
+              response.statusCode < successStatus ||
+              response.statusCode >= redirectStatus
+            ) {
               return Promise.reject(
                 new Error(
                   `Failed to get scan result: HTTP ${response.statusCode}`,
@@ -171,8 +174,7 @@ const createESCLClient = (): ESCLClient => ({
             const contentType =
               response.headers['content-type'] || 'image/jpeg';
             return `data:${contentType};base64,${response.body.toString('base64')}`;
-          });
-      },
+          }),
       catch: (error) =>
         new ESCLError({
           message: 'Failed to retrieve scan result',

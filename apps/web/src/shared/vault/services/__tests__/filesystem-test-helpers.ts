@@ -1,63 +1,33 @@
-import { randomUUID } from 'node:crypto';
-import * as path from 'node:path';
-
-const runCommand = async (
-  cmd: string[],
-): Promise<{
-  readonly exitCode: number;
-  readonly stdout: string;
-  readonly stderr: string;
-}> => {
-  const process = Bun.spawn(cmd, {
-    stdout: 'pipe',
-    stderr: 'pipe',
-  });
-
-  const [exitCode, stdout, stderr] = await Promise.all([
-    process.exited,
-    new Response(process.stdout).text(),
-    new Response(process.stderr).text(),
-  ]);
-
-  return { exitCode, stdout, stderr };
-};
-
-export const ensureDirectory = async (directoryPath: string): Promise<void> => {
-  const result = await runCommand(['mkdir', '-p', directoryPath]);
-  if (result.exitCode !== 0) {
-    return Promise.reject(new Error(result.stderr));
-  }
-};
-
-export const setupTestVaultPath = async (): Promise<string> => {
-  const tmpRoot = Bun.env.TMPDIR ?? '/tmp';
-  const testVaultPath = path.join(tmpRoot, `papersync-test-${randomUUID()}`);
-  await ensureDirectory(testVaultPath);
-  return testVaultPath;
-};
-
-export const cleanupTestVaultPath = async (
-  testVaultPath: string,
-): Promise<void> => {
-  await runCommand(['rm', '-rf', testVaultPath]);
-};
-
-export const writeTextFile = async (
-  filePath: string,
-  content: string,
-): Promise<void> => {
+import {
+  mkdir,
+  mkdtemp,
+  readFile,
+  rm,
+  stat,
+  writeFile,
+} from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+export const ensureDirectory = (directoryPath: string) =>
+  mkdir(directoryPath, { recursive: true });
+export const setupTestVaultPath = () =>
+  mkdtemp(path.join(tmpdir(), 'papersync-test-'));
+export const cleanupTestVaultPath = (testVaultPath: string) =>
+  rm(testVaultPath, { recursive: true, force: true });
+export const writeTextFile = async (filePath: string, content: string) => {
   await ensureDirectory(path.dirname(filePath));
-  await Bun.write(filePath, content);
+  await writeFile(filePath, content);
 };
-
-export const readTextFile = async (filePath: string): Promise<string> =>
-  Bun.file(filePath).text();
-
-export const isDirectory = async (directoryPath: string): Promise<boolean> =>
-  (await runCommand(['test', '-d', directoryPath])).exitCode === 0;
-
-export const pathExists = async (targetPath: string): Promise<boolean> =>
-  Bun.file(targetPath).exists() || isDirectory(targetPath);
-
-export const joinPath = (...segments: ReadonlyArray<string>): string =>
+export const readTextFile = (filePath: string) => readFile(filePath, 'utf8');
+export const isDirectory = (directoryPath: string) =>
+  stat(directoryPath).then(
+    (info) => info.isDirectory(),
+    () => false,
+  );
+export const pathExists = (targetPath: string) =>
+  stat(targetPath).then(
+    () => true,
+    () => false,
+  );
+export const joinPath = (...segments: ReadonlyArray<string>) =>
   path.join(...segments);

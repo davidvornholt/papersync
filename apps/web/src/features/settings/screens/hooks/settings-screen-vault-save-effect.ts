@@ -1,5 +1,5 @@
 import { Data, Effect } from 'effect';
-import type { Settings, VaultMethod } from '@/shared/hooks/use-settings';
+import type { Settings, VaultMethod } from '@/shared/hooks/use-settings-schema';
 import { loadSettings } from '@/shared/hooks/use-settings-storage';
 import { syncSettingsToVault } from '@/shared/vault/actions/sync-settings';
 import type { VaultMethod as SettingsSyncMethod } from '@/shared/vault/actions/sync-settings-types';
@@ -45,12 +45,14 @@ export const createSaveSettingsEffect = ({
         Effect.flatMap(() => {
           // Super Productivity is a task manager, not a notes vault; subjects
           // and timetables are kept local only when it's the active provider.
-          const method = settings.vault.method;
+          const { method } = settings.vault;
 
           if (
-            !isVaultConfigured ||
-            !supportsSettingsSync(method) ||
-            !hasVaultSyncChanges(previousSettings, settings)
+            !(
+              isVaultConfigured &&
+              supportsSettingsSync(method) &&
+              hasVaultSyncChanges(previousSettings, settings)
+            )
           ) {
             return Effect.sync(() =>
               addToast('Settings saved successfully!', 'success'),

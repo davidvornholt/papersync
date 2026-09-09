@@ -1,34 +1,35 @@
 'use server';
 
-import { Effect } from 'effect';
+import { Effect, Schema } from 'effect';
 import {
   ESCLClient,
-  ESCLClientLayer,
-  type ScanSettings,
-} from '../services/escl-client';
-import type { DiscoveredScanner } from '../services/scanner-discovery';
-
-// ============================================================================
-// Types
-// ============================================================================
-
+  ScanSettingsSchema,
+} from '@/features/scanner/services/escl-types';
+import { DiscoveredScannerSchema } from '@/features/scanner/services/scanner-discovery-types';
+import { requireSession } from '@/shared/auth/session';
+import { ESCLClientLayer } from '../services/escl-client';
 export type ScanFromDeviceResult =
   | { readonly success: true; readonly imageData: string }
   | { readonly success: false; readonly error: string };
 
-// ============================================================================
-// Server Action
-// ============================================================================
+const getErrorMessage = (error: unknown): string =>
+  error instanceof Error ? error.message : 'Scanner request failed.';
 
-export async function scanFromDevice(
-  scanner: DiscoveredScanner,
-  settings: ScanSettings,
-): Promise<ScanFromDeviceResult> {
+export const scanFromDevice = async (
+  scanner: unknown,
+  settings: unknown,
+): Promise<ScanFromDeviceResult> => {
+  await requireSession();
   const program = Effect.gen(function* () {
+    const decodedScanner = yield* Schema.decodeUnknown(DiscoveredScannerSchema)(
+      scanner,
+    );
+    const decodedSettings =
+      yield* Schema.decodeUnknown(ScanSettingsSchema)(settings);
     const client = yield* ESCLClient;
 
     // Start the scan job
-    const job = yield* client.startScan(scanner, settings);
+    const job = yield* client.startScan(decodedScanner, decodedSettings);
 
     // Retrieve the scanned image
     const imageData = yield* client.getScanResult(job.jobUrl);
@@ -38,9 +39,12 @@ export async function scanFromDevice(
     Effect.provide(ESCLClientLayer),
     Effect.map((imageData) => ({ success: true as const, imageData })),
     Effect.catchAll((error) =>
-      Effect.succeed({ success: false as const, error: error.message }),
+      Effect.succeed({
+        success: false as const,
+        error: getErrorMessage(error),
+      }),
     ),
   );
 
   return Effect.runPromise(program);
-}
+};

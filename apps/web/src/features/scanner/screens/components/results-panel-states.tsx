@@ -1,18 +1,17 @@
 'use client';
 
 import { motion } from 'motion/react';
-import { Spinner } from '@/shared/components/motion';
-
+import { Spinner } from '@/shared/components/motion-loading';
 export const ResultsEmptyState = (): React.ReactElement => (
   <motion.div
     key="empty"
-    initial={{ opacity: 0 }}
+    initial={false}
     animate={{ opacity: 1 }}
     exit={{ opacity: 0 }}
-    className="flex flex-col items-center justify-center flex-1 py-16 text-center"
+    className="flex flex-1 flex-col items-center justify-center py-16 text-center"
   >
-    <p className="text-foreground font-medium">No new entries detected</p>
-    <p className="text-sm text-muted mt-1">
+    <p className="font-medium text-foreground">No new entries detected</p>
+    <p className="mt-1 text-muted text-sm">
       The scan may not contain handwritten content
     </p>
   </motion.div>
@@ -21,27 +20,27 @@ export const ResultsEmptyState = (): React.ReactElement => (
 export const ResultsProcessingState = (): React.ReactElement => (
   <motion.div
     key="processing"
-    initial={{ opacity: 0 }}
+    initial={false}
     animate={{ opacity: 1 }}
     exit={{ opacity: 0 }}
-    className="flex flex-col items-center justify-center flex-1 py-16"
+    className="flex flex-1 flex-col items-center justify-center py-16"
   >
     <Spinner size="lg" />
-    <p className="mt-4 text-foreground font-medium">Analyzing handwriting...</p>
-    <p className="text-sm text-muted mt-1">This may take a moment</p>
+    <p className="mt-4 font-medium text-foreground">Analyzing handwriting...</p>
+    <p className="mt-1 text-muted text-sm">This may take a moment</p>
   </motion.div>
 );
 
 export const ResultsIdleState = (): React.ReactElement => (
   <motion.div
     key="idle"
-    initial={{ opacity: 0 }}
+    initial={false}
     animate={{ opacity: 1 }}
     exit={{ opacity: 0 }}
-    className="flex flex-col items-center justify-center flex-1 py-16 text-center"
+    className="flex flex-1 flex-col items-center justify-center py-16 text-center"
   >
     <p className="text-muted">Upload a scan to see extracted content</p>
-    <p className="text-sm text-muted-light mt-1">
+    <p className="mt-1 text-muted-light text-sm">
       AI will detect and extract handwritten entries
     </p>
   </motion.div>
@@ -54,12 +53,12 @@ export const ResultsErrorState = ({
 }): React.ReactElement => (
   <motion.div
     key="error"
-    initial={{ opacity: 0 }}
+    initial={false}
     animate={{ opacity: 1 }}
     exit={{ opacity: 0 }}
-    className="flex flex-col items-center justify-center flex-1 py-16 text-center"
+    className="flex flex-1 flex-col items-center justify-center py-16 text-center"
   >
-    <p className="text-foreground font-medium">Processing Failed</p>
-    <p className="text-sm text-muted mt-1">{message}</p>
+    <p className="font-medium text-foreground">Processing failed</p>
+    <p className="mt-1 text-muted text-sm">{message}</p>
   </motion.div>
 );

@@ -3,7 +3,7 @@ import type { Subject } from '@/shared/types/schemas';
 
 type ExceptionSlotEditorProps = {
   readonly slots: Array<{ id: string; subjectId: string }>;
-  readonly subjects: readonly Subject[];
+  readonly subjects: ReadonlyArray<Subject>;
   readonly onAddSlot: () => void;
   readonly onChangeSlot: (slotId: string, subjectId: string) => void;
   readonly onRemoveSlot: (slotId: string) => void;
@@ -17,7 +17,7 @@ export const ExceptionSlotEditor = ({
   onRemoveSlot,
 }: ExceptionSlotEditorProps): React.ReactElement => (
   <div>
-    <div className="flex items-baseline justify-between mb-3">
+    <div className="mb-3 flex items-baseline justify-between">
       <span className="field-label">Classes for this day</span>
       <Button
         variant="ghost"
@@ -30,7 +30,7 @@ export const ExceptionSlotEditor = ({
     </div>
 
     {slots.length === 0 ? (
-      <div className="text-center py-6 text-graphite border border-dashed border-hairline-strong">
+      <div className="border border-hairline-strong border-dashed py-6 text-center text-graphite">
         <p className="serif-italic text-[14px]">No classes (day off)</p>
       </div>
     ) : (
@@ -38,15 +38,15 @@ export const ExceptionSlotEditor = ({
         {slots.map((slot, index) => (
           <li
             key={slot.id}
-            className="flex items-center gap-3 px-1 py-2 border-b border-hairline last:border-b-0"
+            className="flex items-center gap-3 border-hairline border-b px-1 py-2 last:border-b-0"
           >
-            <span className="mono text-[11px] text-graphite w-6 text-right">
+            <span className="mono w-6 text-right text-[11px] text-graphite">
               {String(index + 1).padStart(2, '0')}
             </span>
             <select
               value={slot.subjectId}
               onChange={(e) => onChangeSlot(slot.id, e.target.value)}
-              className="flex-1 bg-transparent border-0 border-b border-hairline-strong px-0 py-2 text-[14px] text-ink focus:outline-none focus:border-ink cursor-pointer"
+              className="flex-1 cursor-pointer border-0 border-hairline-strong border-b bg-transparent px-0 py-2 text-[14px] text-ink focus:border-ink focus:outline-none"
             >
               {subjects.map((subject) => (
                 <option key={subject.id} value={subject.id}>
@@ -57,11 +57,11 @@ export const ExceptionSlotEditor = ({
             <button
               type="button"
               onClick={() => onRemoveSlot(slot.id)}
-              className="p-2 text-graphite hover:text-accent transition-colors cursor-pointer touch-manipulation"
+              className="cursor-pointer touch-manipulation p-2 text-graphite transition-colors hover:text-accent"
               aria-label="Remove class"
             >
               <svg
-                className="w-4 h-4"
+                className="size-4"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"

@@ -1,6 +1,6 @@
+// biome-ignore lint/correctness/noUnresolvedImports: Biome cannot resolve this conditional CommonJS export; TypeScript and the production build verify it.
 import { StyleSheet } from '@react-pdf/renderer';
 import { colors, LAYOUT } from './planner-document-constants';
-
 export const styles = StyleSheet.create({
   page: {
     padding: LAYOUT.pagePadding,

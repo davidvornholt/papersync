@@ -35,7 +35,7 @@ export const DragDropZone = ({
     (event: React.DragEvent) => {
       event.preventDefault();
       setIsDragging(false);
-      const file = event.dataTransfer.files[0];
+      const [file] = event.dataTransfer.files;
       if (file?.type.startsWith('image/')) {
         onFileSelect(file);
       }
@@ -44,13 +44,14 @@ export const DragDropZone = ({
   );
 
   return (
+    // biome-ignore lint/a11y/noNoninteractiveElementInteractions: Drag-and-drop augments the keyboard-accessible upload and camera buttons.
     <section
       aria-label="Drop zone for planner images"
       onDrop={handleDrop}
       onDragOver={(event) => event.preventDefault()}
       onDragEnter={() => setIsDragging(true)}
       onDragLeave={() => setIsDragging(false)}
-      className={`w-full border border-dashed py-10 sm:py-12 px-5 sm:px-8 transition-colors duration-300 ${
+      className={`w-full border border-dashed px-5 py-10 transition-colors duration-300 sm:px-8 sm:py-12 ${
         isDragging
           ? 'border-accent bg-accent-soft/30'
           : 'border-hairline-strong'
@@ -59,7 +60,7 @@ export const DragDropZone = ({
       <input
         ref={cameraInputRef}
         type="file"
-        accept="image/*"
+        accept="image/jpeg, image/png, image/webp"
         capture="environment"
         onChange={handleFileChange}
         className="hidden"
@@ -68,7 +69,7 @@ export const DragDropZone = ({
       <input
         ref={fileInputRef}
         type="file"
-        accept="image/*"
+        accept="image/jpeg, image/png, image/webp"
         onChange={handleFileChange}
         className="hidden"
         aria-label="Select image from device"
@@ -79,10 +80,10 @@ export const DragDropZone = ({
           animate={
             isDragging ? { scale: 1.05, rotate: 3 } : { scale: 1, rotate: 0 }
           }
-          className="w-14 h-14 mx-auto mb-5 rounded-full bg-accent-soft/60 flex items-center justify-center"
+          className="mx-auto mb-5 flex size-14 items-center justify-center rounded-full bg-accent-soft/60"
         >
           <svg
-            className={`w-7 h-7 transition-colors ${
+            className={`size-7 transition-colors ${
               isDragging ? 'text-accent' : 'text-graphite'
             }`}
             fill="none"
@@ -105,16 +106,16 @@ export const DragDropZone = ({
           </svg>
         </motion.div>
 
-        <p className="serif text-[18px] text-ink mb-1">
+        <p className="serif mb-1 text-[18px] text-ink">
           {isDragging ? 'Drop image here' : 'Capture your planner'}
         </p>
-        {!isDragging && (
-          <p className="text-[13px] text-graphite mb-5">
+        {isDragging ? null : (
+          <p className="mb-5 text-[13px] text-graphite">
             Take a photo or upload an existing scan
           </p>
         )}
 
-        <div className="flex flex-col-reverse sm:flex-row gap-2 sm:gap-3 sm:justify-center">
+        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-center sm:gap-3">
           <Button
             variant="secondary"
             onClick={() => fileInputRef.current?.click()}

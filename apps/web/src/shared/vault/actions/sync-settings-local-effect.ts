@@ -1,27 +1,31 @@
 import { Effect } from 'effect';
 import type { SubjectsConfig } from '@/shared/types/schemas';
-import type { TimetableConfig } from '../services/config';
+import type {
+  VaultError,
+  VaultFileNotFoundError,
+} from '@/shared/vault/errors/filesystem-errors';
+import { SyncSettingsValidationError } from '@/shared/vault/errors/sync-settings-types';
+import {
+  readSubjects,
+  readTimetable,
+  type TimetableConfig,
+  writeSubjects,
+  writeTimetable,
+} from '@/shared/vault/services/config-json';
 import {
   getSubjectsPath,
   getTimetablePath,
-  readSubjects,
-  readTimetable,
-  writeSubjects,
-  writeTimetable,
-} from '../services/config';
-import {
-  makeLocalVaultLayer,
-  type VaultError,
-  type VaultFileNotFoundError,
-} from '../services/filesystem';
+} from '@/shared/vault/services/config-paths';
+import { makeLocalVaultLayer } from '../services/filesystem';
 import { mergeSubjects, mergeTimetable } from './sync-settings-merge';
 import type { SettingsToSync } from './sync-settings-types';
-import { SyncSettingsValidationError } from './sync-settings-types';
-
 export const syncToLocalVaultEffect = (
   settings: SettingsToSync,
   vaultPath: string,
-): Effect.Effect<readonly string[], SyncSettingsValidationError | VaultError> =>
+): Effect.Effect<
+  ReadonlyArray<string>,
+  SyncSettingsValidationError | VaultError
+> =>
   Effect.gen(function* () {
     if (!vaultPath) {
       return yield* Effect.fail(

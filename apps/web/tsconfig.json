@@ -1,5 +1,5 @@
 {
-  "extends": "@papersync/typescript-config/nextjs.json",
+  "extends": "@davidvornholt/typescript-config/next",
   "compilerOptions": {
     "types": ["bun"],
     "paths": {

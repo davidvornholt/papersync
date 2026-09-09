@@ -2,6 +2,7 @@ import type { Subject } from '@/shared/types/schemas';
 import { LAYOUT, WEEKDAYS } from './planner-document-constants';
 import type { DayData, DayInfo, TimetableDay } from './planner-document-types';
 
+const fridayOffset = 4;
 export const getDaysOfWeek = (startDate: Date): ReadonlyArray<DayInfo> =>
   WEEKDAYS.map((day, index) => {
     const date = new Date(startDate);
@@ -19,22 +20,22 @@ export const formatDate = (date: Date): string =>
 
 export const formatCompactDateRange = (start: Date): string => {
   const friday = new Date(start);
-  friday.setDate(start.getDate() + 4);
+  friday.setDate(start.getDate() + fridayOffset);
   return `${formatDate(start)} – ${formatDate(friday)}`;
 };
 
 export const getSubjectsForDay = (
   dayKey: TimetableDay['day'],
-  timetable: readonly TimetableDay[],
-  subjects: readonly Subject[],
-): readonly Subject[] => {
+  timetable: ReadonlyArray<TimetableDay>,
+  subjects: ReadonlyArray<Subject>,
+): ReadonlyArray<Subject> => {
   const daySchedule = timetable.find((t) => t.day === dayKey);
   if (!daySchedule || daySchedule.slots.length === 0) {
     return [];
   }
 
   const seenIds = new Set<string>();
-  const result: Subject[] = [];
+  const result: Array<Subject> = [];
 
   for (const slot of daySchedule.slots) {
     if (!seenIds.has(slot.subjectId)) {
@@ -73,11 +74,11 @@ const calculateLinesPerSubject = (
 };
 
 export const calculatePageData = (
-  days: readonly DayInfo[],
-  timetable: readonly TimetableDay[],
-  subjects: readonly Subject[],
+  days: ReadonlyArray<DayInfo>,
+  timetable: ReadonlyArray<TimetableDay>,
+  subjects: ReadonlyArray<Subject>,
   availableHeight: number,
-): DayData[] => {
+): Array<DayData> => {
   const daysWithSubjects = days.map((day) => ({
     day,
     subjects: getSubjectsForDay(day.dayKey, timetable, subjects),
@@ -104,5 +105,8 @@ export const calculatePageData = (
   });
 };
 
-export const generateLineKeys = (subjectId: string, count: number): string[] =>
+export const generateLineKeys = (
+  subjectId: string,
+  count: number,
+): Array<string> =>
   Array.from({ length: count }, (_, index) => `${subjectId}-l${index}`);

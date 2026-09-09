@@ -1,199 +1,108 @@
 'use client';
-
-import { useCallback, useState } from 'react';
-import { useToast } from '@/shared/components/toast';
+import { Effect } from 'effect';
+import { useState } from 'react';
+import type { ExtractedEntry } from '@/features/scanner/hooks/use-scan-types';
+import { useToast } from '@/shared/components/use-toast';
 import { useSettings } from '@/shared/hooks/use-settings';
-import type { VaultSettings } from '@/shared/ocr/actions/extract-types';
-import { syncEntriesToVault } from '@/shared/vault/actions/sync';
-import { type ExtractedEntry, useScan } from '../../hooks/use-scan';
-import type { ResultsPanelState } from '../scan-screen-types';
+import { requestAction } from '@/shared/http/action';
+import { useScan } from '../../hooks/use-scan';
+import { useScanSave } from './use-scan-save';
 
-type UseScanScreenReturn = {
-  readonly scan: ReturnType<typeof useScan>;
-  readonly isDragging: boolean;
-  readonly setIsDragging: (dragging: boolean) => void;
-  readonly isSyncing: boolean;
-  readonly editedEntries: readonly ExtractedEntry[];
-  readonly panelState: ResultsPanelState;
-  readonly handleFileSelect: (file: File) => Promise<void>;
-  readonly handleProcess: () => Promise<void>;
-  readonly handleUpdateEntry: (
-    id: string,
-    updates: Partial<ExtractedEntry>,
-  ) => void;
-  readonly handleDeleteEntry: (id: string) => void;
-  readonly handleSync: () => Promise<void>;
-  readonly handleClear: () => void;
-  readonly handleScanFromDevice: (imageData: string) => Promise<void>;
-};
-
-const buildOcrVaultContext = (
-  vault: ReturnType<typeof useSettings>['settings']['vault'],
-): VaultSettings | undefined => {
-  // OCR uses the vault to fetch existing notes for context. Super Productivity
-  // is task-only — there are no notes to read, so we skip the context lookup.
-  if (vault.method === 'local') {
-    return {
-      method: 'local',
-      localPath: vault.localPath,
-      githubToken: vault.githubToken,
-      githubRepo: vault.githubRepo,
-    };
-  }
-  if (vault.method === 'github') {
-    return {
-      method: 'github',
-      localPath: vault.localPath,
-      githubToken: vault.githubToken,
-      githubRepo: vault.githubRepo,
-    };
-  }
-  return undefined;
-};
-
-export const useScanScreen = (): UseScanScreenReturn => {
-  const { settings } = useSettings();
+export const useScanScreen = () => {
+  const { settings, isLoading } = useSettings();
   const { addToast } = useToast();
   const scan = useScan({
-    aiSettings: {
-      provider: settings.ai.provider,
-      googleApiKey: settings.ai.googleApiKey,
-      ollamaEndpoint: settings.ai.ollamaEndpoint,
-    },
-    vaultSettings: buildOcrVaultContext(settings.vault),
+    aiSettings: settings.ai,
+    vaultSettings:
+      settings.vault.method === 'super-productivity'
+        ? undefined
+        : { ...settings.vault, method: settings.vault.method },
   });
-
   const [isDragging, setIsDragging] = useState(false);
-  const [isSyncing, setIsSyncing] = useState(false);
-  const [editedEntries, setEditedEntries] = useState<ExtractedEntry[]>([]);
-
-  const panelState: ResultsPanelState =
-    scan.state.status === 'processing' ||
-    scan.state.status === 'complete' ||
-    scan.state.status === 'error' ||
-    scan.state.status === 'uploading'
-      ? scan.state.status
-      : 'idle';
-
-  const handleFileSelect = (file: File): Promise<void> =>
-    scan.upload(file).then(() => {
-      addToast('Image uploaded successfully', 'success');
-    });
-
-  const handleProcess = (): Promise<void> =>
-    scan.process().then((result) => {
-      if (result.status === 'complete') {
-        setEditedEntries((prev) => {
-          const newEntries = result.entries.filter(
-            (entry) =>
-              !prev.some((existing) => existing.content === entry.content),
-          );
-          return [...prev, ...newEntries];
-        });
-        addToast(
-          result.entries.length > 0
-            ? `Extracted ${result.entries.length} new entries`
-            : 'No new entries found in scan',
-          result.entries.length > 0 ? 'success' : 'info',
-        );
-        return;
-      }
-
-      if (result.status === 'error') {
-        addToast(`Failed to process scan: ${result.error}`, 'error');
-      }
-    });
-
-  const handleUpdateEntry = useCallback(
-    (id: string, updates: Partial<ExtractedEntry>) => {
-      setEditedEntries((prev) =>
-        prev.map((entry) =>
-          entry.id === id ? { ...entry, ...updates } : entry,
-        ),
-      );
-    },
-    [],
-  );
-
-  const handleDeleteEntry = useCallback(
-    (id: string) => {
-      setEditedEntries((prev) => prev.filter((entry) => entry.id !== id));
-      addToast('Entry removed', 'info');
-    },
-    [addToast],
-  );
-
-  const handleSync = (): Promise<void> => {
-    if (editedEntries.length === 0) {
-      addToast('No entries to sync', 'info');
-      return Promise.resolve();
-    }
-
-    const {
-      method,
-      localPath,
-      githubToken,
-      githubRepo,
-      superProductivityEndpoint,
-      superProductivityProjectId,
-      superProductivityTagIds,
-    } = settings.vault;
-    setIsSyncing(true);
-
-    return syncEntriesToVault(editedEntries, {
-      method,
-      localPath,
-      githubToken,
-      githubRepo,
-      superProductivityEndpoint,
-      superProductivityProjectId,
-      superProductivityTagIds,
-    })
-      .then((result) => {
-        if (result.success) {
-          addToast('Synced to vault successfully!', 'success');
-          setEditedEntries([]);
-          scan.clear();
-          return;
-        }
-        addToast(`Sync failed: ${result.error}`, 'error');
-      })
-      .finally(() => {
-        setIsSyncing(false);
-      });
-  };
-
-  const handleClear = (): void => {
+  const [editedEntries, setEditedEntries] = useState<Array<ExtractedEntry>>([]);
+  const handleClear = () => {
     setEditedEntries([]);
     scan.clear();
   };
-
-  const handleScanFromDevice = (imageData: string): Promise<void> =>
-    fetch(imageData)
-      .then((response) => response.blob())
-      .then((blob) => {
-        const file = new File([blob], 'scanned-document.jpg', {
-          type: blob.type,
-        });
-        return scan.upload(file);
-      })
-      .then(() => {
-        addToast("Document scanned successfully! Click 'Process'.", 'success');
-      });
-
+  const saving = useScanSave({
+    scan,
+    entries: editedEntries,
+    vault: { ...settings.vault, method: settings.vault.method },
+    clear: handleClear,
+  });
+  const handleFailure = (error: { readonly message: string }) =>
+    Effect.sync(() => addToast(error.message, 'error'));
+  const handleFileSelect = (file: File) => {
+    setEditedEntries([]);
+    Effect.runFork(
+      requestAction(() => scan.upload(file)).pipe(
+        Effect.tap((isUploaded) =>
+          Effect.sync(() => {
+            if (isUploaded) {
+              addToast('Image ready. Check the printed week.', 'success');
+            }
+          }),
+        ),
+        Effect.catchAll(handleFailure),
+      ),
+    );
+  };
+  const handleProcess = () => {
+    setEditedEntries([]);
+    Effect.runFork(
+      requestAction(scan.process).pipe(
+        Effect.tap((result) =>
+          Effect.sync(() => {
+            if (result.status === 'complete') {
+              setEditedEntries([...result.entries]);
+              addToast(
+                result.entries.length > 0
+                  ? `Review ${result.entries.length} extracted entries`
+                  : 'No homework found in this image',
+                'info',
+              );
+            }
+            if (result.status === 'error') {
+              addToast(result.error, 'error');
+            }
+          }),
+        ),
+        Effect.catchAll(handleFailure),
+      ),
+    );
+  };
+  const handleScanFromDevice = (imageData: string) => {
+    Effect.runFork(
+      requestAction(() => fetch(imageData)).pipe(
+        Effect.flatMap((response) => requestAction(() => response.blob())),
+        Effect.tap((blob) =>
+          Effect.sync(() =>
+            handleFileSelect(new File([blob], 'scan.jpg', { type: blob.type })),
+          ),
+        ),
+        Effect.catchAll(handleFailure),
+      ),
+    );
+  };
   return {
     scan,
+    isLoading,
     isDragging,
     setIsDragging,
-    isSyncing,
+    ...saving,
     editedEntries,
-    panelState,
+    panelState: scan.state.status,
     handleFileSelect,
     handleProcess,
-    handleUpdateEntry,
-    handleDeleteEntry,
-    handleSync,
     handleClear,
     handleScanFromDevice,
+    handleUpdateEntry: (id: string, updates: Partial<ExtractedEntry>) =>
+      setEditedEntries((entries) =>
+        entries.map((entry) =>
+          entry.id === id ? { ...entry, ...updates } : entry,
+        ),
+      ),
+    handleDeleteEntry: (id: string) =>
+      setEditedEntries((entries) => entries.filter((entry) => entry.id !== id)),
   };
 };

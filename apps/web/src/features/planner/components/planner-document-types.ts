@@ -7,7 +7,7 @@ type TimetableSlot = {
 
 export type TimetableDay = {
   readonly day: 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday';
-  readonly slots: readonly TimetableSlot[];
+  readonly slots: ReadonlyArray<TimetableSlot>;
 };
 
 export type PlannerProps = {
@@ -16,8 +16,8 @@ export type PlannerProps = {
     readonly start: Date;
     readonly end: Date;
   };
-  readonly subjects: readonly Subject[];
-  readonly timetable: readonly TimetableDay[];
+  readonly subjects: ReadonlyArray<Subject>;
+  readonly timetable: ReadonlyArray<TimetableDay>;
   readonly qrDataUrl: string;
 };
 
@@ -30,7 +30,7 @@ export type DayInfo = {
 
 export type DayData = {
   readonly day: DayInfo;
-  readonly subjects: readonly Subject[];
+  readonly subjects: ReadonlyArray<Subject>;
   readonly weight: number;
   readonly linesPerSubject: number;
 };

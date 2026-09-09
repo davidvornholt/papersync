@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
 import { Effect } from 'effect';
-import { makeLocalVaultLayer, VaultService } from '../filesystem';
+import { VaultService } from '@/shared/vault/services/filesystem-contract';
+import { makeLocalVaultLayer } from '../filesystem';
 import {
   cleanupTestVaultPath,
   ensureDirectory,
@@ -54,6 +55,9 @@ describe('Local Filesystem VaultService directory and workflow behavior', () => 
       }).pipe(Effect.provide(makeLocalVaultLayer(testVaultPath)));
 
       await Effect.runPromise(program);
+      expect(await isDirectory(joinPath(testVaultPath, 'existing-dir'))).toBe(
+        true,
+      );
     });
   });
 

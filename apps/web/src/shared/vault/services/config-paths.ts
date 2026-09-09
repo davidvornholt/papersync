@@ -1,5 +1,4 @@
 import type { WeekId } from '@/shared/types/schemas';
-
 export const PAPERSYNC_ROOT = 'PaperSync';
 export const CONFIG_DIR = '.papersync';
 export const CONFIG_FILE = 'config.json';
