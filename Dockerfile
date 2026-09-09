@@ -33,7 +33,6 @@ COPY --from=builder /app/packages/db/migrations /app/packages/db/migrations
 COPY --from=production-dependencies /app/packages/db/node_modules /app/packages/db/node_modules
 COPY --from=builder /app/packages/typescript-config /app/packages/typescript-config
 COPY --from=builder /app/apps/web/.next/static ./.next/static
-COPY --from=builder /app/apps/web/public ./public
 COPY --from=builder /app/apps/super-productivity-plugin/dist/papersync-plugin.zip /app/papersync-plugin.zip
 RUN chmod -R a+rX /app
 USER bun
