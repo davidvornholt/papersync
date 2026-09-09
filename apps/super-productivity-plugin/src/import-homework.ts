@@ -38,7 +38,7 @@ const importEntry = (
       yield* call(() =>
         api.updateTask(existing.id, {
           isDone: existing.isDone === true || payload.isCompleted,
-          ...(payload.dueDate ? { dueDay: payload.dueDate } : {}),
+          dueDay: payload.dueDate ?? null,
         }),
       );
       return existing.id;

@@ -1,7 +1,8 @@
-import { Effect, Fiber, Schedule } from 'effect';
+import { Effect, Schedule } from 'effect';
 import type { PluginApi } from './api';
 import { configure } from './configure';
 import { importHomework } from './import-homework';
+import { createImportController } from './import-lifecycle';
 
 declare const PluginAPI: PluginApi;
 declare const plugin: {
@@ -10,6 +11,7 @@ declare const plugin: {
 };
 
 const semaphore = Effect.runSync(Effect.makeSemaphore(1));
+const importController = createImportController();
 const runImport = (isManual: boolean) =>
   semaphore.withPermits(1)(
     importHomework(PluginAPI).pipe(
@@ -40,14 +42,14 @@ PluginAPI.registerHeaderButton({
   label: 'Import homework',
   icon: 'assignment',
   onClick: () => {
-    Effect.runFork(runImport(true));
+    importController.start(runImport(true));
   },
 });
 plugin.onReady(() => {
-  const fiber = Effect.runFork(
+  importController.start(
     runImport(false).pipe(Effect.repeat(Schedule.spaced('60 seconds'))),
   );
-  plugin.onUnload(() => {
-    Effect.runFork(Fiber.interrupt(fiber));
-  });
+});
+plugin.onUnload(() => {
+  importController.stop();
 });

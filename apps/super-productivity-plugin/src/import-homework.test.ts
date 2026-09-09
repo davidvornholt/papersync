@@ -1,10 +1,12 @@
 import { expect, it, mock } from 'bun:test';
+import type { QueuedHomework } from '@papersync/homework/contract';
 import { getTaskMarker } from '@papersync/homework/identity';
 import { Effect } from 'effect';
 import type { PluginApi, Task } from './api';
 import { importHomework } from './import-homework';
+import { createImportController } from './import-lifecycle';
 
-const item = {
+const item: QueuedHomework = {
   payload: {
     id: 'homework-1',
     week: '2026-W37',
@@ -80,6 +82,31 @@ it('an archived task is acknowledged without recreating or editing it', async ()
   expect(api.updateTask).not.toHaveBeenCalled();
 });
 
+it('removes a reviewed due date while preserving completed state', async () => {
+  const { api, tasks } = makeApi();
+  tasks.push({
+    id: 'task-1',
+    notes: getTaskMarker(item.payload.id),
+    isDone: true,
+    dueDay: '2026-09-10',
+  });
+  const { dueDate: _dueDate, ...payloadWithoutDueDate } = item.payload;
+  api.request.mockResolvedValue([
+    {
+      payload: { ...payloadWithoutDueDate, isCompleted: false },
+      revision: item.revision,
+    },
+  ]);
+
+  await Effect.runPromise(importHomework(api));
+
+  expect(api.updateTask).toHaveBeenCalledWith('task-1', {
+    isDone: true,
+    dueDay: null,
+  });
+  expect(api.addTask).not.toHaveBeenCalled();
+});
+
 it('invalid queue data cannot create tasks', async () => {
   const { api } = makeApi();
   api.request.mockResolvedValue([
@@ -93,4 +120,22 @@ it('invalid queue data cannot create tasks', async () => {
   );
   expect(result._tag).toBe('Left');
   expect(api.addTask).not.toHaveBeenCalled();
+});
+
+it('unload interrupts overlapping manual and scheduled imports', async () => {
+  const controller = createImportController();
+  let interrupted = 0;
+  const runningImport = Effect.never.pipe(
+    Effect.ensuring(
+      Effect.sync(() => {
+        interrupted += 1;
+      }),
+    ),
+  );
+
+  controller.start(runningImport);
+  controller.start(runningImport);
+  await Effect.runPromise(controller.stop());
+
+  expect(interrupted).toBe(2);
 });

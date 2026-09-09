@@ -2,12 +2,13 @@ export type Task = {
   readonly id: string;
   readonly notes?: string;
   readonly isDone?: boolean;
+  readonly dueDay?: string | null;
 };
 export type TaskInput = {
   readonly title: string;
   readonly notes: string;
   readonly isDone: boolean;
-  readonly dueDay?: string;
+  readonly dueDay?: string | null;
   readonly projectId?: string;
   readonly tagIds?: ReadonlyArray<string>;
 };
