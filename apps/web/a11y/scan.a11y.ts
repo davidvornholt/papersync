@@ -165,8 +165,22 @@ test('a sheet without a QR code uses OCR for its week and only asks for unreadab
   });
   await process.click();
   await expect(approve).toBeDisabled();
-  await expect(page.getByLabel('Week printed on the sheet')).toBeVisible();
-  await page.getByLabel('Week printed on the sheet').fill('2026-W01');
+  const weekInput = page.getByLabel('Week printed on the sheet');
+  await expect(weekInput).toBeVisible();
+  await weekInput.focus();
+  // Native week inputs emit a change for the partial year while typing.
+  await page.keyboard.type('01');
+  await page.keyboard.press('ArrowRight');
+  await page.keyboard.press('2');
+  await expect(weekInput).toHaveValue('0002-W01');
+  await expect(page.getByText('Sheet week: 0002-W01')).toBeVisible();
+  await expect(
+    page.locator('details').filter({ has: weekInput }),
+  ).toHaveAttribute('open', '');
+  await expect(weekInput).toBeFocused();
+  await page.keyboard.type('026');
+  await expect(weekInput).toHaveValue('2026-W01');
+  await expect(weekInput).toBeFocused();
   modelResponse = JSON.stringify({
     weekId: '2026-W01',
     entries: [entry],
