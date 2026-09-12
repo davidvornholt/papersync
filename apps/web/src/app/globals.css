@@ -8,5 +8,7 @@
    live here.
    ============================================================================= */
 
+/* biome-ignore lint/nursery/useLayeredStyles: Tailwind declares the theme, base, components, and utilities layers itself. */
 @import "tailwindcss";
+/* biome-ignore lint/nursery/useLayeredStyles: The shared theme contributes to those same layers and owns the global reduced-motion override. */
 @import "@papersync/ui/theme.css";

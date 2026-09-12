@@ -5,6 +5,7 @@
 
 /* Keep reduced motion unlayered so it overrides component and utility motion. */
 @media (prefers-reduced-motion: reduce) {
+  /* biome-ignore lint/nursery/useLayeredStyles: Accessibility must override component and utility motion regardless of their layer. */
   html *,
   html *::before,
   html *::after {
