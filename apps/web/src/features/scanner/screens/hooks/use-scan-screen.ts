@@ -6,6 +6,7 @@ import { useToast } from '@/shared/components/use-toast';
 import { useSettings } from '@/shared/hooks/use-settings';
 import { requestAction } from '@/shared/http/action';
 import { useScan } from '../../hooks/use-scan';
+import { useScanImagePaste } from './use-scan-image-paste';
 import { useScanSave } from './use-scan-save';
 
 export const useScanScreen = () => {
@@ -47,6 +48,12 @@ export const useScanScreen = () => {
       ),
     );
   };
+  const isBusy =
+    isLoading ||
+    scan.state.status === 'processing' ||
+    scan.state.status === 'uploading' ||
+    saving.isSyncing;
+  useScanImagePaste({ onFileSelect: handleFileSelect, isDisabled: isBusy });
   const handleProcess = () => {
     setEditedEntries([]);
     Effect.runFork(
@@ -86,7 +93,7 @@ export const useScanScreen = () => {
   };
   return {
     scan,
-    isLoading,
+    isBusy,
     isDragging,
     setIsDragging,
     ...saving,

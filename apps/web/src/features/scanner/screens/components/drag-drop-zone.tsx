@@ -111,7 +111,7 @@ export const DragDropZone = ({
         </p>
         {isDragging ? null : (
           <p className="mb-5 text-[13px] text-graphite">
-            Take a photo or upload an existing scan
+            Take a photo, upload a scan, or paste an image with Ctrl+V or ⌘V
           </p>
         )}
 
