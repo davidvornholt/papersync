@@ -11,27 +11,38 @@ export const useScannerDiscovery = () => {
   const [scanners, setScanners] = useState<ReadonlyArray<DiscoveredScanner>>(
     [],
   );
-  const [isDiscovering, setIsDiscovering] = useState(false);
+  const [discoveryStatus, setDiscoveryStatus] = useState<
+    'idle' | 'searching' | 'complete' | 'failed'
+  >('idle');
   const { addToast } = useToast();
   const onFailure = (error: { readonly message: string }) =>
-    Effect.sync(() => addToast(error.message, 'error'));
+    Effect.sync(() => {
+      setDiscoveryStatus('failed');
+      addToast(error.message, 'error');
+    });
   const handleDiscover = () => {
-    setIsDiscovering(true);
+    setDiscoveryStatus('searching');
     Effect.runFork(
       requestAction(() => discoverScanners(discoveryMilliseconds)).pipe(
         Effect.tap((result) =>
           Effect.sync(() => {
             if (result.success) {
               setScanners(result.scanners);
+              setDiscoveryStatus('complete');
             } else {
+              setDiscoveryStatus('failed');
               addToast(result.error, 'error');
             }
           }),
         ),
         Effect.catchAll(onFailure),
-        Effect.ensuring(Effect.sync(() => setIsDiscovering(false))),
       ),
     );
   };
-  return { scanners, isDiscovering, handleDiscover };
+  return {
+    scanners,
+    discoveryStatus,
+    isDiscovering: discoveryStatus === 'searching',
+    handleDiscover,
+  };
 };

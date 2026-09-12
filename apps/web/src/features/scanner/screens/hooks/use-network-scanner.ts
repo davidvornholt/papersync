@@ -18,7 +18,8 @@ const _discoveryMilliseconds = 10_000;
 export const useNetworkScanner = (
   onScanComplete: (imageData: string) => void,
 ) => {
-  const { scanners, isDiscovering, handleDiscover } = useScannerDiscovery();
+  const { scanners, discoveryStatus, isDiscovering, handleDiscover } =
+    useScannerDiscovery();
   const [selectedScanner, setSelectedScanner] =
     useState<DiscoveredScanner | null>(null);
   const [capabilities, setCapabilities] = useState<ScannerCapabilities | null>(
@@ -114,6 +115,7 @@ export const useNetworkScanner = (
   };
   return {
     scanners,
+    discoveryStatus,
     selectedScanner,
     capabilities,
     isDiscovering,
