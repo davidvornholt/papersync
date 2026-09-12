@@ -28,14 +28,10 @@ const googleResponse = (value: unknown) =>
   });
 it('validates Google output, defaults completion, and normalizes the written day', async () => {
   fetchSpy.mockResolvedValue(
-    googleResponse({ entries: [entry], confidence: 1 }),
+    googleResponse({ weekId: '2026-W37', entries: [entry], confidence: 1 }),
   );
   const result = await Effect.runPromise(
-    createGoogleVisionProvider('fixture-key').extractHandwriting(
-      image,
-      week,
-      '',
-    ),
+    createGoogleVisionProvider('fixture-key').extractHandwriting(image, week),
   );
   const [request] = fetchSpy.mock.calls;
   expect(String(request?.[0])).toContain('/gemini-3.8-flash:generateContent');
@@ -54,11 +50,15 @@ it.each([
 ] as const)('enforces dueDate as date-or-null: %s', async (_, dueDate, tag) => {
   const modelEntry = { ...entry, dueDate };
   fetchSpy.mockResolvedValue(
-    googleResponse({ entries: [modelEntry], confidence: 1 }),
+    googleResponse({
+      weekId: '2026-W37',
+      entries: [modelEntry],
+      confidence: 1,
+    }),
   );
   const result = await Effect.runPromise(
     createGoogleVisionProvider('fixture-key')
-      .extractHandwriting(image, week, '')
+      .extractHandwriting(image, week)
       .pipe(Effect.either),
   );
   expect(result._tag).toBe(tag);
@@ -71,11 +71,11 @@ it.each([
 });
 it('rejects invalid Gemini output', async () => {
   fetchSpy.mockResolvedValue(
-    googleResponse({ entries: [entry], confidence: 9 }),
+    googleResponse({ weekId: '2026-W37', entries: [entry], confidence: 9 }),
   );
   const result = await Effect.runPromise(
     createGoogleVisionProvider('fixture-key')
-      .extractHandwriting(image, week, '')
+      .extractHandwriting(image, week)
       .pipe(Effect.either),
   );
   expect(result._tag).toBe('Left');
@@ -85,13 +85,14 @@ it('sends Ollama the OCR schema and rejects malformed model output', async () =>
   fetchSpy.mockResolvedValue(
     Response.json({
       response: JSON.stringify({
+        weekId: '2026-W37',
         entries: [{ ...entry, dueDate: null }],
         confidence: 1,
       }),
     }),
   );
   expect(
-    (await Effect.runPromise(provider.extractHandwriting(image, week, ''))).data
+    (await Effect.runPromise(provider.extractHandwriting(image, week))).data
       .entries,
   ).toEqual([
     {
@@ -119,8 +120,56 @@ it('sends Ollama the OCR schema and rejects malformed model output', async () =>
   expect(
     (
       await Effect.runPromise(
-        provider.extractHandwriting(image, week, '').pipe(Effect.either),
+        provider.extractHandwriting(image, week).pipe(Effect.either),
       )
     )._tag,
   ).toBe('Left');
+});
+
+it.each(
+  ['google', 'ollama'].flatMap((name) =>
+    [Schema.decodeUnknownSync(WeekId)('2025-W52'), null].map(
+      (detectedWeek) => ({ name, detectedWeek }),
+    ),
+  ),
+)(
+  'detects the printed week without a QR hint and preserves an unknown week: %j',
+  async ({ name, detectedWeek }) => {
+    const provider =
+      name === 'google'
+        ? createGoogleVisionProvider('fixture-key')
+        : createOllamaVisionProvider('http://localhost:11434');
+    const value = {
+      weekId: detectedWeek,
+      entries: [{ ...entry, dueDate: null }],
+      confidence: 1,
+    };
+    fetchSpy.mockResolvedValue(
+      name === 'google'
+        ? googleResponse(value)
+        : Response.json({ response: JSON.stringify(value) }),
+    );
+    const result = await Effect.runPromise(
+      provider.extractHandwriting(image, null),
+    );
+    expect(result.data.weekId).toBe(detectedWeek);
+    expect(result.data.entries[0]?.content).toBe(entry.content);
+    expect(result.data.entries[0]?.dueDate).toBeUndefined();
+  },
+);
+
+it('keeps the verified QR or manual week when the model disagrees', async () => {
+  fetchSpy.mockResolvedValue(
+    googleResponse({ weekId: '2025-W52', entries: [entry], confidence: 1 }),
+  );
+  expect(
+    (
+      await Effect.runPromise(
+        createGoogleVisionProvider('fixture-key').extractHandwriting(
+          image,
+          week,
+        ),
+      )
+    ).data.weekId,
+  ).toBe(week);
 });

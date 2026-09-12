@@ -1,6 +1,8 @@
 'use client';
 
-import type { ExtractedEntry } from '@/features/scanner/hooks/use-scan-types';
+import { Checkbox } from '@papersync/ui/checkbox';
+import { Select } from '@papersync/ui/select';
+import type { ExtractedEntry } from '@/shared/homework/entry';
 import { SCAN_DAY_OPTIONS } from '../scan-screen-types';
 
 type EditableEntryItemProps = {
@@ -19,9 +21,10 @@ export const EditableEntryItem = ({
       {entry.subject || 'Homework'}
     </legend>
     <div className="grid grid-cols-2 gap-3">
-      <label className="text-sm">
+      <label htmlFor={`${entry.id}-day`} className="text-sm">
         Written on
-        <select
+        <Select
+          id={`${entry.id}-day`}
           value={entry.day}
           onChange={(event) => onUpdate(entry.id, { day: event.target.value })}
           className="mt-1 w-full border border-hairline bg-paper p-2"
@@ -31,7 +34,7 @@ export const EditableEntryItem = ({
               {day}
             </option>
           ))}
-        </select>
+        </Select>
       </label>
       <label className="text-sm">
         Subject
@@ -67,25 +70,31 @@ export const EditableEntryItem = ({
       />
     </label>
     <div className="flex flex-wrap items-center gap-4 text-sm">
-      <label className="flex items-center gap-2">
-        <input
-          type="checkbox"
-          checked={entry.isTask}
+      <label htmlFor={`${entry.id}-type`} className="flex items-center gap-2">
+        Entry type
+        <Select
+          id={`${entry.id}-type`}
+          value={entry.isTask ? 'task' : 'note'}
           onChange={(event) =>
-            onUpdate(entry.id, { isTask: event.target.checked })
+            onUpdate(entry.id, { isTask: event.target.value === 'task' })
           }
-        />
-        Create a task
+        >
+          <option value="task">Task</option>
+          <option value="note">Note</option>
+        </Select>
       </label>
-      <label className="flex items-center gap-2">
-        <input
-          type="checkbox"
+      <label
+        htmlFor={`${entry.id}-completed`}
+        className="flex items-center gap-2"
+      >
+        <Checkbox
+          id={`${entry.id}-completed`}
           checked={entry.isCompleted}
           onChange={(event) =>
             onUpdate(entry.id, { isCompleted: event.target.checked })
           }
         />
-        Already done
+        Completed on paper
       </label>
       <button
         type="button"

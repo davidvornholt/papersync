@@ -6,6 +6,10 @@ import { getTaskMarker } from '@papersync/homework/identity';
 import { Effect, Schema } from 'effect';
 import type { PluginApi, Task } from './api';
 import { ImportError } from './error';
+import {
+  chooseImportDestination,
+  type ImportDestination,
+} from './import-destination';
 export const serviceUrl = 'https://papersync.vornholt.online/api/homework';
 export const secretKey = 'papersync-connection';
 const lineBreakPattern = /\r?\n/u;
@@ -24,8 +28,15 @@ const hasMarker = (task: Task, id: string) =>
 const importEntry = (
   api: PluginApi,
   item: QueuedHomework,
-  tasks: Array<Task>,
-  archived: ReadonlyArray<Task>,
+  {
+    tasks,
+    archived,
+    destination,
+  }: {
+    readonly tasks: Array<Task>;
+    readonly archived: ReadonlyArray<Task>;
+    readonly destination: ImportDestination;
+  },
 ) =>
   Effect.gen(function* () {
     const { payload } = item;
@@ -55,8 +66,8 @@ const importEntry = (
         notes,
         isDone: payload.isCompleted,
         ...(payload.dueDate ? { dueDay: payload.dueDate } : {}),
-        ...(payload.projectId ? { projectId: payload.projectId } : {}),
-        ...(payload.tagIds ? { tagIds: [...payload.tagIds] } : {}),
+        projectId: destination.projectId,
+        tagIds: [...destination.tagIds],
       }),
     );
     tasks.push({ id, notes, isDone: payload.isCompleted });
@@ -66,7 +77,12 @@ export const importHomework = (api: PluginApi) =>
   Effect.gen(function* () {
     const token = yield* call(() => api.getSecret(secretKey));
     if (!token) {
-      return 0;
+      return yield* Effect.fail(
+        new ImportError({
+          message:
+            'Connect PaperSync in the plugin settings before importing homework.',
+        }),
+      );
     }
     const headers = {
       authorization: `Bearer ${token}`,
@@ -86,13 +102,21 @@ export const importHomework = (api: PluginApi) =>
     if (items.length === 0) {
       return 0;
     }
+    const destination = yield* chooseImportDestination(api, items.length);
+    if (!destination) {
+      return null;
+    }
     const tasks = [...(yield* call(() => api.getTasks()))];
     const archived = yield* call(() => api.getArchivedTasks());
     yield* Effect.forEach(
       items,
       (item) =>
         Effect.gen(function* () {
-          const taskId = yield* importEntry(api, item, tasks, archived);
+          const taskId = yield* importEntry(api, item, {
+            tasks,
+            archived,
+            destination,
+          });
           yield* call(() =>
             api.request(serviceUrl, {
               method: 'POST',

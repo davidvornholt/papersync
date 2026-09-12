@@ -15,6 +15,16 @@ export type TaskInput = {
 
 // The published plugin-api package predates these methods. This port follows the v18.21.2 host contract.
 export type PluginApi = {
+  readonly getAllProjects: () => Promise<
+    ReadonlyArray<{
+      readonly id: string;
+      readonly title: string;
+      readonly isArchived?: boolean;
+    }>
+  >;
+  readonly getAllTags: () => Promise<
+    ReadonlyArray<{ readonly id: string; readonly title: string }>
+  >;
   readonly getTasks: () => Promise<ReadonlyArray<Task>>;
   readonly getArchivedTasks: () => Promise<ReadonlyArray<Task>>;
   readonly addTask: (input: TaskInput) => Promise<string>;

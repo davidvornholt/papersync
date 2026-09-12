@@ -2,8 +2,8 @@
 
 import { Button } from '@papersync/ui/button';
 import { AnimatePresence, motion } from 'motion/react';
-import type { ExtractedEntry } from '@/features/scanner/hooks/use-scan-types';
 import { Spinner } from '@/shared/components/motion-loading';
+import type { ExtractedEntry } from '@/shared/homework/entry';
 import { EditableEntryItem } from './editable-entry-item';
 
 const percentageScale = 100;
@@ -18,6 +18,7 @@ type ResultsPanelCompleteProps = {
   readonly onDeleteEntry: (id: string) => void;
   readonly onSync: () => void;
   readonly isSyncing: boolean;
+  readonly canSave: boolean;
 };
 
 export const ResultsPanelComplete = ({
@@ -28,6 +29,7 @@ export const ResultsPanelComplete = ({
   onDeleteEntry,
   onSync,
   isSyncing,
+  canSave,
 }: ResultsPanelCompleteProps): React.ReactElement => (
   <motion.div
     key="results"
@@ -61,12 +63,22 @@ export const ResultsPanelComplete = ({
     </div>
 
     <div className="mt-4 border-hairline border-t pt-4">
+      <p className="mb-3 text-graphite text-sm">
+        {entries.filter((entry) => entry.isTask).length} tasks will be queued
+        for Super Productivity. Notes are shown for review and are not saved or
+        imported.
+      </p>
+      {canSave ? null : (
+        <p className="mb-3 text-sm">
+          Enter the printed week and analyze again before saving.
+        </p>
+      )}
       <Button
         onClick={onSync}
         disabled={
-          entries.length === 0 ||
+          !(canSave && entries.some((entry) => entry.isTask)) ||
           isSyncing ||
-          entries.some((entry) => !entry.content.trim())
+          entries.some((entry) => entry.isTask && !entry.content.trim())
         }
         className="w-full"
       >

@@ -105,7 +105,7 @@ test('shared styles preserve card spacing and heading sizes', async ({
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/settings');
   const heading = page.getByRole('heading', {
-    name: 'Sync destination',
+    name: 'Subjects & timetable',
     exact: true,
   });
   await expect(heading).toHaveCSS('font-size', '20px');
@@ -116,8 +116,34 @@ test('shared styles preserve card spacing and heading sizes', async ({
   await expect(content).toHaveCSS('padding-top', isMobile ? '20px' : '24px');
   await expect(content).toHaveCSS('padding-left', isMobile ? '20px' : '28px');
   await expect(
-    page.getByRole('button', { name: 'Local filesystem', exact: false }),
+    page.getByRole('button', { name: 'Add subject', exact: true }),
   ).toHaveCSS('transition-duration', '1e-05s');
+  const shell = page.locator('.page-shell');
+  const settingsWidth = (await shell.boundingBox())?.width;
+  const sectionsWidth = await page
+    .locator('.page-shell > div')
+    .last()
+    .evaluate((element) => element.getBoundingClientRect().width);
+  const shellContentWidth = await shell.evaluate(
+    (element) =>
+      element.clientWidth -
+      Number.parseFloat(getComputedStyle(element).paddingLeft) -
+      Number.parseFloat(getComputedStyle(element).paddingRight),
+  );
+  expect(sectionsWidth).toBeCloseTo(shellContentWidth, 0);
+  await expect(page.getByText('Project ID (optional)')).toHaveCount(0);
+  await expect(
+    page.getByRole('button', { name: 'Local filesystem' }),
+  ).toHaveCount(0);
+  await page.screenshot({
+    path: test.info().outputPath('settings.png'),
+    fullPage: true,
+  });
+  await page.goto('/scan');
+  await expect(page.locator('div.page-shell')).toBeVisible();
+  expect((await page.locator('div.page-shell').boundingBox())?.width).toBe(
+    settingsWidth,
+  );
   await page.goto('/');
   await expect(
     page.getByRole('heading', { name: 'Self-hosted and open source.' }),

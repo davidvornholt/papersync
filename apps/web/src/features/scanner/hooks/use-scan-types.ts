@@ -1,22 +1,12 @@
-import type { VaultSettings } from '@/shared/ocr/actions/extract-types';
+import type { ExtractedEntry } from '@/shared/homework/entry';
 import type { WeekId } from '@/shared/types/schemas';
-export type ExtractedEntry = {
-  readonly id: string;
-  readonly day: string;
-  readonly subject: string;
-  readonly content: string;
-  readonly isTask: boolean;
-  readonly isCompleted: boolean;
-  readonly isNew: boolean;
-  readonly dueDate?: string;
-};
-
 export type ScanState =
   | { readonly status: 'idle' }
   | { readonly status: 'uploading'; readonly progress: number }
   | { readonly status: 'processing' }
   | {
       readonly status: 'complete';
+      readonly weekId: WeekId | null;
       readonly entries: ReadonlyArray<ExtractedEntry>;
       readonly confidence: number;
       readonly modelUsed: string;
@@ -31,7 +21,6 @@ export type AISettings = {
 
 export type UseScanOptions = {
   readonly aiSettings: AISettings;
-  readonly vaultSettings?: VaultSettings;
 };
 
 export type UseScanReturn = {

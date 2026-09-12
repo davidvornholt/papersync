@@ -13,20 +13,12 @@ export class ExtractionValidationError extends Data.TaggedError(
   readonly message: string;
 }> {}
 
-export type VaultSettings = {
-  readonly method: 'local' | 'github';
-  readonly localPath?: string;
-  readonly githubToken?: string;
-  readonly githubRepo?: string;
-};
-
 export type ExtractionOptions = {
   readonly imageBase64: string;
-  readonly weekId: WeekId;
+  readonly weekId: WeekId | null;
   readonly provider: 'google' | 'ollama';
   readonly googleApiKey?: string;
   readonly ollamaEndpoint?: string;
-  readonly vaultSettings?: VaultSettings;
 };
 
 export type ExtractionResult =

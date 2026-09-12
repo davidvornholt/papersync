@@ -59,13 +59,7 @@ it('migrates legacy settings without a timetable while preserving saved values',
 
   const loaded = await Effect.runPromise(loadSettings());
 
-  expect(loaded.vault).toMatchObject({
-    method: 'local',
-    localPath: '/school/vault',
-    githubConnected: true,
-    githubRepo: 'student/homework',
-    githubUsername: 'student',
-  });
+  expect(loaded).not.toHaveProperty('vault');
   expect(loaded.ai).toEqual({
     provider: 'ollama',
     googleApiKey: '',

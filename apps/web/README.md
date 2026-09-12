@@ -1,6 +1,6 @@
 # PaperSync web app
 
-Write homework on the printed sheet at school. At home, photograph or upload the sheet, check its week, review the recognized text and due dates, then approve the entries. Photos are processed for that request and are not stored in the homework queue. JPEG, PNG, and WebP images up to 10 MB are supported; export HEIC photos as JPEG first.
+Write homework on the printed sheet at school. At home, photograph or upload the sheet, let PaperSync read its week from the QR code or printed text, review the recognized text and due dates, then approve the entries. Photos are processed for that request and are not stored in the homework queue. JPEG, PNG, and WebP images up to 10 MB are supported; export HEIC photos as JPEG first.
 
 ## Development
 
@@ -8,9 +8,9 @@ Use the exact Bun version declared at the repository root. Run `bun install`, `j
 
 Plain development configuration lives in `config/dev.yaml`; secret configuration is documented in `secrets/dev.example.yaml` and stored encrypted in `secrets/dev.yaml`. Generate `.env.local` with `bun standards dev-env`; do not edit generated files. Production configuration and secrets belong to `davidvornholt/personal-infra`.
 
-GitHub sign-in admits only the configured numeric GitHub account ID. It is separate from the optional GitHub device flow for connecting an Obsidian repository. The app requires a database for its hosted import queue. Local vault paths, Ollama endpoints, and network scanners resolve from the server running PaperSync.
+GitHub sign-in admits only the configured numeric GitHub account ID. The app requires a database for its hosted import queue. Ollama endpoints and network scanners resolve from the server running PaperSync.
 
-The workspace's `.env.example` is a safe reference, not a deployment source. `BETTER_AUTH_URL`, `BETTER_AUTH_SECRET`, `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`, `GITHUB_ALLOWED_ACCOUNT_ID`, and `DATABASE_URL` are required without defaults. The session secret must contain at least 32 characters. `NEXT_PUBLIC_GITHUB_CLIENT_ID` is optional and defaults to an empty string, disabling the separate repository device flow. `PLUGIN_ARCHIVE_PATH` defaults to `../super-productivity-plugin/dist/papersync-plugin.zip`.
+The workspace's `.env.example` is a safe reference, not a deployment source. `BETTER_AUTH_URL`, `BETTER_AUTH_SECRET`, `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`, `GITHUB_ALLOWED_ACCOUNT_ID`, and `DATABASE_URL` are required without defaults. The session secret must contain at least 32 characters. `PLUGIN_ARCHIVE_PATH` defaults to `../super-productivity-plugin/dist/papersync-plugin.zip`.
 
 Next.js owns `PORT`, `HOSTNAME`, and `NODE_ENV`; its development command defaults to port 3000, while production wiring explicitly provides its bind address and environment. The OS supplies `HOME`, `PATH`, and `TZ` for tooling, executable lookup, and local-time behavior; production uses `/tmp` as HOME and Europe/Berlin as TZ. Playwright reads `CI` to select CI reporting, forbid focused tests, and enable its configured retry. `GOOGLE_VERTEX_API_KEY` appears only in an isolated regression test proving that managed OCR ignores express-mode credentials.
 
@@ -22,9 +22,15 @@ Set `GOOGLE_VERTEX_PROJECT`, `GOOGLE_VERTEX_LOCATION` (`global`, `eu`, or `us`),
 
 ## Super Productivity
 
-In Settings, select Super Productivity, fetch the plugin ZIP, and create a connection key. Install the ZIP in Super Productivity and configure the plugin with the key. Connect one installation; SuperSync syncs the imported tasks to your other devices. Keep Super Productivity open to import approved entries automatically, or use its PaperSync import action.
+In Settings, fetch the Super Productivity plugin ZIP and create a connection key. Install the ZIP in Super Productivity and configure the plugin with the key. Connect one installation; SuperSync syncs the imported tasks to your other devices. Click “Import homework” in Super Productivity and choose a project and tags by name for new tasks. The plugin does not poll in the background.
 
 The same week, written day, subject, and normalized text identify a repeated entry. Repeating an unchanged scan does not create another task. A due date correction updates the task; changing its wording creates a new entry. Review the recognized text before approval. Completed or archived Super Productivity tasks stay completed. Keep the PaperSync marker in task notes so interrupted imports can safely retry.
+
+## Stored data
+
+PostgreSQL stores approved homework (week, written day, subject, text, completion and due date), content revisions, import acknowledgements, imported task IDs, creation timestamps, and a hash of the plugin connection key. Imported rows remain for duplicate detection. PaperSync does not store scan images or unapproved OCR results in the database. Notes are available during review but are not saved or imported.
+
+Subjects, timetable, and self-hosted AI settings are saved in this browser’s local storage. The sign-in session uses an encrypted cookie. The plugin stores its connection key on the Super Productivity device; projects and tags are selected there during import.
 
 ## Verification
 

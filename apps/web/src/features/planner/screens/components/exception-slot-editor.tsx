@@ -1,4 +1,5 @@
 import { Button } from '@papersync/ui/button';
+import { Select } from '@papersync/ui/select';
 import type { Subject } from '@/shared/types/schemas';
 
 type ExceptionSlotEditorProps = {
@@ -43,17 +44,17 @@ export const ExceptionSlotEditor = ({
             <span className="mono w-6 text-right text-[11px] text-graphite">
               {String(index + 1).padStart(2, '0')}
             </span>
-            <select
+            <Select
               value={slot.subjectId}
               onChange={(e) => onChangeSlot(slot.id, e.target.value)}
-              className="flex-1 cursor-pointer border-0 border-hairline-strong border-b bg-transparent px-0 py-2 text-[14px] text-ink focus:border-ink focus:outline-none"
+              className="min-w-0 flex-1 text-[14px]"
             >
               {subjects.map((subject) => (
                 <option key={subject.id} value={subject.id}>
                   {subject.name}
                 </option>
               ))}
-            </select>
+            </Select>
             <button
               type="button"
               onClick={() => onRemoveSlot(slot.id)}

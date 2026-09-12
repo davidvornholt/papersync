@@ -10,7 +10,5 @@ apps:
     GITHUB_CLIENT_ID: ""
     # Required GitHub numeric account ID admitted to this private instance.
     GITHUB_ALLOWED_ACCOUNT_ID: "157214705"
-    # Optional device-flow client ID for a GitHub repository vault; unrelated to site login.
-    NEXT_PUBLIC_GITHUB_CLIENT_ID: ""
     # Optional plugin ZIP location, relative to the web workspace. This is the runtime fallback too.
     PLUGIN_ARCHIVE_PATH: ../super-productivity-plugin/dist/papersync-plugin.zip

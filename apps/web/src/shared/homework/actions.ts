@@ -8,7 +8,8 @@ import {
   revokeConnectionKey,
   rotateConnectionKey,
 } from './connection';
-import { getPendingHomework } from './queue';
+import type { ExtractedEntry } from './entry';
+import { enqueueHomework, getPendingHomework } from './queue';
 export const getConnectionStatus = async () => {
   await requireSession();
   return databaseRuntime.runPromise(
@@ -26,4 +27,19 @@ export const createConnectionKey = async () => {
 export const removeConnectionKey = async () => {
   await requireSession();
   return databaseRuntime.runPromise(revokeConnectionKey);
+};
+
+export const saveHomework = async (
+  entries: ReadonlyArray<ExtractedEntry>,
+  weekId: string,
+) => {
+  await requireSession();
+  return databaseRuntime.runPromise(
+    enqueueHomework(entries, { weekId }).pipe(
+      Effect.map((count) => ({ success: true as const, count })),
+      Effect.catchAll((error) =>
+        Effect.succeed({ success: false as const, error: error.message }),
+      ),
+    ),
+  );
 };

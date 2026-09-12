@@ -1,10 +1,5 @@
 import { Schema as S } from 'effect';
 
-const VaultMethodSchema = S.Union(
-  S.Literal('local'),
-  S.Literal('github'),
-  S.Literal('super-productivity'),
-);
 const AIProviderSchema = S.Union(S.Literal('google'), S.Literal('ollama'));
 const DayOfWeekSchema = S.Union(
   S.Literal('monday'),
@@ -33,16 +28,6 @@ const TimetableDaySchema = S.Struct({
 });
 
 export const SettingsSchema = S.Struct({
-  vault: S.Struct({
-    method: VaultMethodSchema,
-    localPath: S.optional(S.String),
-    githubConnected: S.optional(S.Boolean),
-    githubRepo: S.optional(S.String),
-    githubUsername: S.optional(S.String),
-    githubToken: S.optional(S.String),
-    superProductivityProjectId: S.optional(S.String),
-    superProductivityTagIds: S.optional(S.Array(S.String)),
-  }),
   ai: S.Struct({
     provider: AIProviderSchema,
     googleApiKey: S.optional(S.String),
@@ -53,7 +38,6 @@ export const SettingsSchema = S.Struct({
 });
 
 export type Settings = S.Schema.Type<typeof SettingsSchema>;
-export type VaultMethod = S.Schema.Type<typeof VaultMethodSchema>;
 export type AIProvider = S.Schema.Type<typeof AIProviderSchema>;
 export type Subject = S.Schema.Type<typeof SubjectSchema>;
 export type DayOfWeek = S.Schema.Type<typeof DayOfWeekSchema>;
@@ -74,14 +58,6 @@ export const createDefaultTimetable = (): Array<TimetableDay> =>
   DAYS_OF_WEEK.map((day) => ({ day, slots: [] }));
 
 export const defaultSettings: Settings = {
-  vault: {
-    method: 'super-productivity',
-    localPath: '',
-    githubConnected: false,
-    githubRepo: '',
-    superProductivityProjectId: '',
-    superProductivityTagIds: [],
-  },
   ai: {
     provider: 'google',
     googleApiKey: '',

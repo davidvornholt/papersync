@@ -36,15 +36,6 @@ describe('Settings Persistence', () => {
     it('should provide default settings when localStorage is empty', () => {
       // Default settings shape
       const defaultSettings = {
-        vault: {
-          mode: 'local' as const,
-          localPath: undefined,
-          github: {
-            connected: false,
-            username: undefined,
-            repository: undefined,
-          },
-        },
         ai: {
           provider: 'google' as const,
           googleApiKey: undefined,
@@ -53,7 +44,6 @@ describe('Settings Persistence', () => {
         subjects: [],
       };
 
-      expect(defaultSettings.vault.mode).toBe('local');
       expect(defaultSettings.ai.provider).toBe('google');
       expect(defaultSettings.subjects).toHaveLength(0);
     });
@@ -62,7 +52,6 @@ describe('Settings Persistence', () => {
   describe('LocalStorage serialization', () => {
     it('should serialize settings to JSON', () => {
       const settings = {
-        vault: { mode: 'local', localPath: '/test' },
         ai: { provider: 'google' },
         subjects: [{ id: '1', name: 'Math', color: '#FF0000' }],
       };
@@ -78,7 +67,6 @@ describe('Settings Persistence', () => {
 
     it('should deserialize settings from JSON', () => {
       const stored = JSON.stringify({
-        vault: { mode: 'github', localPath: '/vault' },
         ai: { provider: 'ollama', ollamaEndpoint: 'http://custom:11434' },
         subjects: [],
       });
@@ -88,19 +76,11 @@ describe('Settings Persistence', () => {
         localStorageMock.getItem('papersync-settings') ?? '{}',
       );
 
-      expect(parsed.vault.mode).toBe('github');
       expect(parsed.ai.provider).toBe('ollama');
     });
   });
 
   describe('Settings validation', () => {
-    it('should validate vault mode', () => {
-      const validModes = ['local', 'github'];
-      expect(validModes.includes('local')).toBe(true);
-      expect(validModes.includes('github')).toBe(true);
-      expect(validModes.includes('invalid')).toBe(false);
-    });
-
     it('should validate AI provider', () => {
       const validProviders = ['google', 'ollama'];
       expect(validProviders.includes('google')).toBe(true);

@@ -10,18 +10,7 @@ import {
 } from '@/shared/homework/actions';
 import { HomeworkError } from '@/shared/homework/error';
 
-type PanelProps = {
-  readonly projectId: string;
-  readonly tagIdsInput: string;
-  readonly onChangeProjectId: (value: string) => void;
-  readonly onChangeTagIds: (value: string) => void;
-};
-export const SettingsVaultSuperProductivityPanel = ({
-  projectId,
-  tagIdsInput,
-  onChangeProjectId,
-  onChangeTagIds,
-}: PanelProps) => {
+export const SettingsSuperProductivityPanel = () => {
   const [token, setToken] = useState<string | null>(null);
   const [status, setStatus] = useState<{
     readonly isConnected: boolean;
@@ -83,15 +72,14 @@ export const SettingsVaultSuperProductivityPanel = ({
         <div className="mt-3 space-y-3 text-graphite text-sm">
           <p>
             Scan your paper at home, review the homework, and approve it.
-            Approved homework waits in PaperSync until Super Productivity is
-            open.
+            Approved homework waits in PaperSync until you import it in Super
+            Productivity.
           </p>
           <p>
             Install the ZIP under Super Productivity Settings → Plugins, then
             paste a connection key into the plugin settings. It connects to
-            papersync.vornholt.online and checks at startup and every minute
-            while Super Productivity is open. Use its “Import homework” button
-            to check immediately.
+            papersync.vornholt.online when you click “Import homework”. Choose a
+            project and tags for that import; there are no background checks.
           </p>
           <p>
             The plugin creates tasks with due dates. Connect one Super
@@ -167,22 +155,10 @@ export const SettingsVaultSuperProductivityPanel = ({
             />
           </label>
         ) : null}
-        <label className="block text-sm">
-          Project ID (optional)
-          <input
-            value={projectId}
-            onChange={(event) => onChangeProjectId(event.target.value)}
-            className="mt-1 w-full border border-hairline bg-paper p-2"
-          />
-        </label>
-        <label className="block text-sm">
-          Tag IDs (optional, comma separated)
-          <input
-            value={tagIdsInput}
-            onChange={(event) => onChangeTagIds(event.target.value)}
-            className="mt-1 w-full border border-hairline bg-paper p-2"
-          />
-        </label>
+        <p className="text-graphite text-sm">
+          Choose a project and tags by name when you click “Import homework” in
+          Super Productivity.
+        </p>
       </fieldset>
     </div>
   );

@@ -7,7 +7,6 @@ type UploadScanCardProps = {
   readonly isDragging: boolean;
   readonly setIsDragging: (dragging: boolean) => void;
   readonly isProcessing: boolean;
-  readonly canProcess: boolean;
   readonly onFileSelect: (file: File) => void;
   readonly onClear: () => void;
   readonly onProcess: () => void;
@@ -18,7 +17,6 @@ export const UploadScanCard = ({
   isDragging,
   setIsDragging,
   isProcessing,
-  canProcess,
   onFileSelect,
   onClear,
   onProcess,
@@ -31,7 +29,6 @@ export const UploadScanCard = ({
           onClear={onClear}
           onProcess={onProcess}
           isProcessing={isProcessing}
-          canProcess={canProcess}
         />
       ) : (
         <DragDropZone

@@ -1,8 +1,6 @@
 import { DueDate, Week } from '@papersync/homework/contract';
 import { Schema } from 'effect';
 
-const minimumSubjectsPerDay = 3;
-const maximumSubjectsPerDay = 6;
 export const WeekId = Week.pipe(Schema.brand('WeekId'));
 export type WeekId = typeof WeekId.Type;
 
@@ -83,6 +81,7 @@ export const TaskEntry = Schema.Struct({
 export type TaskEntry = typeof TaskEntry.Type;
 
 export const OCRResponse = Schema.Struct({
+  weekId: Schema.NullOr(WeekId),
   entries: Schema.Array(TaskEntry),
   confidence: Schema.Number.pipe(
     Schema.greaterThanOrEqualTo(0),
@@ -92,71 +91,9 @@ export const OCRResponse = Schema.Struct({
 });
 export type OCRResponse = typeof OCRResponse.Type;
 
-export const DayEntry = Schema.Struct({
-  subject: Schema.String,
-  tasks: Schema.Array(
-    Schema.Struct({
-      content: Schema.String,
-      isCompleted: Schema.Boolean,
-      dueDate: Schema.optional(ISODate),
-    }),
-  ),
-});
-export type DayEntry = typeof DayEntry.Type;
-
-export const DayRecord = Schema.Struct({
-  date: ISODate,
-  dayName: Schema.String,
-  entries: Schema.Array(DayEntry),
-});
-export type DayRecord = typeof DayRecord.Type;
-
-/**
- * Task item for general tasks (not bound to a subject)
- */
-export const GeneralTask = Schema.Struct({
-  content: Schema.String,
-  isCompleted: Schema.Boolean,
-  dueDate: Schema.optional(ISODate),
-});
-export type GeneralTask = typeof GeneralTask.Type;
-
-export const WeeklyNote = Schema.Struct({
-  week: WeekId,
-  dateRange: Schema.Struct({
-    start: ISODate,
-    end: ISODate,
-  }),
-  syncedAt: Schema.optional(ISODateTime),
-  days: Schema.Array(DayRecord),
-  /** General tasks for the entire week (displayed at the end of the file) */
-  generalTasks: Schema.Array(GeneralTask),
-});
-export type WeeklyNote = typeof WeeklyNote.Type;
-
 export const QRPayload = Schema.Struct({
   week: WeekId,
   checksum: Schema.String,
   version: Schema.Literal(1),
 });
 export type QRPayload = typeof QRPayload.Type;
-
-export const VaultAccessMethod = Schema.Literal('local', 'github');
-export type VaultAccessMethod = typeof VaultAccessMethod.Type;
-
-export const AIProvider = Schema.Literal('google', 'ollama');
-export type AIProvider = typeof AIProvider.Type;
-
-export const AppConfig = Schema.Struct({
-  vaultPath: Schema.String,
-  vaultAccessMethod: VaultAccessMethod,
-  aiProvider: AIProvider,
-  githubToken: Schema.optional(Schema.String),
-  githubRepo: Schema.optional(Schema.String),
-  ollamaEndpoint: Schema.optional(Schema.String),
-  subjectsPerDay: Schema.Number.pipe(
-    Schema.greaterThanOrEqualTo(minimumSubjectsPerDay),
-    Schema.lessThanOrEqualTo(maximumSubjectsPerDay),
-  ),
-});
-export type AppConfig = typeof AppConfig.Type;
