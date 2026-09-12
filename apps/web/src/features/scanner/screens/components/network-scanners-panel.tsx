@@ -11,6 +11,14 @@ type NetworkScannersPanelProps = {
   readonly isDisabled: boolean;
 };
 
+const discoveryMessages = {
+  idle: 'Discover scanners on the network where PaperSync is running.',
+  searching: 'Searching the network where PaperSync is running…',
+  complete:
+    'No scanners found on PaperSync’s network. If your scanner is at home and PaperSync is hosted elsewhere, save a scan as JPEG or PNG on your device and upload it above.',
+  failed: 'Scanner discovery failed. Try again.',
+};
+
 export const NetworkScannersPanel = ({
   onScanComplete,
   isDisabled,
@@ -18,6 +26,7 @@ export const NetworkScannersPanel = ({
   const controller = useNetworkScanner(onScanComplete);
   const {
     scanners,
+    discoveryStatus,
     selectedScanner,
     isDiscovering,
     handleDiscover,
@@ -43,8 +52,11 @@ export const NetworkScannersPanel = ({
       </CardHeader>
       <CardContent>
         {scanners.length === 0 ? (
-          <p className="py-6 text-center text-[13px] text-graphite">
-            Click discover to find compatible scanners on your network
+          <p
+            role="status"
+            className="py-6 text-center text-[13px] text-graphite"
+          >
+            {discoveryMessages[discoveryStatus]}
           </p>
         ) : (
           <div className="space-y-5">
