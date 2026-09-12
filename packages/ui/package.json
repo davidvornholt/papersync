@@ -11,7 +11,7 @@
   "devDependencies": {
     "@davidvornholt/typescript-config": "workspace:*",
     "@types/bun": "^1.4.2",
-    "@types/react": "^19.2.18",
+    "@types/react": "^19.3.0",
     "typescript": "^7.0.2"
   },
   "exports": {
@@ -21,7 +21,7 @@
     "./theme.css": "./src/theme.css"
   },
   "dependencies": {
-    "react": "^19.2.8"
+    "react": "^19.3.0"
   },
   "type": "module"
 }
