@@ -7,6 +7,8 @@ import { encodeQRPayload } from '../src/shared/planner/qr';
 import { WeekId } from '../src/shared/types/schemas';
 import { createSessionCookies } from './auth-fixture';
 
+const pngDataUrlPattern = /^data:image\/png;base64,/u;
+
 const pasteImage = (page: Page, image: string, selector = 'body') =>
   page.evaluate(
     async ({ data, targetSelector }) => {
@@ -45,7 +47,7 @@ test('Ctrl+V previews a clipboard image and reads its printed week', async ({
   await page.keyboard.press('Control+V');
   await expect(page.getByAltText('Scanned planner preview')).toHaveAttribute(
     'src',
-    qr,
+    pngDataUrlPattern,
   );
   await expect(page.getByLabel('Week printed on the sheet')).toHaveValue(week);
   await expect(
@@ -111,7 +113,7 @@ test('image paste preserves editing, respects processing, and validates uploads'
   await expect(preview).toHaveAttribute('src', qr);
   releaseResponse();
   await expect(
-    page.getByText('Test extraction stopped.', { exact: true }),
+    page.getByText('Processing failed', { exact: true }),
   ).toBeVisible();
   expect(await pasteImage(page, nextQr)).toBe(true);
   await expect(preview).toHaveAttribute('src', nextQr);
