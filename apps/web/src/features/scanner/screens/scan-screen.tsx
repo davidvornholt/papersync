@@ -6,12 +6,7 @@ import { UploadScanCard } from './components/upload-scan-card';
 import { useScanScreen } from './hooks/use-scan-screen';
 export const ScanScreen = (): React.ReactElement => {
   const controller = useScanScreen();
-  const { scan } = controller;
-  const isBusy =
-    controller.isLoading ||
-    scan.state.status === 'processing' ||
-    scan.state.status === 'uploading' ||
-    controller.isSyncing;
+  const { scan, isBusy } = controller;
   return (
     <div className="shell page-shell">
       <p className="mono-tag">After school</p>
