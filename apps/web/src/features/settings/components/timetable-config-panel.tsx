@@ -1,6 +1,7 @@
 'use client';
 
 import { Button } from '@papersync/ui/button';
+import { Select } from '@papersync/ui/select';
 import { Trash2 } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useState } from 'react';
@@ -129,7 +130,7 @@ export const TimetableConfigPanel = ({
                   <span className="mono w-6 text-right text-[11px] text-graphite">
                     {String(index + 1).padStart(2, '0')}
                   </span>
-                  <select
+                  <Select
                     aria-label={`${DAY_LABELS[activeDay]} class ${index + 1}`}
                     value={slot.subjectId}
                     onChange={(e) =>
@@ -142,7 +143,7 @@ export const TimetableConfigPanel = ({
                         {subject.name}
                       </option>
                     ))}
-                  </select>
+                  </Select>
                   <IconButton
                     label={`Remove ${DAY_LABELS[activeDay]} class ${index + 1}`}
                     onClick={() => onRemoveSlot(activeDay, slot.id)}

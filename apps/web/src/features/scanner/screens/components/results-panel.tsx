@@ -2,7 +2,7 @@
 
 import { Card, CardContent } from '@papersync/ui/card';
 import { AnimatePresence } from 'motion/react';
-import type { ExtractedEntry } from '@/features/scanner/hooks/use-scan-types';
+import type { ExtractedEntry } from '@/shared/homework/entry';
 import type { ResultsPanelState } from '../scan-screen-types';
 import { ResultsPanelComplete } from './results-panel-complete';
 import {
@@ -25,6 +25,7 @@ type ResultsPanelProps = {
   readonly onDeleteEntry: (id: string) => void;
   readonly onSync: () => void;
   readonly isSyncing: boolean;
+  readonly canSave: boolean;
 };
 
 export const ResultsPanel = ({
@@ -37,6 +38,7 @@ export const ResultsPanel = ({
   onDeleteEntry,
   onSync,
   isSyncing,
+  canSave,
 }: ResultsPanelProps): React.ReactElement => (
   <Card className="flex h-full min-h-[360px] flex-col sm:min-h-[420px]">
     <CardContent className="flex min-h-0 flex-1 flex-col">
@@ -50,6 +52,7 @@ export const ResultsPanel = ({
             onDeleteEntry={onDeleteEntry}
             onSync={onSync}
             isSyncing={isSyncing}
+            canSave={canSave}
           />
         ) : null}
 

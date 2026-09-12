@@ -1,4 +1,5 @@
 import { Button } from '@papersync/ui/button';
+import { Select } from '@papersync/ui/select';
 import { useId } from 'react';
 import type {
   ColorMode,
@@ -52,7 +53,7 @@ export const NetworkScannerSettings = ({
             >
               Scanner source
             </label>
-            <select
+            <Select
               id={`${instanceId}-inputSource`}
               value={inputSource}
               onChange={(e) => onSourceChange(e.target.value as InputSource)}
@@ -65,7 +66,7 @@ export const NetworkScannerSettings = ({
                     : 'Document feeder (ADF)'}
                 </option>
               ))}
-            </select>
+            </Select>
           </div>
         ) : null}
 
@@ -73,7 +74,7 @@ export const NetworkScannerSettings = ({
           <label htmlFor={`${instanceId}-resolution`} className="field-label">
             Resolution
           </label>
-          <select
+          <Select
             id={`${instanceId}-resolution`}
             value={resolution}
             onChange={(e) => onResolutionChange(Number(e.target.value))}
@@ -86,14 +87,14 @@ export const NetworkScannerSettings = ({
                 </option>
               ),
             )}
-          </select>
+          </Select>
         </div>
 
         <div>
           <label htmlFor={`${instanceId}-colorMode`} className="field-label">
             Color mode
           </label>
-          <select
+          <Select
             id={`${instanceId}-colorMode`}
             value={colorMode}
             onChange={(e) => onColorModeChange(e.target.value as ColorMode)}
@@ -106,7 +107,7 @@ export const NetworkScannerSettings = ({
                 </option>
               ),
             )}
-          </select>
+          </Select>
         </div>
       </div>
 

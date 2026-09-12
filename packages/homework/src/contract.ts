@@ -20,8 +20,6 @@ export const Homework = Schema.Struct({
   content: Schema.NonEmptyTrimmedString,
   isCompleted: Schema.Boolean,
   dueDate: Schema.optional(DueDate),
-  projectId: Schema.optional(Schema.NonEmptyTrimmedString),
-  tagIds: Schema.optional(Schema.Array(Schema.NonEmptyTrimmedString)),
 });
 export type Homework = typeof Homework.Type;
 export const QueuedHomework = Schema.Struct({

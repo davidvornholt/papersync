@@ -15,7 +15,6 @@ import { useTimetableSettings } from './use-timetable-settings';
 export type UseSettingsReturn = {
   readonly settings: Settings;
   readonly isLoading: boolean;
-  readonly updateVault: (updates: Partial<Settings['vault']>) => void;
   readonly updateAI: (updates: Partial<Settings['ai']>) => void;
   readonly addSubject: (name: string) => void;
   readonly removeSubject: (id: string) => void;
@@ -53,16 +52,6 @@ export const useSettings = (): UseSettingsReturn => {
     };
   }, []);
 
-  const updateVault = useCallback(
-    (updates: Partial<Settings['vault']>): void => {
-      setSettings((prev) => ({
-        ...prev,
-        vault: { ...prev.vault, ...updates },
-      }));
-    },
-    [],
-  );
-
   const updateAI = useCallback((updates: Partial<Settings['ai']>): void => {
     setSettings((prev) => ({ ...prev, ai: { ...prev.ai, ...updates } }));
   }, []);
@@ -84,7 +73,6 @@ export const useSettings = (): UseSettingsReturn => {
     ...subjects,
     settings,
     isLoading,
-    updateVault,
     updateAI,
 
     save,

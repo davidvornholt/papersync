@@ -28,9 +28,6 @@
     // These server filesystem and scanner transports intentionally use Node-compatible built-ins under Bun.
     {
       "includes": [
-        "apps/web/src/shared/vault/services/filesystem.ts",
-        "apps/web/src/shared/vault/services/__tests__/filesystem-test-helpers.ts",
-        "apps/web/src/shared/vault/actions/__tests__/sync-local-effect.test.ts",
         "packages/typescript-config/config.test.ts",
         "apps/web/src/app/api/plugin/route.ts",
         "apps/web/a11y/scan.a11y.ts",

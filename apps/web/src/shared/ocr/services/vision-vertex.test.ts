@@ -55,7 +55,7 @@ const extract = () =>
   Effect.gen(function* () {
     const layer = yield* getVisionLayer(options);
     const provider = yield* Effect.provide(VisionProvider, layer);
-    return yield* provider.extractHandwriting(options.imageBase64, weekId, '');
+    return yield* provider.extractHandwriting(options.imageBase64, weekId);
   });
 
 it('uses service-account OAuth and the exact high-reasoning Vertex model despite client provider settings', async () => {
@@ -69,7 +69,15 @@ it('uses service-account OAuth and the exact high-reasoning Vertex model despite
         {
           content: {
             role: 'model',
-            parts: [{ text: JSON.stringify({ entries: [], confidence: 1 }) }],
+            parts: [
+              {
+                text: JSON.stringify({
+                  weekId: '2026-W37',
+                  entries: [],
+                  confidence: 1,
+                }),
+              },
+            ],
           },
           finishReason: 'STOP',
         },

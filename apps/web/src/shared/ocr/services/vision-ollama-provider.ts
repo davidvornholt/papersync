@@ -17,14 +17,14 @@ const responseSchema = Schema.Struct({ response: Schema.String });
 export const createOllamaVisionProvider = (
   endpoint: string,
 ): VisionProvider => ({
-  extractHandwriting: (imageBase64, weekId, existingContent) =>
+  extractHandwriting: (imageBase64, weekId) =>
     Effect.gen(function* () {
       const body = yield* fetchJson(`${endpoint}/api/generate`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
           model: 'qwen3-vl-4b',
-          prompt: createExtractionSystemPrompt(weekId, existingContent),
+          prompt: createExtractionSystemPrompt(weekId),
           images: [imageBase64.replace(imageDataPattern, '')],
           format: OCRResponseJsonSchema,
           stream: false,
@@ -71,6 +71,7 @@ export const createOllamaVisionProvider = (
       );
       return {
         data: {
+          weekId: weekId ?? validated.weekId,
           entries: validated.entries.map((entry) => ({
             day: normalizeDayName(entry.day),
             subject: entry.subject,

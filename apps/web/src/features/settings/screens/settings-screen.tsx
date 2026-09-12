@@ -5,13 +5,11 @@ import { motion } from 'motion/react';
 import { PageTransition } from '@/shared/components/motion-layout';
 import { Spinner } from '@/shared/components/motion-loading';
 import { AddSubjectModal } from '../components/add-subject-modal';
-import { GitHubOAuthModal } from '../components/github-oauth-modal';
-import { RepositorySelectorModal } from '../components/repository-selector-modal';
 import { SettingsAICard } from '../components/settings-ai-card';
 import { SettingsSaveAction } from '../components/settings-save-action';
-import { aiOptions, vaultOptions } from '../components/settings-screen-options';
+import { aiOptions } from '../components/settings-screen-options';
 import { SettingsSubjectsCard } from '../components/settings-subjects-card';
-import { SettingsVaultCard } from '../components/settings-vault-card';
+import { SettingsSuperProductivityPanel } from '../components/settings-super-productivity-panel';
 import { useSettingsScreenController } from './hooks/use-settings-screen-controller';
 
 const easeOut = 'easeOut' as const;
@@ -19,8 +17,8 @@ const easeOut = 'easeOut' as const;
 const SECTIONS = [
   {
     number: '01',
-    title: 'Vault',
-    italic: 'where everything lives',
+    title: 'Super Productivity',
+    italic: 'approved homework',
   },
   {
     number: '02',
@@ -84,30 +82,18 @@ export const SettingsScreen = ({
           }
         />
 
-        <div className="mx-auto mt-8 max-w-3xl space-y-12 sm:mt-10 sm:space-y-16 md:mt-14">
+        <div className="mt-8 space-y-12 sm:mt-10 sm:space-y-16 md:mt-14">
           <motion.section
             initial={false}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: '-60px' }}
             transition={{ duration: 0.7, ease: easeOut }}
           >
-            <p className="section-number">01 — Vault</p>
+            <p className="section-number">01 — Super Productivity</p>
             <h2 className="mt-3 mb-5 text-[24px] sm:mb-6 sm:text-[28px]">
-              Where the notes <span className="serif-italic">come to rest</span>
-              .
+              Connect your <span className="serif-italic">task manager</span>.
             </h2>
-            <SettingsVaultCard
-              settings={controller.settings}
-              options={vaultOptions}
-              isConfigured={controller.isOAuthConfigured}
-              isLoadingVaultSettings={controller.isLoadingVaultSettings}
-              superProductivity={controller.superProductivity}
-              onChangeMethod={controller.handleVaultMethodChange}
-              onChangeLocalPath={controller.handleVaultPathChange}
-              onConnect={controller.handleConnect}
-              onDisconnect={controller.handleDisconnect}
-              onOpenRepoSelector={controller.handleOpenRepoSelector}
-            />
+            <SettingsSuperProductivityPanel />
           </motion.section>
 
           <motion.section
@@ -144,7 +130,6 @@ export const SettingsScreen = ({
             </h2>
             <SettingsSubjectsCard
               settings={controller.settings}
-              isVaultConfigured={controller.isVaultConfigured}
               configuredDaysCount={controller.configuredDaysCount}
               onOpenSubjectModal={controller.handleOpenSubjectModal}
               onEditSubject={controller.handleOpenSubjectEditor}
@@ -164,8 +149,6 @@ export const SettingsScreen = ({
           >
             <SettingsSaveAction
               isSaving={controller.isSaving}
-              isSyncing={controller.isSyncing}
-              isVaultConfigured={controller.isVaultConfigured}
               onSave={() => controller.handleSave()}
             />
           </motion.div>
@@ -179,22 +162,6 @@ export const SettingsScreen = ({
         editingSubject={controller.editingSubject}
         onEdit={controller.handleEditSubject}
         existingSubjects={controller.settings.subjects}
-      />
-
-      <GitHubOAuthModal
-        isOpen={controller.isOAuthModalOpen}
-        onClose={controller.handleOAuthModalClose}
-        onSuccess={controller.handleOAuthSuccess}
-        oauthState={controller.oauthState}
-        onStartOAuth={controller.startOAuth}
-        onCancel={controller.cancelOAuth}
-      />
-
-      <RepositorySelectorModal
-        isOpen={controller.isRepoSelectorOpen}
-        onClose={controller.handleCloseRepoSelector}
-        onSelect={controller.handleRepoSelect}
-        accessToken={controller.settings.vault.githubToken || ''}
       />
     </PageTransition>
   );

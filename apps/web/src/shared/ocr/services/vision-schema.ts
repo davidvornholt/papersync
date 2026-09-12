@@ -1,5 +1,5 @@
 import { JSONSchema, Schema } from 'effect';
-import { ISODate } from '@/shared/types/schemas';
+import { ISODate, WeekId } from '@/shared/types/schemas';
 
 const OCREntrySchema = Schema.Struct({
   day: Schema.String,
@@ -10,6 +10,7 @@ const OCREntrySchema = Schema.Struct({
   dueDate: Schema.NullOr(ISODate),
 });
 export const OCRResponseSchema = Schema.Struct({
+  weekId: Schema.NullOr(WeekId),
   entries: Schema.Array(OCREntrySchema),
   confidence: Schema.Number.pipe(Schema.between(0, 1)),
   notes: Schema.optional(Schema.String),

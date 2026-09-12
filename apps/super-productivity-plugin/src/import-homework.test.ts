@@ -1,10 +1,45 @@
-import { expect, it, mock } from 'bun:test';
+import { afterAll, expect, it, mock } from 'bun:test';
 import type { QueuedHomework } from '@papersync/homework/contract';
 import { getTaskMarker } from '@papersync/homework/identity';
 import { Effect } from 'effect';
 import type { PluginApi, Task } from './api';
 import { importHomework } from './import-homework';
 import { createImportController } from './import-lifecycle';
+
+const originalDocument = Object.getOwnPropertyDescriptor(
+  globalThis,
+  'document',
+);
+const originalSelect = Object.getOwnPropertyDescriptor(
+  globalThis,
+  'HTMLSelectElement',
+);
+class FixtureSelect {
+  value = 'project-1';
+}
+Object.defineProperty(globalThis, 'HTMLSelectElement', {
+  configurable: true,
+  value: FixtureSelect,
+});
+Object.defineProperty(globalThis, 'document', {
+  configurable: true,
+  value: {
+    querySelector: () => new FixtureSelect(),
+    querySelectorAll: () => [{ value: 'tag-1' }],
+  },
+});
+afterAll(() => {
+  for (const [name, descriptor] of [
+    ['document', originalDocument],
+    ['HTMLSelectElement', originalSelect],
+  ] as const) {
+    if (descriptor) {
+      Object.defineProperty(globalThis, name, descriptor);
+    } else {
+      Reflect.deleteProperty(globalThis, name);
+    }
+  }
+});
 
 const item: QueuedHomework = {
   payload: {
@@ -21,6 +56,15 @@ const item: QueuedHomework = {
 const makeApi = () => {
   const tasks: Array<Task> = [];
   const api = {
+    getAllProjects: mock(() =>
+      Promise.resolve([
+        { id: 'project-1', title: 'School <work>' },
+        { id: 'old', title: 'Archived', isArchived: true },
+      ]),
+    ),
+    getAllTags: mock(() =>
+      Promise.resolve([{ id: 'tag-1', title: 'Homework' }]),
+    ),
     getTasks: mock(() => Promise.resolve(tasks)),
     getArchivedTasks: mock(() => Promise.resolve<ReadonlyArray<Task>>([])),
     addTask: mock((input) => {
@@ -36,7 +80,12 @@ const makeApi = () => {
     showSnack: mock(() => undefined),
     registerHeaderButton: mock(() => undefined),
     registerConfigHandler: mock(() => undefined),
-    openDialog: mock(() => Promise.resolve(undefined)),
+    openDialog: mock((options: Parameters<PluginApi['openDialog']>[0]) => {
+      options.buttons
+        .find((button) => button.label === 'Import homework')
+        ?.onClick?.();
+      return Promise.resolve<string | undefined>('Import homework');
+    }),
   } satisfies PluginApi;
   return { api, tasks };
 };
@@ -122,7 +171,7 @@ it('invalid queue data cannot create tasks', async () => {
   expect(api.addTask).not.toHaveBeenCalled();
 });
 
-it('unload interrupts overlapping manual and scheduled imports', async () => {
+it('unload interrupts overlapping manual imports', async () => {
   const controller = createImportController();
   let interrupted = 0;
   const runningImport = Effect.never.pipe(
@@ -138,4 +187,28 @@ it('unload interrupts overlapping manual and scheduled imports', async () => {
   await Effect.runPromise(controller.stop());
 
   expect(interrupted).toBe(2);
+});
+
+it('selects projects and tags by name and escapes labels in the import dialog', async () => {
+  const { api } = makeApi();
+  await Effect.runPromise(importHomework(api));
+  expect(api.openDialog.mock.calls[0]?.[0].htmlContent).toContain(
+    'School &lt;work&gt;',
+  );
+  expect(api.openDialog.mock.calls[0]?.[0].htmlContent).not.toContain(
+    'Archived',
+  );
+  expect(api.openDialog.mock.calls[0]?.[0].htmlContent).not.toContain(
+    '<option value="">',
+  );
+  expect(api.addTask).toHaveBeenCalledWith(
+    expect.objectContaining({ projectId: 'project-1', tagIds: ['tag-1'] }),
+  );
+});
+it('cancelling leaves the queue unacknowledged and creates no tasks', async () => {
+  const { api } = makeApi();
+  api.openDialog.mockImplementation(() => Promise.resolve(undefined));
+  expect(await Effect.runPromise(importHomework(api))).toBeNull();
+  expect(api.addTask).not.toHaveBeenCalled();
+  expect(api.request).toHaveBeenCalledTimes(1);
 });

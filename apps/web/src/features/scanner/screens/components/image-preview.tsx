@@ -10,7 +10,6 @@ type ImagePreviewProps = {
   readonly onClear: () => void;
   readonly onProcess: () => void;
   readonly isProcessing: boolean;
-  readonly canProcess: boolean;
 };
 
 export const ImagePreview = ({
@@ -18,7 +17,6 @@ export const ImagePreview = ({
   onClear,
   onProcess,
   isProcessing,
-  canProcess,
 }: ImagePreviewProps): React.ReactElement => (
   <motion.div
     initial={false}
@@ -41,7 +39,7 @@ export const ImagePreview = ({
       </Button>
       <Button
         onClick={onProcess}
-        disabled={isProcessing || !canProcess}
+        disabled={isProcessing}
         className="sm:flex-[2]"
       >
         {isProcessing ? (

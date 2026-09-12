@@ -12,8 +12,7 @@ export type OCRResultWithModel = {
 export type VisionProvider = {
   readonly extractHandwriting: (
     imageBase64: string,
-    weekId: WeekId,
-    existingContent: string,
+    weekId: WeekId | null,
   ) => Effect.Effect<OCRResultWithModel, VisionError | VisionValidationError>;
 };
 

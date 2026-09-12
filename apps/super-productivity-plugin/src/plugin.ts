@@ -1,4 +1,4 @@
-import { Effect, Schedule } from 'effect';
+import { Effect } from 'effect';
 import type { PluginApi } from './api';
 import { configure } from './configure';
 import { importHomework } from './import-homework';
@@ -6,23 +6,20 @@ import { createImportController } from './import-lifecycle';
 
 declare const PluginAPI: PluginApi;
 declare const plugin: {
-  readonly onReady: (callback: () => void) => void;
   readonly onUnload: (callback: () => void) => void;
 };
 
 const semaphore = Effect.runSync(Effect.makeSemaphore(1));
 const importController = createImportController();
-const runImport = (isManual: boolean) =>
+const runImport = () =>
   semaphore.withPermits(1)(
     importHomework(PluginAPI).pipe(
       Effect.match({
         onFailure: (error) => {
-          if (isManual) {
-            PluginAPI.showSnack({ msg: error.message, type: 'ERROR' });
-          }
+          PluginAPI.showSnack({ msg: error.message, type: 'ERROR' });
         },
         onSuccess: (count) => {
-          if (count > 0 || isManual) {
+          if (count !== null) {
             PluginAPI.showSnack({
               msg:
                 count > 0
@@ -42,13 +39,8 @@ PluginAPI.registerHeaderButton({
   label: 'Import homework',
   icon: 'assignment',
   onClick: () => {
-    importController.start(runImport(true));
+    importController.start(runImport());
   },
-});
-plugin.onReady(() => {
-  importController.start(
-    runImport(false).pipe(Effect.repeat(Schedule.spaced('60 seconds'))),
-  );
 });
 plugin.onUnload(() => {
   importController.stop();

@@ -1,34 +1,42 @@
 'use client';
 
+import { Effect } from 'effect';
 import { useState } from 'react';
 import { useToast } from '@/shared/components/use-toast';
 import { useSettings } from '@/shared/hooks/use-settings';
 import type { Subject } from '@/shared/hooks/use-settings-schema';
-import {
-  getConfiguredDaysCount,
-  isVaultConfigured,
-} from '../settings-screen-helpers';
-import { useSettingsScreenVault } from './use-settings-screen-vault';
+import { requestAction } from '@/shared/http/action';
+import { getConfiguredDaysCount } from '../settings-screen-helpers';
 export const useSettingsScreenController = () => {
   const settingsApi = useSettings();
   const { addToast } = useToast();
   const [isSubjectModalOpen, setIsSubjectModalOpen] = useState(false);
   const [editingSubject, setEditingSubject] = useState<Subject | null>(null);
 
-  const vaultConfigured = isVaultConfigured(settingsApi.settings);
+  const [isSaving, setIsSaving] = useState(false);
   const configuredDaysCount = getConfiguredDaysCount(
     settingsApi.settings.timetable,
   );
 
-  const vaultController = useSettingsScreenVault({
-    settings: settingsApi.settings,
-    save: settingsApi.save,
-    updateVault: settingsApi.updateVault,
-    setSubjects: settingsApi.setSubjects,
-    updateTimetable: settingsApi.updateTimetable,
-    isVaultConfigured: vaultConfigured,
-    addToast,
-  });
+  const handleSave = () => {
+    if (isSaving) {
+      return;
+    }
+    setIsSaving(true);
+    Effect.runFork(
+      requestAction(settingsApi.save).pipe(
+        Effect.tap(() =>
+          Effect.sync(() =>
+            addToast('Settings saved on this browser.', 'success'),
+          ),
+        ),
+        Effect.catchAll((error) =>
+          Effect.sync(() => addToast(error.message, 'error')),
+        ),
+        Effect.ensuring(Effect.sync(() => setIsSaving(false))),
+      ),
+    );
+  };
 
   const handleOpenSubjectModal = (): void => {
     setEditingSubject(null);
@@ -72,24 +80,17 @@ export const useSettingsScreenController = () => {
     setEditingSubject(null);
   };
 
-  const superProductivity = {
-    tagIdsInput: vaultController.superProductivityTagIdsInput,
-    onChangeProjectId: vaultController.handleChangeSuperProductivityProjectId,
-    onChangeTagIds: vaultController.handleChangeSuperProductivityTagIds,
-  };
-
   return {
     settings: settingsApi.settings,
     isLoading: settingsApi.isLoading,
     isSubjectModalOpen,
     editingSubject,
-    isVaultConfigured: vaultConfigured,
     configuredDaysCount,
     addTimetableSlot: settingsApi.addTimetableSlot,
     removeTimetableSlot: settingsApi.removeTimetableSlot,
     updateTimetableSlot: settingsApi.updateTimetableSlot,
-    ...vaultController,
-    superProductivity,
+    isSaving,
+    handleSave,
     handleAIProviderChange: (provider: 'google' | 'ollama'): void =>
       settingsApi.updateAI({ provider }),
     handleGoogleApiKeyChange: (googleApiKey: string): void =>

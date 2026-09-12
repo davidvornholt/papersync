@@ -66,25 +66,23 @@ export const useScan = (options: UseScanOptions): UseScanReturn => {
   const process = (): Promise<ScanState> => {
     revisionRef.current += 1;
     const currentRevision = revisionRef.current;
-    if (!(imagePreview && weekId)) {
+    if (!imagePreview) {
       const nextState: ScanState = {
         status: 'error',
-        error: 'Choose an image and the week printed on the sheet.',
+        error: 'Choose an image of the sheet.',
       };
       setState(nextState);
       return Promise.resolve(nextState);
     }
     setState({ status: 'processing' });
     return Effect.runPromise(
-      processExtractionEffect(
-        imagePreview,
-        weekId,
-        options.aiSettings,
-        options.vaultSettings,
-      ).pipe(
+      processExtractionEffect(imagePreview, weekId, options.aiSettings).pipe(
         Effect.map((nextState): ScanState => {
           if (currentRevision !== revisionRef.current) {
             return { status: 'idle' };
+          }
+          if (nextState.status === 'complete') {
+            setWeek(nextState.weekId);
           }
           setState(nextState);
           return nextState;

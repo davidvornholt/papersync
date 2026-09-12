@@ -2,32 +2,34 @@
 import { Effect } from 'effect';
 import { useState } from 'react';
 import { useToast } from '@/shared/components/use-toast';
-import type { Settings } from '@/shared/hooks/use-settings-schema';
+import { saveHomework } from '@/shared/homework/actions';
+import type { ExtractedEntry } from '@/shared/homework/entry';
 import { requestAction } from '@/shared/http/action';
-import { syncEntriesToVault } from '@/shared/vault/actions/sync';
-import type { ExtractedEntry, UseScanReturn } from '../../hooks/use-scan-types';
+import type { UseScanReturn } from '../../hooks/use-scan-types';
 
 type SaveOptions = {
   readonly scan: UseScanReturn;
   readonly entries: ReadonlyArray<ExtractedEntry>;
-  readonly vault: Settings['vault'];
   readonly clear: () => void;
 };
-export const useScanSave = ({ scan, entries, vault, clear }: SaveOptions) => {
+export const useScanSave = ({ scan, entries, clear }: SaveOptions) => {
   const [isSyncing, setIsSyncing] = useState(false);
   const { addToast } = useToast();
   const handleSync = () => {
     if (entries.length === 0 || !scan.weekId || isSyncing) {
       return;
     }
-    const options = { ...vault, weekId: scan.weekId };
+    const { weekId } = scan;
     setIsSyncing(true);
     Effect.runFork(
-      requestAction(() => syncEntriesToVault(entries, options)).pipe(
+      requestAction(() => saveHomework(entries, weekId)).pipe(
         Effect.tap((result) =>
           Effect.sync(() => {
             if (result.success) {
-              addToast(result.notePath, 'success');
+              addToast(
+                `${result.count} tasks waiting for Super Productivity. Click “Import homework” there.`,
+                'success',
+              );
               clear();
             } else {
               addToast(`Save failed: ${result.error}`, 'error');

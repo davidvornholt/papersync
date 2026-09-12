@@ -13,7 +13,7 @@ import { OCRResponseJsonSchema, OCRResponseSchema } from './vision-schema';
 export const createGeminiVisionProvider = (
   model: LanguageModel,
 ): VisionProvider => ({
-  extractHandwriting: (imageBase64, weekId, existingContent) =>
+  extractHandwriting: (imageBase64, weekId) =>
     Effect.tryPromise({
       try: (abortSignal) =>
         generateText({
@@ -24,7 +24,7 @@ export const createGeminiVisionProvider = (
               OCRResponseJsonSchema as Parameters<typeof jsonSchema>[0],
             ),
           }),
-          system: createExtractionSystemPrompt(weekId, existingContent),
+          system: createExtractionSystemPrompt(weekId),
           messages: [
             {
               role: 'user',
@@ -51,6 +51,7 @@ export const createGeminiVisionProvider = (
       ),
       Effect.map((validated) => ({
         data: {
+          weekId: weekId ?? validated.weekId,
           entries: validated.entries.map((entry) => ({
             ...entry,
             day: normalizeDayName(entry.day),

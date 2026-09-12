@@ -1,8 +1,8 @@
 'use client';
 import { Effect } from 'effect';
 import { useState } from 'react';
-import type { ExtractedEntry } from '@/features/scanner/hooks/use-scan-types';
 import { useToast } from '@/shared/components/use-toast';
+import type { ExtractedEntry } from '@/shared/homework/entry';
 import { useSettings } from '@/shared/hooks/use-settings';
 import { requestAction } from '@/shared/http/action';
 import { useScan } from '../../hooks/use-scan';
@@ -14,10 +14,6 @@ export const useScanScreen = () => {
   const { addToast } = useToast();
   const scan = useScan({
     aiSettings: settings.ai,
-    vaultSettings:
-      settings.vault.method === 'super-productivity'
-        ? undefined
-        : { ...settings.vault, method: settings.vault.method },
   });
   const [isDragging, setIsDragging] = useState(false);
   const [editedEntries, setEditedEntries] = useState<Array<ExtractedEntry>>([]);
@@ -28,7 +24,6 @@ export const useScanScreen = () => {
   const saving = useScanSave({
     scan,
     entries: editedEntries,
-    vault: { ...settings.vault, method: settings.vault.method },
     clear: handleClear,
   });
   const handleFailure = (error: { readonly message: string }) =>
@@ -40,7 +35,7 @@ export const useScanScreen = () => {
         Effect.tap((isUploaded) =>
           Effect.sync(() => {
             if (isUploaded) {
-              addToast('Image ready. Check the printed week.', 'success');
+              addToast('Image ready to analyze.', 'success');
             }
           }),
         ),

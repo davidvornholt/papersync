@@ -2,7 +2,7 @@
 
 Requires Super Productivity 18.21.2 or newer. Install the ZIP from PaperSync Settings under Super Productivity Settings → Plugins. Open the plugin settings and paste a connection key created in PaperSync. Connect one installation; SuperSync synchronizes its imported tasks to your other devices.
 
-The plugin checks for approved homework at startup and every minute while the app is open. The “Import homework” header button also imports immediately and reports connection failures. Keys stay in Super Productivity’s local secret storage. Replacing or revoking a key in PaperSync invalidates the old connection.
+Click the “Import homework” header button to fetch approved homework, choose a project and tags by name, and import. Cancel leaves the queue untouched. The plugin makes no background checks. Existing tasks keep their project and tags when a repeated scan updates their due date or completion. Keys stay in Super Productivity’s local secret storage. Replacing or revoking a key in PaperSync invalidates the old connection.
 
 Tasks carry a PaperSync ID in their notes. A retry finds that ID in active or archived tasks before creating anything. A reviewed due date, including its removal, is applied to the matching active task. Completion remains done if either the existing task or reviewed homework is complete, and archived tasks stay archived. Keep the marker in the task notes if you want retries to recognize the task. Edited wording on a later scan creates a distinct task, so check the review before approving it.
 

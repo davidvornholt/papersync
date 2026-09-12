@@ -5,15 +5,11 @@ import { Spinner } from '@/shared/components/motion-loading';
 
 type SettingsSaveActionProps = {
   readonly isSaving: boolean;
-  readonly isSyncing: boolean;
-  readonly isVaultConfigured: boolean;
   readonly onSave: () => void;
 };
 
 export const SettingsSaveAction = ({
   isSaving,
-  isSyncing,
-  isVaultConfigured,
   onSave,
 }: SettingsSaveActionProps): React.ReactElement => (
   <div>
@@ -21,16 +17,14 @@ export const SettingsSaveAction = ({
       {isSaving ? (
         <>
           <Spinner size="sm" className="mr-2" />
-          {isSyncing ? 'Syncing to vault…' : 'Saving…'}
+          Saving…
         </>
       ) : (
         'Save all settings'
       )}
     </Button>
     <p className="mt-2 text-center text-muted text-xs">
-      {isVaultConfigured
-        ? 'Saves all settings locally and syncs to vault'
-        : 'Saves all settings locally'}
+      Saves AI settings, subjects, and timetable in this browser.
     </p>
   </div>
 );

@@ -193,3 +193,28 @@
   transform: translateX(2px);
   transition-duration: 80ms;
 }
+
+/* The select chevron and checkbox tick are decorative generated content. */
+.paper-select {
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--color-ink) 50%),
+    linear-gradient(135deg, var(--color-ink) 50%, transparent 50%);
+  background-position:
+    calc(100% - 1.1rem) center,
+    calc(100% - 0.8rem) center;
+  background-size: 0.3rem 0.3rem;
+  background-repeat: no-repeat;
+}
+.paper-checkbox:checked::after {
+  content: "";
+  width: 0.65rem;
+  height: 0.35rem;
+  border-left: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: translateY(-0.1rem) rotate(-45deg);
+}
+@media (forced-colors: active) {
+  .paper-checkbox::after {
+    display: none;
+  }
+}

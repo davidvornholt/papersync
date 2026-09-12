@@ -1,7 +1,7 @@
 const features = [
   {
     title: 'Your existing tools',
-    body: 'Send homework to Super Productivity or keep weekly Markdown notes in an Obsidian vault, locally or through GitHub.',
+    body: 'Review scanned homework and import approved tasks into Super Productivity.',
   },
   {
     title: 'Your timetable',

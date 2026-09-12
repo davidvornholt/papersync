@@ -1,9 +1,21 @@
 'use client';
 
+import type { UseScanReturn } from '../hooks/use-scan-types';
 import { NetworkScannersPanel } from './components/network-scanners-panel';
 import { ResultsPanel } from './components/results-panel';
 import { UploadScanCard } from './components/upload-scan-card';
 import { useScanScreen } from './hooks/use-scan-screen';
+
+const getWeekHelp = (scan: UseScanReturn) => {
+  if (scan.state.status === 'complete' && !scan.weekId) {
+    return 'The printed week could not be read. Enter it and analyze again to resolve dates before saving.';
+  }
+  if (scan.hasDetectedWeek) {
+    return 'Read from the QR code. You can correct it here.';
+  }
+  return 'The model reads the printed week if the QR code is unreadable. You can override it here.';
+};
+
 export const ScanScreen = (): React.ReactElement => {
   const controller = useScanScreen();
   const { scan, isBusy } = controller;
@@ -22,28 +34,34 @@ export const ScanScreen = (): React.ReactElement => {
           <h2 className="text-2xl">1. Scan the sheet</h2>
           <fieldset disabled={isBusy}>
             {scan.imagePreview ? (
-              <label className="mb-5 block">
-                Week printed on the sheet
-                <input
-                  type="week"
-                  value={scan.weekId ?? ''}
-                  onChange={(event) => scan.setWeekId(event.target.value)}
-                  required={true}
-                  className="mt-2 block w-full border border-hairline bg-paper p-3"
-                />
-                <span className="mt-2 block text-graphite text-sm">
-                  {scan.hasDetectedWeek
-                    ? 'Read from the sheet’s QR code. Check it before continuing.'
-                    : 'Choose the week printed on this sheet before reading the handwriting.'}
-                </span>
-              </label>
+              <details
+                className="mb-5"
+                open={scan.state.status === 'complete' && !scan.weekId}
+              >
+                <summary className="cursor-pointer">
+                  {scan.weekId
+                    ? `Sheet week: ${scan.weekId}`
+                    : 'Week detected automatically when analyzing'}
+                </summary>
+                <label className="mt-3 block">
+                  Week printed on the sheet
+                  <input
+                    type="week"
+                    value={scan.weekId ?? ''}
+                    onChange={(event) => scan.setWeekId(event.target.value)}
+                    className="mt-2 block w-full border border-hairline bg-paper p-3"
+                  />
+                </label>
+                <p className="mt-2 text-graphite text-sm">
+                  {getWeekHelp(scan)}
+                </p>
+              </details>
             ) : null}
             <UploadScanCard
               preview={scan.imagePreview}
               isDragging={controller.isDragging}
               setIsDragging={controller.setIsDragging}
               isProcessing={isBusy}
-              canProcess={scan.weekId !== null}
               onFileSelect={controller.handleFileSelect}
               onClear={controller.handleClear}
               onProcess={controller.handleProcess}
@@ -82,6 +100,7 @@ export const ScanScreen = (): React.ReactElement => {
               onDeleteEntry={controller.handleDeleteEntry}
               onSync={controller.handleSync}
               isSyncing={controller.isSyncing}
+              canSave={scan.weekId !== null}
             />
           </fieldset>
         </section>

@@ -3,10 +3,10 @@ import {
   ExtractionRequestError,
   FileReadError,
 } from '@/features/scanner/errors/use-scan-effects';
+import type { ExtractedEntry } from '@/shared/homework/entry';
 import { extractHandwriting } from '@/shared/ocr/actions/extract';
-import type { VaultSettings } from '@/shared/ocr/actions/extract-types';
 import type { WeekId } from '@/shared/types/schemas';
-import type { AISettings, ExtractedEntry, ScanState } from './use-scan-types';
+import type { AISettings, ScanState } from './use-scan-types';
 
 const percentageScale = 100;
 const bytesPerMebibyte = 1_048_576;
@@ -65,9 +65,8 @@ export const readFileAsDataUrl = (
 
 export const processExtractionEffect = (
   imageData: string,
-  weekId: WeekId,
+  weekId: WeekId | null,
   aiSettings: AISettings,
-  vaultSettings?: VaultSettings,
 ): Effect.Effect<ScanState, never> =>
   Effect.tryPromise({
     try: () =>
@@ -77,7 +76,6 @@ export const processExtractionEffect = (
         provider: aiSettings.provider,
         googleApiKey: aiSettings.googleApiKey,
         ollamaEndpoint: aiSettings.ollamaEndpoint,
-        vaultSettings,
       }),
     catch: (error) =>
       new ExtractionRequestError({
@@ -108,6 +106,7 @@ export const processExtractionEffect = (
 
       return Effect.succeed({
         status: 'complete' as const,
+        weekId: result.data.weekId,
         entries,
         confidence: result.data.confidence,
         modelUsed: result.modelUsed,

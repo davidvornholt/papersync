@@ -2,13 +2,11 @@ import { PgClient } from '@effect/sql-pg';
 import { Homework, PendingHomework } from '@papersync/homework/contract';
 import { getHomeworkId, hashContent } from '@papersync/homework/identity';
 import { Effect, Schema } from 'effect';
-import type { ExtractedEntry } from '@/shared/vault/actions/sync-helpers-types';
+import type { ExtractedEntry } from '@/shared/homework/entry';
 import { HomeworkError } from './error';
 
 type QueueOptions = {
   readonly weekId: string;
-  readonly projectId?: string;
-  readonly tagIds?: ReadonlyArray<string>;
 };
 const toHomework = (entry: ExtractedEntry, options: QueueOptions) =>
   Effect.gen(function* () {
@@ -26,8 +24,6 @@ const toHomework = (entry: ExtractedEntry, options: QueueOptions) =>
       content: entry.content.trim(),
       isCompleted: entry.isCompleted,
       ...(entry.dueDate ? { dueDate: entry.dueDate } : {}),
-      ...(options.projectId ? { projectId: options.projectId } : {}),
-      ...(options.tagIds?.length ? { tagIds: options.tagIds } : {}),
     });
   });
 const setHomework = (payload: Homework) =>
