@@ -45,6 +45,7 @@ export const ExceptionSlotEditor = ({
               {String(index + 1).padStart(2, '0')}
             </span>
             <Select
+              aria-label={`Exception class ${index + 1}`}
               value={slot.subjectId}
               onChange={(e) => onChangeSlot(slot.id, e.target.value)}
               className="min-w-0 flex-1 text-[14px]"

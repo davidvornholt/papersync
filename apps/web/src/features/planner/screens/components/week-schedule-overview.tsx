@@ -103,6 +103,7 @@ export const WeekScheduleOverview = ({
                   variant="ghost"
                   size="sm"
                   onClick={() => onEditException(dayDate, day)}
+                  aria-label={`Exception for ${dayDate.toLocaleDateString('en-US', { weekday: 'long' })}`}
                   className={hasException ? 'text-warning' : ''}
                 >
                   {hasException ? 'Edit' : 'Exception'}

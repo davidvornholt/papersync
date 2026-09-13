@@ -3,7 +3,8 @@
 import { Button } from '@papersync/ui/button';
 import { useEffect, useId, useState } from 'react';
 import { Modal } from '@/shared/components/modal';
-import type { DayOfWeek, ISODate, Subject } from '@/shared/types/schemas';
+import { getIsoDate } from '@/shared/planner/week';
+import type { DayOfWeek, Subject } from '@/shared/types/schemas';
 import type { ScheduleException } from '../planner-screen-types';
 import { ExceptionSlotEditor } from './exception-slot-editor';
 
@@ -51,7 +52,7 @@ export const ExceptionEditorModal = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={exception ? 'Edit Exception' : 'Add Exception'}
+      title={exception ? 'Edit exception' : 'Add exception'}
       description={`Modify the schedule for ${dateStr}`}
       size="md"
       footer={
@@ -73,7 +74,7 @@ export const ExceptionEditorModal = ({
           </Button>
           <Button
             onClick={() => {
-              const isoDate = date.toISOString().split('T')[0] as ISODate;
+              const isoDate = getIsoDate(date);
               onSave({
                 date: isoDate,
                 dayOfWeek,
