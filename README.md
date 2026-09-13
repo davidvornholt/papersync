@@ -19,6 +19,10 @@ bun run dev:web
 
 Run `bun run check:fix` for formatting, lint, type checks, tests, production builds, and browser accessibility checks. The database must be running for integration tests.
 
+## PR screenshots
+
+Capture matched before/after images with demo data, then run `bun standards screenshots publish <image.png>` from the repository root. Publishing uses the [configured shared screenshot bucket](config/screenshots.yaml) and PaperSync's encrypted credential. The returned Markdown links are public and permanent; follow the [screenshot skill](.agents/skills/screenshots-in-prs/SKILL.md) when adding them to a PR.
+
 ## Workspace layout
 
 - `apps/web`: Next.js application, scan review, authentication, and import queue API
