@@ -66,7 +66,7 @@ export const Timetable = Schema.Struct({
 });
 export type Timetable = typeof Timetable.Type;
 
-export const TaskAction = Schema.Literal('add', 'modify', 'complete');
+export const TaskAction = Schema.Literal('add', 'modify', 'complete', 'skip');
 export type TaskAction = typeof TaskAction.Type;
 
 export const TaskEntry = Schema.Struct({
@@ -90,10 +90,3 @@ export const OCRResponse = Schema.Struct({
   notes: Schema.optional(Schema.String),
 });
 export type OCRResponse = typeof OCRResponse.Type;
-
-export const QRPayload = Schema.Struct({
-  week: WeekId,
-  checksum: Schema.String,
-  version: Schema.Literal(1),
-});
-export type QRPayload = typeof QRPayload.Type;

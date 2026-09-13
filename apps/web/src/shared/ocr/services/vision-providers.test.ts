@@ -133,7 +133,7 @@ it.each(
     ),
   ),
 )(
-  'detects the printed week without a QR hint and preserves an unknown week: %j',
+  'detects the printed week without a manual hint and preserves an unknown week: %j',
   async ({ name, detectedWeek }) => {
     const provider =
       name === 'google'
@@ -158,7 +158,7 @@ it.each(
   },
 );
 
-it('keeps the verified QR or manual week when the model disagrees', async () => {
+it('keeps the manually corrected week when the model disagrees', async () => {
   fetchSpy.mockResolvedValue(
     googleResponse({ weekId: '2025-W52', entries: [entry], confidence: 1 }),
   );

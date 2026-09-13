@@ -8,7 +8,10 @@ import { HomeworkError } from './error';
 type QueueOptions = {
   readonly weekId: string;
 };
-const toHomework = (entry: ExtractedEntry, options: QueueOptions) =>
+const toHomework = (
+  entry: Omit<ExtractedEntry, 'action'>,
+  options: QueueOptions,
+) =>
   Effect.gen(function* () {
     const id = yield* getHomeworkId(
       options.weekId,
@@ -47,7 +50,6 @@ export const enqueueHomework = (
           content: Schema.String,
           isTask: Schema.Boolean,
           isCompleted: Schema.Boolean,
-          isNew: Schema.Boolean,
           dueDate: Schema.optional(Schema.String),
         }),
       ),

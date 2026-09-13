@@ -1,6 +1,8 @@
 # PaperSync web app
 
-Write homework on the printed sheet at school. At home, photograph or upload the sheet, let PaperSync read its week from the QR code or printed text, review the recognized text and due dates, then approve the entries. Photos are processed for that request and are not stored in the homework queue. JPEG, PNG, and WebP images up to 10 MB are supported; export HEIC photos as JPEG first.
+Write homework on the printed sheet at school. At home, photograph or upload the sheet, let PaperSync read its week from the full printed week or dated day headings, review the recognized text and due dates, then approve the entries. Photos are processed for that request and are not stored in the homework queue. JPEG, PNG, and WebP images up to 10 MB are supported; export HEIC photos as JPEG first.
+
+New sheets print the full ISO week (for example, `2026-W37`) on both pages and a complete date beside each day, so a cropped day can still be dated. Older sheets omit the year; if recognition cannot determine it, enter the printed week manually and analyze again. No QR code is needed.
 
 ## Development
 
@@ -24,11 +26,11 @@ Set `GOOGLE_VERTEX_PROJECT`, `GOOGLE_VERTEX_LOCATION` (`global`, `eu`, or `us`),
 
 In Settings, fetch the Super Productivity plugin ZIP and create a connection key. Install the ZIP in Super Productivity and configure the plugin with the key. Connect one installation; SuperSync syncs the imported tasks to your other devices. Click “Import homework” in Super Productivity and choose a project and tags by name for new tasks. The plugin does not poll in the background.
 
-The same week, written day, subject, and normalized text identify a repeated entry. Repeating an unchanged scan does not create another task. A due date correction updates the task; changing its wording creates a new entry. Review the recognized text before approval. Completed or archived Super Productivity tasks stay completed. Keep the PaperSync marker in task notes so interrupted imports can safely retry.
+The same week, written day, subject, and normalized text identify a repeated entry. Before review, PaperSync compares recognized homework with saved rows, including tasks already imported. Unchanged entries are collapsed under “already saved”; new entries and changed completion states or due dates remain editable. Open the saved entries and choose “Review entry” to correct one. Notes are not stored, so they appear again when rescanned. A due date correction updates the task; changing its wording creates a new entry. Review the recognized text before approval. Completed or archived Super Productivity tasks stay completed. Keep the PaperSync marker in task notes so interrupted imports can safely retry.
 
 ## Stored data
 
-PostgreSQL stores approved homework (week, written day, subject, text, completion and due date), content revisions, import acknowledgements, imported task IDs, creation timestamps, and a hash of the plugin connection key. Imported rows remain for duplicate detection. PaperSync does not store scan images or unapproved OCR results in the database. Notes are available during review but are not saved or imported.
+PostgreSQL stores approved homework (week, written day, subject, text, completion and due date), content revisions, import acknowledgements, imported task IDs, creation timestamps, and a hash of the plugin connection key. Imported rows remain for duplicate detection. Scan logs record the provider model, whether a week was resolved or supplied, entry counts, and error types; they do not contain images or recognized text. PaperSync does not store scan images or unapproved OCR results in the database. Notes are available during review but are not saved or imported.
 
 Subjects, timetable, and self-hosted AI settings are saved in this browser’s local storage. The sign-in session uses an encrypted cookie. The plugin stores its connection key on the Super Productivity device; projects and tags are selected there during import.
 
