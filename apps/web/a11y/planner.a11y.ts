@@ -1,3 +1,4 @@
+import AxeBuilder from '@axe-core/playwright';
 import { scanWcag22AaViolations } from '@davidvornholt/a11y-testing/axe';
 import { expect, test as it, test } from '@playwright/test';
 import { defaultSettings } from '../src/shared/hooks/use-settings-schema';
@@ -35,9 +36,8 @@ for (const timezoneId of ['Europe/Berlin', 'America/Los_Angeles']) {
         const monday = page
           .getByRole('listitem')
           .filter({ has: page.getByText('Mon', { exact: true }) });
-        await page
-          .getByRole('button', { name: 'Exception for Tuesday' })
-          .click();
+        const exceptionButton = tuesday.getByRole('button');
+        await exceptionButton.click();
         const dialog = page.getByRole('dialog');
         await expect(dialog).toContainText('Tuesday');
         await dialog.getByLabel('Reason (optional)').fill('Museum visit');
@@ -50,9 +50,14 @@ for (const timezoneId of ['Europe/Berlin', 'America/Los_Angeles']) {
         await expect(tuesday).toContainText('No classes');
         await expect(monday).not.toContainText('Museum visit');
         await expect(monday).toContainText('Math');
-        await tuesday
-          .getByRole('button', { name: 'Exception for Tuesday' })
-          .click();
+        const savedExceptionAccessibility = await new AxeBuilder({ page })
+          .withRules(['label-content-name-mismatch'])
+          .analyze();
+        expect(savedExceptionAccessibility.violations).toEqual([]);
+        await expect(exceptionButton).toHaveAccessibleName(
+          'Edit exception for Tuesday',
+        );
+        await exceptionButton.click();
         await expect(dialog.getByLabel('Reason (optional)')).toHaveValue(
           'Museum visit',
         );
@@ -84,9 +89,7 @@ for (const timezoneId of ['Europe/Berlin', 'America/Los_Angeles']) {
         await expect(
           page.getByText('Generating PDF…', { exact: true }),
         ).toBeVisible();
-        await tuesday
-          .getByRole('button', { name: 'Exception for Tuesday' })
-          .click();
+        await exceptionButton.click();
         await dialog
           .getByLabel('Reason (optional)')
           .fill('Museum trip, updated');
@@ -106,9 +109,7 @@ for (const timezoneId of ['Europe/Berlin', 'America/Los_Angeles']) {
         await expect(
           page.getByRole('button', { name: 'Download', exact: true }),
         ).toBeVisible();
-        await tuesday
-          .getByRole('button', { name: 'Exception for Tuesday' })
-          .click();
+        await exceptionButton.click();
         await dialog
           .getByRole('button', { name: 'Remove exception', exact: true })
           .click();

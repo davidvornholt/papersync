@@ -40,6 +40,9 @@ export const WeekScheduleOverview = ({
 
         const exception = exceptions.find((entry) => entry.date === isoDate);
         const hasException = exception !== undefined;
+        const exceptionAction = hasException
+          ? { text: 'Edit', label: 'Edit exception' }
+          : { text: 'Exception', label: 'Exception' };
         const slots = hasException
           ? exception.slots
           : (daySchedule?.slots ?? []);
@@ -103,10 +106,10 @@ export const WeekScheduleOverview = ({
                   variant="ghost"
                   size="sm"
                   onClick={() => onEditException(dayDate, day)}
-                  aria-label={`Exception for ${dayDate.toLocaleDateString('en-US', { weekday: 'long' })}`}
+                  aria-label={`${exceptionAction.label} for ${dayDate.toLocaleDateString('en-US', { weekday: 'long' })}`}
                   className={hasException ? 'text-warning' : ''}
                 >
-                  {hasException ? 'Edit' : 'Exception'}
+                  {exceptionAction.text}
                 </Button>
               </div>
             </div>
