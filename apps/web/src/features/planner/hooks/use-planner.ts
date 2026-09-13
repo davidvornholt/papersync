@@ -1,7 +1,7 @@
 'use client';
 
 import { Data, Effect } from 'effect';
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { getWeekDateRange, getWeekId } from '@/shared/planner/week';
 import type { Subject, WeekId } from '@/shared/types/schemas';
 import { downloadPlannerPdf } from '../services/generator';
@@ -83,22 +83,31 @@ export const usePlanner = (initialWeekId?: WeekId): UsePlannerReturn => {
   const dateRange = getWeekDateRange(weekId);
 
   const [state, setState] = useState<PlannerState>({ status: 'idle' });
+  const revisionRef = useRef(0);
 
   const generate = useCallback(
     (
       subjects: ReadonlyArray<Subject>,
       timetable: ReadonlyArray<TimetableDay>,
     ): Promise<void> => {
+      revisionRef.current += 1;
+      const revision = revisionRef.current;
       setState({ status: 'generating' });
       return Effect.runPromise(
         fetchPdfEffect(weekId, subjects, timetable).pipe(
           Effect.tap((blob) =>
-            Effect.sync(() => setState({ status: 'generated', blob })),
+            Effect.sync(() => {
+              if (revision === revisionRef.current) {
+                setState({ status: 'generated', blob });
+              }
+            }),
           ),
           Effect.catchAll((error) =>
-            Effect.sync(() =>
-              setState({ status: 'error', error: error.message }),
-            ),
+            Effect.sync(() => {
+              if (revision === revisionRef.current) {
+                setState({ status: 'error', error: error.message });
+              }
+            }),
           ),
           Effect.asVoid,
         ),
@@ -125,6 +134,7 @@ export const usePlanner = (initialWeekId?: WeekId): UsePlannerReturn => {
   }, [state]);
 
   const reset = useCallback((): void => {
+    revisionRef.current += 1;
     setState({ status: 'idle' });
   }, []);
 

@@ -3,8 +3,8 @@
 import { useMemo, useState } from 'react';
 import { useToast } from '@/shared/components/use-toast';
 import { useSettings } from '@/shared/hooks/use-settings';
-import { getWeekId, getWeekStartDate } from '@/shared/planner/week';
-import type { DayOfWeek, ISODate, WeekId } from '@/shared/types/schemas';
+import { getIsoDate, getWeekId, getWeekStartDate } from '@/shared/planner/week';
+import type { DayOfWeek, WeekId } from '@/shared/types/schemas';
 import { usePlanner } from '../hooks/use-planner';
 import {
   applyExceptionsToTimetable,
@@ -71,6 +71,7 @@ export const usePlannerScreen = () => {
     exceptionData: Omit<ScheduleException, 'id'>,
   ): void => {
     setExceptions((prev) => upsertException(prev, exceptionData));
+    planner.reset();
     addToast('Schedule exception saved', 'success');
   };
 
@@ -79,10 +80,9 @@ export const usePlannerScreen = () => {
       return;
     }
 
-    const isoDate = exceptionEditingDate.date
-      .toISOString()
-      .split('T')[0] as ISODate;
+    const isoDate = getIsoDate(exceptionEditingDate.date);
     setExceptions((prev) => prev.filter((entry) => entry.date !== isoDate));
+    planner.reset();
     addToast('Exception removed', 'info');
   };
 

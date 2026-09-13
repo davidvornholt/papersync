@@ -1,5 +1,6 @@
 import type { TimetableDay } from '@/shared/hooks/use-settings-schema';
-import type { DayOfWeek, ISODate, Subject } from '@/shared/types/schemas';
+import { getIsoDate } from '@/shared/planner/week';
+import type { DayOfWeek, Subject } from '@/shared/types/schemas';
 import type { PlannerState } from '../hooks/use-planner';
 import type {
   PreviewPanelState,
@@ -72,7 +73,7 @@ export const applyExceptionsToTimetable = (
       const dayIndex = WEEKDAYS.indexOf(daySchedule.day);
       const dayDate = new Date(weekStartDate);
       dayDate.setDate(weekStartDate.getDate() + dayIndex);
-      const isoDate = dayDate.toISOString().split('T')[0] as ISODate;
+      const isoDate = getIsoDate(dayDate);
 
       const exception = exceptions.find((entry) => entry.date === isoDate);
       if (!exception) {
@@ -97,7 +98,7 @@ export const getExceptionForDate = (
   exceptions: ReadonlyArray<ScheduleException>,
   date: Date,
 ): ScheduleException | null => {
-  const isoDate = date.toISOString().split('T')[0] as ISODate;
+  const isoDate = getIsoDate(date);
   return exceptions.find((entry) => entry.date === isoDate) ?? null;
 };
 
