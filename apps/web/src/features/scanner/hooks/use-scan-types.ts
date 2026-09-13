@@ -10,6 +10,7 @@ export type ScanState =
       readonly entries: ReadonlyArray<ExtractedEntry>;
       readonly confidence: number;
       readonly modelUsed: string;
+      readonly notes?: string;
     }
   | { readonly status: 'error'; readonly error: string };
 
@@ -26,7 +27,6 @@ export type UseScanOptions = {
 export type UseScanReturn = {
   readonly state: ScanState;
   readonly weekId: WeekId | null;
-  readonly hasDetectedWeek: boolean;
   readonly setWeekId: (value: string) => void;
   readonly imagePreview: string | null;
   readonly upload: (file: File) => Promise<boolean>;

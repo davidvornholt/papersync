@@ -22,7 +22,12 @@ export const useScanSave = ({ scan, entries, clear }: SaveOptions) => {
     const { weekId } = scan;
     setIsSyncing(true);
     Effect.runFork(
-      requestAction(() => saveHomework(entries, weekId)).pipe(
+      requestAction(() =>
+        saveHomework(
+          entries.filter((entry) => entry.isTask && entry.action !== 'skip'),
+          weekId,
+        ),
+      ).pipe(
         Effect.tap((result) =>
           Effect.sync(() => {
             if (result.success) {

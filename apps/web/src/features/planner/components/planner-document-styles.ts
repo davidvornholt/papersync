@@ -23,8 +23,6 @@ export const styles = StyleSheet.create({
   headerLeft: { flexDirection: 'row', alignItems: 'baseline', gap: 8 },
   appName: { fontSize: 12, fontWeight: 700, color: colors.black },
   weekInfo: { fontSize: 10, fontWeight: 400, color: colors.darkGray },
-  qrContainer: { width: 24, height: 24 },
-  qrImage: { width: 24, height: 24 },
   dayRow: {
     borderBottomWidth: 0.5,
     borderBottomColor: colors.lightGray,

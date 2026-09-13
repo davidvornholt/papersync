@@ -1,19 +1,12 @@
 'use server';
 
+import { databaseRuntime } from '@papersync/db/runtime';
 import { Effect } from 'effect';
 import { requireSession } from '@/shared/auth/session';
-import type {
-  VisionError,
-  VisionValidationError,
-} from '@/shared/ocr/errors/vision-contract';
+import { reconcileHomework } from '@/shared/homework/reconcile';
 import { VisionProvider } from '@/shared/ocr/services/vision-contract';
 import { getVisionLayer } from '@/shared/ocr/services/vision-selection';
-import type { OCRResponse } from '@/shared/types/schemas';
-import type {
-  ExtractionOptions,
-  ExtractionResult,
-  ExtractionValidationError,
-} from './extract-types';
+import type { ExtractionOptions, ExtractionResult } from './extract-types';
 
 /**
  * Server Actions for OCR Extraction
@@ -22,12 +15,7 @@ import type {
  * "use server" files can only export async functions.
  */
 
-const extractHandwritingEffect = (
-  options: ExtractionOptions,
-): Effect.Effect<
-  { readonly data: OCRResponse; readonly modelUsed: string },
-  ExtractionValidationError | VisionError | VisionValidationError
-> =>
+const extractHandwritingEffect = (options: ExtractionOptions) =>
   Effect.gen(function* () {
     const { imageBase64, weekId } = options;
     const visionLayer = yield* getVisionLayer(options);
@@ -39,20 +27,37 @@ const extractHandwritingEffect = (
       visionLayer,
     );
 
-    return { data: result.data, modelUsed: result.modelUsed };
+    const data = yield* reconcileHomework(result.data);
+    yield* Effect.logInfo('Scan analysis completed').pipe(
+      Effect.annotateLogs({
+        model: result.modelUsed,
+        weekResolved: data.weekId !== null,
+        weekHintProvided: weekId !== null,
+        entryCount: data.entries.length,
+        alreadySavedCount: data.entries.filter(
+          (entry) => entry.action === 'skip',
+        ).length,
+      }),
+    );
+    return { data, modelUsed: result.modelUsed };
   });
 
 export const extractHandwriting = async (
   options: ExtractionOptions,
 ): Promise<ExtractionResult> => {
   await requireSession();
-  return Effect.runPromise(
+  return databaseRuntime.runPromise(
     extractHandwritingEffect(options).pipe(
       Effect.map((result) => ({
         success: true as const,
         data: result.data,
         modelUsed: result.modelUsed,
       })),
+      Effect.tapError((error) =>
+        Effect.logWarning('Scan analysis failed').pipe(
+          Effect.annotateLogs('errorType', error._tag),
+        ),
+      ),
       Effect.catchAll((error) =>
         Effect.succeed({ success: false as const, error: error.message }),
       ),
