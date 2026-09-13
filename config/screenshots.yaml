@@ -1,0 +1,6 @@
+# Public, permanent PR evidence in the shared bucket owned by personal-infra.
+# The pair names PaperSync's own bucket-scoped credential; no other project's credential is reused.
+pair: assets:assets.screenshots_rw
+bucket: personal-pr-screenshots
+endpoint: https://831f91724ea62b0cb0215829eb001f66.eu.r2.cloudflarestorage.com
+publicBaseUrl: https://screenshots.vornholt.online
