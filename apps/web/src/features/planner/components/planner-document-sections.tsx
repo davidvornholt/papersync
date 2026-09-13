@@ -1,4 +1,4 @@
-import { Image, Text, View } from '@react-pdf/renderer';
+import { Text, View } from '@react-pdf/renderer';
 import { formatDate, generateLineKeys } from './planner-document-helpers';
 import { styles } from './planner-document-styles';
 import type { DayData } from './planner-document-types';
@@ -73,25 +73,20 @@ export const NotesSection = ({
 };
 
 type HeaderProps = {
-  readonly weekNumber: string;
+  readonly weekId: string;
   readonly dateRange: string;
-  readonly qrDataUrl: string;
 };
 
 export const PlannerHeader = ({
-  weekNumber,
+  weekId,
   dateRange,
-  qrDataUrl,
 }: HeaderProps): React.ReactElement => (
   <View style={styles.header}>
     <View style={styles.headerLeft}>
       <Text style={styles.appName}>PaperSync</Text>
       <Text style={styles.weekInfo}>
-        {weekNumber} · {dateRange}
+        {weekId} · {dateRange}
       </Text>
-    </View>
-    <View style={styles.qrContainer}>
-      <Image src={qrDataUrl} style={styles.qrImage} />
     </View>
   </View>
 );

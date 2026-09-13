@@ -99,7 +99,7 @@ export const processExtractionEffect = (
           content: entry.content,
           isTask: entry.isTask,
           isCompleted: entry.isCompleted,
-          isNew: entry.action === 'add',
+          action: entry.action,
           dueDate: entry.dueDate,
         }),
       );
@@ -110,6 +110,7 @@ export const processExtractionEffect = (
         entries,
         confidence: result.data.confidence,
         modelUsed: result.modelUsed,
+        notes: result.data.notes,
       });
     }),
     Effect.catchAll((error) =>

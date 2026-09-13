@@ -2,10 +2,8 @@ import { scanWcag22AaViolations } from '@davidvornholt/a11y-testing/axe';
 // biome-ignore lint/correctness/noUnresolvedImports: Playwright re-exports Page through its type declarations; TypeScript verifies this export.
 import type { Page } from '@playwright/test';
 import { expect, test } from '@playwright/test';
-import { Effect, Schema } from 'effect';
-import { encodeQRPayload } from '../src/shared/planner/qr';
-import { WeekId } from '../src/shared/types/schemas';
 import { createSessionCookies } from './auth-fixture';
+import { createPlannerImage } from './planner-image';
 
 const pngDataUrlPattern = /^data:image\/png;base64,/u;
 
@@ -28,7 +26,7 @@ const pasteImage = (page: Page, image: string, selector = 'body') =>
     { data: image, targetSelector: selector },
   );
 
-test('Ctrl+V previews a clipboard image and reads its printed week', async ({
+test('Ctrl+V previews a clipboard image for analysis', async ({
   page,
   context,
 }) => {
@@ -38,18 +36,20 @@ test('Ctrl+V previews a clipboard image and reads its printed week', async ({
   await expect(
     page.getByRole('button', { name: 'Upload image' }),
   ).toBeEnabled();
-  const week = Schema.decodeUnknownSync(WeekId)('2026-W01');
-  const qr = await Effect.runPromise(encodeQRPayload(week));
+  const week = '2026-W01';
+  const image = await createPlannerImage(page, week);
   await page.evaluate(async (data) => {
     const blob = await (await fetch(data)).blob();
     await navigator.clipboard.write([new ClipboardItem({ [blob.type]: blob })]);
-  }, qr);
+  }, image);
   await page.keyboard.press('Control+V');
   await expect(page.getByAltText('Scanned planner preview')).toHaveAttribute(
     'src',
     pngDataUrlPattern,
   );
-  await expect(page.getByLabel('Week printed on the sheet')).toHaveValue(week);
+  await expect(
+    page.getByText('Week detected automatically when analyzing'),
+  ).toBeVisible();
   await expect(
     page.getByRole('button', { name: 'Process scan' }),
   ).toBeEnabled();
@@ -65,17 +65,19 @@ test('image paste preserves editing, respects processing, and validates uploads'
   await expect(
     page.getByRole('button', { name: 'Upload image' }),
   ).toBeEnabled();
-  const week = Schema.decodeUnknownSync(WeekId)('2026-W01');
-  const nextWeek = Schema.decodeUnknownSync(WeekId)('2026-W02');
-  const qr = await Effect.runPromise(encodeQRPayload(week));
-  const nextQr = await Effect.runPromise(encodeQRPayload(nextWeek));
-  expect(await pasteImage(page, qr)).toBe(true);
+  const week = '2026-W01';
+  const nextWeek = '2026-W02';
+  const image = await createPlannerImage(page, week);
+  const nextImage = await createPlannerImage(page, nextWeek);
+  expect(await pasteImage(page, image)).toBe(true);
   const preview = page.getByAltText('Scanned planner preview');
-  await expect(preview).toHaveAttribute('src', qr);
+  await expect(preview).toHaveAttribute('src', image);
+  await page.getByText('Week detected automatically when analyzing').click();
   const weekInput = page.getByLabel('Week printed on the sheet');
+  await weekInput.fill(week);
   await expect(weekInput).toHaveValue(week);
-  expect(await pasteImage(page, nextQr, 'input[type=week]')).toBe(false);
-  await expect(preview).toHaveAttribute('src', qr);
+  expect(await pasteImage(page, nextImage, 'input[type=week]')).toBe(false);
+  await expect(preview).toHaveAttribute('src', image);
   await expect(weekInput).toHaveValue(week);
 
   const textPastePrevented = await page.evaluate(() => {
@@ -90,7 +92,7 @@ test('image paste preserves editing, respects processing, and validates uploads'
     return event.defaultPrevented;
   });
   expect(textPastePrevented).toBe(false);
-  await expect(preview).toHaveAttribute('src', qr);
+  await expect(preview).toHaveAttribute('src', image);
 
   const { promise: responseReady, resolve: releaseResponse } =
     Promise.withResolvers<void>();
@@ -109,15 +111,15 @@ test('image paste preserves editing, respects processing, and validates uploads'
   await expect(
     page.getByRole('button', { name: 'Analyzing...' }),
   ).toBeDisabled();
-  expect(await pasteImage(page, nextQr)).toBe(false);
-  await expect(preview).toHaveAttribute('src', qr);
+  expect(await pasteImage(page, nextImage)).toBe(false);
+  await expect(preview).toHaveAttribute('src', image);
   releaseResponse();
   await expect(
     page.getByText('Processing failed', { exact: true }),
   ).toBeVisible();
-  expect(await pasteImage(page, nextQr)).toBe(true);
-  await expect(preview).toHaveAttribute('src', nextQr);
-  await expect(weekInput).toHaveValue(nextWeek);
+  expect(await pasteImage(page, nextImage)).toBe(true);
+  await expect(preview).toHaveAttribute('src', nextImage);
+  await expect(weekInput).toHaveValue('');
 
   expect(
     await pasteImage(

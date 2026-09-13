@@ -9,12 +9,9 @@ import { useScanScreen } from './hooks/use-scan-screen';
 
 const getWeekHelp = (scan: UseScanReturn) => {
   if (scan.state.status === 'complete' && !scan.weekId) {
-    return 'The printed week could not be read. Enter it and analyze again to resolve dates before saving.';
+    return 'The photo must show the year and week, or a full date. Older sheets omit the year; enter their week here and analyze again.';
   }
-  if (scan.hasDetectedWeek) {
-    return 'Read from the QR code. You can correct it here.';
-  }
-  return 'The model reads the printed week if the QR code is unreadable. You can override it here.';
+  return 'Read from the full printed week or day dates. You can correct the week here.';
 };
 
 const WeekEditor = ({ scan }: { readonly scan: UseScanReturn }) => {
@@ -100,6 +97,9 @@ export const ScanScreen = (): React.ReactElement => {
                 scan.state.status === 'complete'
                   ? scan.state.modelUsed
                   : undefined
+              }
+              notes={
+                scan.state.status === 'complete' ? scan.state.notes : undefined
               }
               errorMessage={
                 scan.state.status === 'error' ? scan.state.error : undefined

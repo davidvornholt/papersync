@@ -18,7 +18,6 @@ export type PlannerProps = {
   };
   readonly subjects: ReadonlyArray<Subject>;
   readonly timetable: ReadonlyArray<TimetableDay>;
-  readonly qrDataUrl: string;
 };
 
 export type DayInfo = {

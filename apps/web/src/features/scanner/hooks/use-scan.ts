@@ -2,7 +2,6 @@
 
 import { Effect, Schema } from 'effect';
 import { useRef, useState } from 'react';
-import { getImageWeek } from '@/features/scanner/services/image-week';
 import { WeekId } from '@/shared/types/schemas';
 import { processExtractionEffect, readFileAsDataUrl } from './use-scan-effects';
 import type {
@@ -14,7 +13,6 @@ export const useScan = (options: UseScanOptions): UseScanReturn => {
   const [state, setState] = useState<ScanState>({ status: 'idle' });
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [weekId, setWeek] = useState<WeekId | null>(null);
-  const [hasDetectedWeek, setHasDetectedWeek] = useState(false);
   const revisionRef = useRef(0);
 
   const clear = () => {
@@ -22,7 +20,6 @@ export const useScan = (options: UseScanOptions): UseScanReturn => {
     setState({ status: 'idle' });
     setImagePreview(null);
     setWeek(null);
-    setHasDetectedWeek(false);
   };
 
   const upload = (file: File): Promise<boolean> => {
@@ -30,24 +27,16 @@ export const useScan = (options: UseScanOptions): UseScanReturn => {
     const currentRevision = revisionRef.current;
     setState({ status: 'uploading', progress: 0 });
     return Effect.runPromise(
-      Effect.all(
-        [
-          readFileAsDataUrl(file, (progress) => {
-            if (currentRevision === revisionRef.current) {
-              setState({ status: 'uploading', progress });
-            }
-          }),
-          getImageWeek(file),
-        ],
-        { concurrency: 'unbounded' },
-      ).pipe(
-        Effect.map(([data, payload]) => {
+      readFileAsDataUrl(file, (progress) => {
+        if (currentRevision === revisionRef.current) {
+          setState({ status: 'uploading', progress });
+        }
+      }).pipe(
+        Effect.map((data) => {
           if (currentRevision !== revisionRef.current) {
             return false;
           }
           setImagePreview(data);
-          setWeek(payload?.week ?? null);
-          setHasDetectedWeek(payload !== null);
           setState({ status: 'idle' });
           return true;
         }),
@@ -94,14 +83,12 @@ export const useScan = (options: UseScanOptions): UseScanReturn => {
   const setWeekId = (value: string) => {
     revisionRef.current += 1;
     setWeek(Schema.is(WeekId)(value) ? value : null);
-    setHasDetectedWeek(false);
     setState({ status: 'idle' });
   };
 
   return {
     state,
     weekId,
-    hasDetectedWeek,
     setWeekId,
     imagePreview,
     upload,
