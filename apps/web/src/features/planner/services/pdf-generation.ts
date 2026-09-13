@@ -5,7 +5,6 @@ import {
   PdfGenerationError,
   RequestValidationError,
 } from '@/features/planner/errors/pdf-generation';
-import { encodeQRPayload } from '@/shared/planner/qr';
 import { getWeekDateRange, getWeekId } from '@/shared/planner/week';
 import type { Subject, WeekId } from '@/shared/types/schemas';
 import { PlannerDocument } from '../components/planner-document';
@@ -80,22 +79,11 @@ export const generatePlannerPdfBufferEffect = (
     const weekId = validatedBody.weekId ?? getWeekId();
     const dateRange = getWeekDateRange(weekId);
 
-    const qrDataUrl = yield* encodeQRPayload(weekId).pipe(
-      Effect.mapError(
-        (error) =>
-          new PdfGenerationError({
-            message: `QR generation failed: ${error.message}`,
-            cause: error,
-          }),
-      ),
-    );
-
     const document = PlannerDocument({
       weekId,
       dateRange,
       subjects: validatedBody.subjects as Array<Subject>,
       timetable: validatedBody.timetable as Array<TimetableDay>,
-      qrDataUrl,
     });
 
     const pdfBlob = yield* Effect.tryPromise({

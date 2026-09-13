@@ -17,6 +17,7 @@ type ResultsPanelProps = {
   readonly entries: ReadonlyArray<ExtractedEntry>;
   readonly confidence: number;
   readonly modelUsed?: string;
+  readonly notes?: string;
   readonly errorMessage?: string;
   readonly onUpdateEntry: (
     id: string,
@@ -33,6 +34,7 @@ export const ResultsPanel = ({
   entries,
   confidence,
   modelUsed,
+  notes,
   errorMessage,
   onUpdateEntry,
   onDeleteEntry,
@@ -48,6 +50,7 @@ export const ResultsPanel = ({
             entries={entries}
             confidence={confidence}
             modelUsed={modelUsed}
+            notes={notes}
             onUpdateEntry={onUpdateEntry}
             onDeleteEntry={onDeleteEntry}
             onSync={onSync}

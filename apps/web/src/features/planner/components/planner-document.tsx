@@ -15,8 +15,6 @@ import {
 import { styles } from './planner-document-styles';
 import type { PlannerProps } from './planner-document-types';
 
-const weekPattern = /^\d{4}-W/u;
-
 const frontPageDays = 3;
 const schoolDays = 5;
 const minimumNotesLines = 4;
@@ -52,10 +50,8 @@ export const PlannerDocument = ({
   dateRange,
   subjects,
   timetable,
-  qrDataUrl,
 }: PlannerProps): React.ReactElement => {
   const days = getDaysOfWeek(dateRange.start);
-  const weekNumber = weekId.replace(weekPattern, 'W');
   const dateRangeStr = formatCompactDateRange(dateRange.start);
 
   const page1Days = days.slice(0, frontPageDays);
@@ -98,11 +94,7 @@ export const PlannerDocument = ({
   return (
     <Document>
       <Page size="A4" style={styles.page}>
-        <PlannerHeader
-          weekNumber={weekNumber}
-          dateRange={dateRangeStr}
-          qrDataUrl={qrDataUrl}
-        />
+        <PlannerHeader weekId={weekId} dateRange={dateRangeStr} />
         <View style={styles.pageContent}>
           {page1Data.map((dayData, index) => (
             <DayRow
@@ -115,11 +107,7 @@ export const PlannerDocument = ({
       </Page>
 
       <Page size="A4" style={styles.page}>
-        <PlannerHeader
-          weekNumber={weekNumber}
-          dateRange={dateRangeStr}
-          qrDataUrl={qrDataUrl}
-        />
+        <PlannerHeader weekId={weekId} dateRange={dateRangeStr} />
         <View style={styles.pageContent}>
           {page2Data.map((dayData) => (
             <DayRow key={dayData.day.dayKey} dayData={dayData} />

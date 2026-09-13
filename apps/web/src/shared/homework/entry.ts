@@ -1,3 +1,4 @@
+import type { TaskAction } from '@/shared/types/schemas';
 export type ExtractedEntry = {
   readonly id: string;
   readonly day: string;
@@ -5,6 +6,6 @@ export type ExtractedEntry = {
   readonly content: string;
   readonly isTask: boolean;
   readonly isCompleted: boolean;
-  readonly isNew: boolean;
+  readonly action: TaskAction;
   readonly dueDate?: string;
 };

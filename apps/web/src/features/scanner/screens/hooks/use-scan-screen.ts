@@ -59,7 +59,7 @@ export const useScanScreen = () => {
               setEditedEntries([...result.entries]);
               addToast(
                 result.entries.length > 0
-                  ? `Review ${result.entries.length} extracted entries`
+                  ? `Review ${result.entries.filter((entry) => entry.action !== 'skip').length} new or changed entries`
                   : 'No homework found in this image',
                 'info',
               );
@@ -101,7 +101,13 @@ export const useScanScreen = () => {
     handleUpdateEntry: (id: string, updates: Partial<ExtractedEntry>) =>
       setEditedEntries((entries) =>
         entries.map((entry) =>
-          entry.id === id ? { ...entry, ...updates } : entry,
+          entry.id === id
+            ? {
+                ...entry,
+                ...updates,
+                action: entry.action === 'skip' ? 'modify' : entry.action,
+              }
+            : entry,
         ),
       ),
     handleDeleteEntry: (id: string) =>

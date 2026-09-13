@@ -1,7 +1,13 @@
 import { describe, expect, it } from 'bun:test';
 import { Effect } from 'effect';
 import { RequestValidationError } from '@/features/planner/errors/pdf-generation';
+import { getWeekStartDate } from '@/shared/planner/week';
 import type { WeekId } from '@/shared/types/schemas';
+import {
+  formatCompactDateRange,
+  formatDate,
+  getDaysOfWeek,
+} from '../../components/planner-document-helpers';
 import {
   type GeneratePdfRequest,
   generatePlannerPdfBufferEffect,
@@ -104,4 +110,16 @@ describe('planner PDF generation request handling', () => {
     expect(String(result.weekId)).toBe('2026-W05');
     expect(result.arrayBuffer.byteLength).toBeGreaterThan(0);
   });
+});
+
+it('prints full dates for cropped days, including weeks spanning New Year', () => {
+  const start = getWeekStartDate('2026-W01' as WeekId);
+  expect(formatCompactDateRange(start)).toBe('2025-12-29 – 2026-01-02');
+  expect(getDaysOfWeek(start).map((day) => formatDate(day.date))).toEqual([
+    '2025-12-29',
+    '2025-12-30',
+    '2025-12-31',
+    '2026-01-01',
+    '2026-01-02',
+  ]);
 });

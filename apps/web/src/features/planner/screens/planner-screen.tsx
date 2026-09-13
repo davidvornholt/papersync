@@ -56,7 +56,7 @@ export const PlannerScreen = (): React.ReactElement => {
           section="Generate planner"
           title="A week,"
           italicSuffix="set in ink."
-          description="PaperSync composes a printable PDF for the week ahead — your subjects, your slots, the exceptions you bend in for assemblies and holidays. A small QR code in the corner remembers which week each page belongs to."
+          description="PaperSync composes a printable PDF for the week ahead — your subjects, your slots, the exceptions you bend in for assemblies and holidays. The full week and dated day headings let recognition identify each page or cropped day."
           aside={
             <dl className="space-y-5">
               <div>

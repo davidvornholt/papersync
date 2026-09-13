@@ -1,3 +1,4 @@
+import { getIsoDate } from '@/shared/planner/week';
 import type { Subject } from '@/shared/types/schemas';
 import { LAYOUT, WEEKDAYS } from './planner-document-constants';
 import type { DayData, DayInfo, TimetableDay } from './planner-document-types';
@@ -15,8 +16,7 @@ export const getDaysOfWeek = (startDate: Date): ReadonlyArray<DayInfo> =>
     };
   });
 
-export const formatDate = (date: Date): string =>
-  date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+export const formatDate = (date: Date): string => getIsoDate(date);
 
 export const formatCompactDateRange = (start: Date): string => {
   const friday = new Date(start);

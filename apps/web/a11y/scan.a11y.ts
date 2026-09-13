@@ -1,11 +1,9 @@
 import { createServer } from 'node:http';
 import { scanWcag22AaViolations } from '@davidvornholt/a11y-testing/axe';
 import { expect, test } from '@playwright/test';
-import { Effect, Schema } from 'effect';
 import { defaultSettings } from '../src/shared/hooks/use-settings-schema';
-import { encodeQRPayload } from '../src/shared/planner/qr';
-import { WeekId } from '../src/shared/types/schemas';
 import { createSessionCookies } from './auth-fixture';
+import { createPlannerImage } from './planner-image';
 
 const entry = {
   day: 'Monday',
@@ -52,17 +50,17 @@ test('an older sheet retains its week and supports review, empty scans, and extr
       ai: { provider: 'ollama', ollamaEndpoint: endpoint },
     },
   );
-  const week = Schema.decodeUnknownSync(WeekId)('2026-W01');
-  const qr = await Effect.runPromise(encodeQRPayload(week));
+  const week = '2026-W01';
+  const image = await createPlannerImage(page, week);
   await page.goto('/scan');
   await expect(page.getByLabel('Select image from device')).toBeEnabled();
   await page.getByLabel('Select image from device').setInputFiles({
     name: 'older-sheet.png',
     mimeType: 'image/png',
-    buffer: Buffer.from(qr.split(',')[1], 'base64'),
+    buffer: Buffer.from(image.split(',')[1], 'base64'),
   });
-  await expect(page.getByText(`Sheet week: ${week}`)).toBeVisible();
   await page.getByRole('button', { name: 'Process scan' }).click();
+  await expect(page.getByText(`Sheet week: ${week}`)).toBeVisible();
   await expect(page.getByLabel('Homework or note')).toHaveValue(entry.content);
   await expect(page.getByLabel('Due date')).toHaveValue(entry.dueDate);
   await page.getByLabel('Due date').fill('2026-01-05');
@@ -87,7 +85,7 @@ test('an older sheet retains its week and supports review, empty scans, and extr
   expect(await scanWcag22AaViolations(page)).toEqual([]);
 });
 
-test('a sheet without a QR code uses OCR for its week and only asks for unreadable weeks', async ({
+test('a sheet uses OCR for its week and only asks for unreadable weeks', async ({
   page,
   context,
 }) => {
@@ -106,31 +104,12 @@ test('a sheet without a QR code uses OCR for its week and only asks for unreadab
     confidence: 1,
   });
   await page.goto('/scan');
-  const imageData = await page.evaluate(() => {
-    const width = 500;
-    const height = 300;
-    const textLeft = 24;
-    const headingTop = 48;
-    const entryTop = 100;
-    const canvas = document.createElement('canvas');
-    canvas.width = width;
-    canvas.height = height;
-    const drawing = canvas.getContext('2d');
-    if (drawing) {
-      drawing.fillStyle = 'white';
-      drawing.fillRect(0, 0, canvas.width, canvas.height);
-      drawing.fillStyle = 'black';
-      drawing.font = '24px sans-serif';
-      drawing.fillText('2026-W01 — Monday', textLeft, headingTop);
-      drawing.fillText('Math: Exercises 1–3', textLeft, entryTop);
-    }
-    return canvas.toDataURL('image/png').split(',')[1];
-  });
+  const [, imageData] = (await createPlannerImage(page)).split(',');
   const imageBuffer = Buffer.from(imageData, 'base64');
 
   await expect(page.getByLabel('Select image from device')).toBeEnabled();
   await page.getByLabel('Select image from device').setInputFiles({
-    name: 'no-qr.png',
+    name: 'printed-week.png',
     mimeType: 'image/png',
     buffer: imageBuffer,
   });
@@ -196,4 +175,69 @@ test('a sheet without a QR code uses OCR for its week and only asks for unreadab
     path: test.info().outputPath('review.png'),
     fullPage: true,
   });
+});
+
+test('rescans collapse saved homework and allow deliberate corrections without losing typing focus', async ({
+  page,
+  context,
+}) => {
+  await context.addCookies(await createSessionCookies());
+  await page.goto('/scan');
+  const [, imageData] = (await createPlannerImage(page)).split(',');
+  await expect(page.getByLabel('Select image from device')).toBeEnabled();
+  await page.getByLabel('Select image from device').setInputFiles({
+    name: 'rescan.png',
+    mimeType: 'image/png',
+    buffer: Buffer.from(imageData, 'base64'),
+  });
+  const oldEntry = { ...entry, isCompleted: false, action: 'skip' };
+  const newEntry = {
+    ...entry,
+    content: 'An additional assignment',
+    isCompleted: false,
+    action: 'add',
+  };
+  let entries = [oldEntry, newEntry];
+  await page.route('**/scan', async (route) => {
+    if (!route.request().headers()['next-action']) {
+      await route.continue();
+      return;
+    }
+    const result = {
+      success: true,
+      data: { weekId: '2026-W01', entries, confidence: 1 },
+      modelUsed: 'browser fixture',
+    };
+    await route.fulfill({
+      contentType: 'text/x-component',
+      body: `0:{"a":"$@1","f":"","b":"test"}\n1:${JSON.stringify(result)}\n`,
+    });
+  });
+  const process = page.getByRole('button', { name: 'Process scan' });
+  const approve = page.getByRole('button', { name: 'Approve and save' });
+  await process.click();
+  await expect(page.getByLabel('Homework or note')).toHaveCount(1);
+  await expect(page.getByLabel('Homework or note')).toHaveValue(
+    newEntry.content,
+  );
+  await expect(approve).toBeEnabled();
+  const saved = page.getByText('1 already saved — show entries');
+  await saved.click();
+  await expect(page.getByText(oldEntry.content, { exact: true })).toBeVisible();
+  expect(await scanWcag22AaViolations(page)).toEqual([]);
+  await page.getByRole('button', { name: 'Review entry', exact: true }).click();
+  const correction = page.getByLabel('Homework or note').first();
+  await correction.fill('Corrected');
+  await correction.press('End');
+  await page.keyboard.type(' homework');
+  await expect(correction).toHaveValue('Corrected homework');
+  await expect(correction).toBeFocused();
+  entries = [oldEntry];
+  await process.click();
+  await expect(
+    page.getByText('All recognized homework is already saved.'),
+  ).toBeVisible();
+  await expect(approve).toBeDisabled();
+  await expect(page.getByLabel('Homework or note')).toHaveCount(0);
+  expect(await scanWcag22AaViolations(page)).toEqual([]);
 });

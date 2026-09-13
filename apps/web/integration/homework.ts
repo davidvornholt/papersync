@@ -1,7 +1,7 @@
 import { expect, it } from 'bun:test';
 import { PgClient } from '@effect/sql-pg';
 import { databaseRuntime } from '@papersync/db/runtime';
-import { Effect } from 'effect';
+import { Effect, Schema } from 'effect';
 import {
   isConnectionAuthorized,
   revokeConnectionKey,
@@ -12,6 +12,8 @@ import {
   enqueueHomework,
   getPendingHomework,
 } from '../src/shared/homework/queue';
+import { reconcileHomework } from '../src/shared/homework/reconcile';
+import { OCRResponse, type TaskAction } from '../src/shared/types/schemas';
 
 const runIsolated = <A, E>(program: Effect.Effect<A, E, PgClient.PgClient>) =>
   databaseRuntime.runPromise(
@@ -34,7 +36,7 @@ const entry = {
   content: `Integration homework ${crypto.randomUUID()}`,
   isTask: true,
   isCompleted: false,
-  isNew: true,
+  action: 'add' as const,
   dueDate: '2026-09-10',
 };
 const options = { weekId: '2026-W37' };
@@ -104,4 +106,62 @@ it('rotating or revoking the plugin key invalidates previous credentials', async
     isNewAccepted: true,
     isRevokedAccepted: false,
   });
+});
+
+it('rescans separate saved homework from new entries and changed paper details', async () => {
+  const response = Schema.decodeUnknownSync(OCRResponse)({
+    weekId: options.weekId,
+    confidence: 1,
+    entries: [
+      entry,
+      { ...entry, content: `  ${entry.content}  ` },
+      { ...entry, content: 'An additional assignment' },
+      { ...entry, isCompleted: true },
+      { ...entry, dueDate: '2026-09-11' },
+      { ...entry, dueDate: undefined },
+      { ...entry, isTask: false },
+    ],
+  });
+  const result = await runIsolated(
+    Effect.gen(function* () {
+      yield* enqueueHomework([entry], options);
+      const queued = yield* reconcileHomework(response);
+      const pending = yield* getPendingHomework;
+      for (const item of pending) {
+        yield* acknowledgeHomework(
+          item.payload.id,
+          item.revision,
+          'imported-task',
+        );
+      }
+      const imported = yield* reconcileHomework(response);
+      const otherWeek = yield* reconcileHomework({
+        ...response,
+        weekId: Schema.decodeUnknownSync(OCRResponse.fields.weekId)('2026-W38'),
+      });
+      const unknownWeek = yield* reconcileHomework({
+        ...response,
+        weekId: null,
+      });
+      const remaining = yield* getPendingHomework;
+      return { queued, imported, otherWeek, unknownWeek, remaining };
+    }),
+  );
+  const expected: Array<TaskAction> = [
+    'skip',
+    'skip',
+    'add',
+    'modify',
+    'modify',
+    'modify',
+    'add',
+  ];
+  expect(result.queued.entries.map((item) => item.action)).toEqual(expected);
+  expect(result.imported.entries.map((item) => item.action)).toEqual(expected);
+  expect(result.imported.entries[1]?.content).toBe(entry.content);
+  expect(result.otherWeek.entries.every((item) => item.action === 'add')).toBe(
+    true,
+  );
+  expect(result.unknownWeek).toEqual({ ...response, weekId: null });
+  expect(result.remaining).toEqual([]);
 });
