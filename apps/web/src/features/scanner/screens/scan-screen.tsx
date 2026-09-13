@@ -1,5 +1,6 @@
 'use client';
 
+import { Button } from '@papersync/ui/button';
 import { useState } from 'react';
 import type { UseScanReturn } from '../hooks/use-scan-types';
 import { NetworkScannersPanel } from './components/network-scanners-panel';
@@ -9,12 +10,18 @@ import { useScanScreen } from './hooks/use-scan-screen';
 
 const getWeekHelp = (scan: UseScanReturn) => {
   if (scan.state.status === 'complete' && !scan.weekId) {
-    return 'The photo must show the year and week, or a full date. Older sheets omit the year; enter their week here and analyze again.';
+    return 'Enter the printed week and choose “Use this week.” Your recognized entries and edits will stay here.';
   }
   return 'Read from the full printed week or day dates. You can correct the week here.';
 };
 
-const WeekEditor = ({ scan }: { readonly scan: UseScanReturn }) => {
+const WeekEditor = ({
+  scan,
+  onApplyWeek,
+}: {
+  readonly scan: UseScanReturn;
+  readonly onApplyWeek: () => void;
+}) => {
   const [isOpen, setIsOpen] = useState(false);
   return (
     <details
@@ -40,6 +47,23 @@ const WeekEditor = ({ scan }: { readonly scan: UseScanReturn }) => {
         />
       </label>
       <p className="mt-2 text-graphite text-sm">{getWeekHelp(scan)}</p>
+      {scan.state.status === 'complete' ? (
+        <>
+          <p className="mt-2 text-graphite text-sm">
+            Changing the week keeps your entries and due dates. Check dates
+            against the paper before saving.
+          </p>
+          {scan.canSave ? null : (
+            <Button
+              className="mt-3"
+              onClick={onApplyWeek}
+              disabled={!scan.weekId || scan.isUpdatingWeek}
+            >
+              {scan.isUpdatingWeek ? 'Applying week…' : 'Use this week'}
+            </Button>
+          )}
+        </>
+      ) : null}
     </details>
   );
 };
@@ -61,7 +85,12 @@ export const ScanScreen = (): React.ReactElement => {
         <section aria-label="Your paper" className="space-y-6">
           <h2 className="text-2xl">1. Scan the sheet</h2>
           <fieldset disabled={isBusy}>
-            {scan.imagePreview ? <WeekEditor scan={scan} /> : null}
+            {scan.imagePreview ? (
+              <WeekEditor
+                scan={scan}
+                onApplyWeek={controller.handleApplyWeek}
+              />
+            ) : null}
             <UploadScanCard
               preview={scan.imagePreview}
               isDragging={controller.isDragging}
@@ -108,7 +137,7 @@ export const ScanScreen = (): React.ReactElement => {
               onDeleteEntry={controller.handleDeleteEntry}
               onSync={controller.handleSync}
               isSyncing={controller.isSyncing}
-              canSave={scan.weekId !== null}
+              canSave={scan.canSave}
             />
           </fieldset>
         </section>

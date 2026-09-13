@@ -3,6 +3,7 @@
 import { Effect, Schema } from 'effect';
 import { useRef, useState } from 'react';
 import { WeekId } from '@/shared/types/schemas';
+import { useReviewWeek } from './use-review-week';
 import { processExtractionEffect, readFileAsDataUrl } from './use-scan-effects';
 import type {
   ScanState,
@@ -14,10 +15,17 @@ export const useScan = (options: UseScanOptions): UseScanReturn => {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [weekId, setWeek] = useState<WeekId | null>(null);
   const revisionRef = useRef(0);
+  const { isUpdatingWeek, setIsUpdatingWeek, applyWeek } = useReviewWeek({
+    state,
+    setState,
+    weekId,
+    revisionRef,
+  });
 
   const clear = () => {
     revisionRef.current += 1;
     setState({ status: 'idle' });
+    setIsUpdatingWeek(false);
     setImagePreview(null);
     setWeek(null);
   };
@@ -83,13 +91,22 @@ export const useScan = (options: UseScanOptions): UseScanReturn => {
   const setWeekId = (value: string) => {
     revisionRef.current += 1;
     setWeek(Schema.is(WeekId)(value) ? value : null);
-    setState({ status: 'idle' });
+    setState((current) =>
+      current.status === 'complete' ? current : { status: 'idle' },
+    );
   };
 
   return {
     state,
     weekId,
     setWeekId,
+    isUpdatingWeek,
+    canSave:
+      state.status === 'complete' &&
+      weekId !== null &&
+      state.weekId === weekId &&
+      !isUpdatingWeek,
+    applyWeek,
     imagePreview,
     upload,
     process,

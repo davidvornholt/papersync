@@ -1,4 +1,5 @@
 import type { ExtractedEntry } from '@/shared/homework/entry';
+import type { ReviewWeekResult } from '@/shared/homework/review-week';
 import type { WeekId } from '@/shared/types/schemas';
 export type ScanState =
   | { readonly status: 'idle' }
@@ -28,6 +29,11 @@ export type UseScanReturn = {
   readonly state: ScanState;
   readonly weekId: WeekId | null;
   readonly setWeekId: (value: string) => void;
+  readonly isUpdatingWeek: boolean;
+  readonly canSave: boolean;
+  readonly applyWeek: (
+    entries: ReadonlyArray<ExtractedEntry>,
+  ) => Promise<ReviewWeekResult | null>;
   readonly imagePreview: string | null;
   readonly upload: (file: File) => Promise<boolean>;
   readonly process: () => Promise<ScanState>;
