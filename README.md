@@ -26,6 +26,10 @@ Photos and unapproved OCR results are not persisted. Approved tasks remain in Po
 
 See the [Super Productivity plugin instructions](apps/super-productivity-plugin/README.md) for installation and changing its deployment address.
 
+## PR screenshots
+
+Capture matched before/after images with demo data, then run `bun standards screenshots publish <image.png>` from the repository root. Publishing uses the [configured shared screenshot bucket](config/screenshots.yaml) and PaperSync's encrypted credential. The returned Markdown links are public and permanent; follow the [screenshot skill](.agents/skills/screenshots-in-prs/SKILL.md) when adding them to a PR.
+
 ## License
 
 [MIT](LICENSE).
