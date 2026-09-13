@@ -10,6 +10,7 @@ import {
 } from './connection';
 import type { ExtractedEntry } from './entry';
 import { enqueueHomework, getPendingHomework } from './queue';
+import { type ReviewWeekResult, reconcileReviewWeek } from './review-week';
 export const getConnectionStatus = async () => {
   await requireSession();
   return databaseRuntime.runPromise(
@@ -37,6 +38,24 @@ export const saveHomework = async (
   return databaseRuntime.runPromise(
     enqueueHomework(entries, { weekId }).pipe(
       Effect.map((count) => ({ success: true as const, count })),
+      Effect.catchAll((error) =>
+        Effect.succeed({ success: false as const, error: error.message }),
+      ),
+    ),
+  );
+};
+
+export const applyReviewWeek = async (
+  entries: ReadonlyArray<ExtractedEntry>,
+  weekId: string,
+): Promise<ReviewWeekResult> => {
+  await requireSession();
+  return databaseRuntime.runPromise(
+    reconcileReviewWeek(entries, weekId).pipe(
+      Effect.map((reviewEntries) => ({
+        success: true as const,
+        entries: reviewEntries,
+      })),
       Effect.catchAll((error) =>
         Effect.succeed({ success: false as const, error: error.message }),
       ),

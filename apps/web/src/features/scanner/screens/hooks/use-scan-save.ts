@@ -16,7 +16,7 @@ export const useScanSave = ({ scan, entries, clear }: SaveOptions) => {
   const [isSyncing, setIsSyncing] = useState(false);
   const { addToast } = useToast();
   const handleSync = () => {
-    if (entries.length === 0 || !scan.weekId || isSyncing) {
+    if (entries.length === 0 || !scan.weekId || !scan.canSave || isSyncing) {
       return;
     }
     const { weekId } = scan;

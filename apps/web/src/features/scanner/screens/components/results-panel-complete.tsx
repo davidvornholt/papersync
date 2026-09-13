@@ -112,7 +112,8 @@ export const ResultsPanelComplete = ({
         </p>
         {canSave ? null : (
           <p className="mb-3 text-sm">
-            Enter the printed week and analyze again before saving.
+            Enter the printed week and choose “Use this week” before saving.
+            Your entries will stay here.
           </p>
         )}
         <Button

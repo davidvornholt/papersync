@@ -6,6 +6,7 @@ import type { ExtractedEntry } from '@/shared/homework/entry';
 import { useSettings } from '@/shared/hooks/use-settings';
 import { requestAction } from '@/shared/http/action';
 import { useScan } from '../../hooks/use-scan';
+import { useApplyReviewWeek } from './use-apply-review-week';
 import { useScanImagePaste } from './use-scan-image-paste';
 import { useScanSave } from './use-scan-save';
 
@@ -17,6 +18,11 @@ export const useScanScreen = () => {
   });
   const [isDragging, setIsDragging] = useState(false);
   const [editedEntries, setEditedEntries] = useState<Array<ExtractedEntry>>([]);
+  const handleApplyWeek = useApplyReviewWeek(
+    scan,
+    editedEntries,
+    setEditedEntries,
+  );
   const handleClear = () => {
     setEditedEntries([]);
     scan.clear();
@@ -47,7 +53,8 @@ export const useScanScreen = () => {
     isLoading ||
     scan.state.status === 'processing' ||
     scan.state.status === 'uploading' ||
-    saving.isSyncing;
+    saving.isSyncing ||
+    scan.isUpdatingWeek;
   useScanImagePaste({ onFileSelect: handleFileSelect, isDisabled: isBusy });
   const handleProcess = () => {
     setEditedEntries([]);
@@ -95,6 +102,7 @@ export const useScanScreen = () => {
     editedEntries,
     panelState: scan.state.status,
     handleFileSelect,
+    handleApplyWeek,
     handleProcess,
     handleClear,
     handleScanFromDevice,
