@@ -1,35 +1,31 @@
 # PaperSync
 
-> Built on [davidvornholt/standards](https://github.com/davidvornholt/standards).
-
-Write homework on paper at school. At home, scan the sheet, check the recognized text and deadlines, and approve the tasks for Super Productivity. Click “Import homework” in the Super Productivity plugin and choose a project and tags by name; SuperSync distributes the imported tasks to your other devices.
-
-PaperSync is open source and can be self-hosted. The web app requires PostgreSQL and a GitHub OAuth application restricted to one account. Hosted OCR uses Gemini 3.8 Flash at high reasoning through Google Cloud Enterprise AI, with a dedicated server-managed service account. Self-hosted instances can instead use a Google API key or an Ollama endpoint reachable from the server. Network scanners also resolve from the server running PaperSync.
-
-The included Super Productivity plugin targets `papersync.vornholt.online`. Hosting that integration at another address currently requires changing its request URL and manifest host permission before building the plugin. Configurable plugin destinations are deferred.
+Scan handwritten homework, review the recognized tasks, and approve them for Super Productivity. Connect one installation; SuperSync distributes imported tasks to your other devices.
 
 ## Development
 
-Use Bun 1.4.2 and follow [the web app setup](apps/web/README.md) to start the database, generate the development environment, configure GitHub OAuth, and run migrations before starting the app.
+Use the Bun version in `package.json`. From the repository root:
 
-```bash
+```sh
 bun install
+just dev-db-start
+bun standards dev-env
+bun run --cwd packages/db db:migrate
 bun run dev:web
 ```
 
-Run `bun run check:fix` for formatting, lint, type checks, tests, production builds, and browser accessibility checks. The database must be running for integration tests.
+Configure a development GitHub OAuth application with callback `http://localhost:3000/api/auth/callback/github`. Configuration lives in `config/dev.yaml` and `secrets/dev.example.yaml`; encrypted values belong in `secrets/dev.yaml`, and machine overrides in ignored `config/dev.local.yaml`.
 
-## Workspace layout
+Run `bun run check:fix` with the database running. After schema changes, run `bun run --cwd packages/db db:generate` and apply the generated migration.
 
-- `apps/web`: Next.js application, scan review, authentication, and import queue API
-- `apps/super-productivity-plugin`: task importer and installable ZIP
-- `packages/db`: database schema, runtime, and generated migrations
-- `packages/homework`: validated import contract and task identity
-- `packages/ui`: shared components and theme
-- `packages/typescript-config` and `packages/a11y-testing`: adopted standards packages
+## Hosting and integration
 
-Production configuration, secrets, DNS, and digest-pinned deployment belong to [personal-infra](https://github.com/davidvornholt/personal-infra). PR preview sites are omitted by decision.
+[personal-infra](https://github.com/davidvornholt/personal-infra) owns the hosted deployment. Self-hosting requires PostgreSQL and a GitHub OAuth application restricted to one numeric account ID. Configure all three managed Google Vertex values together to use server-owned OCR; omit all three to enable local Google API key or Ollama settings. Ollama endpoints and network scanners must be reachable from the server.
+
+Photos and unapproved OCR results are not persisted. Approved tasks remain in PostgreSQL for import and duplicate detection. Browser-local preferences are not part of a database backup.
+
+See the [Super Productivity plugin instructions](apps/super-productivity-plugin/README.md) for installation and changing its deployment address.
 
 ## License
 
-PaperSync is licensed under the [MIT License](./LICENSE).
+[MIT](LICENSE).
