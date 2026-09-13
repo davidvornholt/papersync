@@ -13,6 +13,7 @@ import {
   getPendingHomework,
 } from '../src/shared/homework/queue';
 import { reconcileHomework } from '../src/shared/homework/reconcile';
+import { reconcileReviewWeek } from '../src/shared/homework/review-week';
 import { OCRResponse, type TaskAction } from '../src/shared/types/schemas';
 
 const runIsolated = <A, E>(program: Effect.Effect<A, E, PgClient.PgClient>) =>
@@ -164,4 +165,47 @@ it('rescans separate saved homework from new entries and changed paper details',
   );
   expect(result.unknownWeek).toEqual({ ...response, weekId: null });
   expect(result.remaining).toEqual([]);
+});
+
+it('changing a reviewed week rechecks duplicates and preserves edits without queue writes', async () => {
+  const result = await runIsolated(
+    Effect.gen(function* () {
+      yield* enqueueHomework([entry], options);
+      const edited = {
+        ...entry,
+        id: 'stable-review-id',
+        content: `  ${entry.content}  `,
+      };
+      const sameWeek = yield* reconcileReviewWeek([edited], options.weekId);
+      const otherWeek = yield* reconcileReviewWeek(sameWeek, '2026-W38');
+      const changed = yield* reconcileReviewWeek(
+        [{ ...edited, isCompleted: true, dueDate: '2026-09-12' }],
+        options.weekId,
+      );
+      const invalid = yield* reconcileReviewWeek([edited], 'invalid').pipe(
+        Effect.either,
+      );
+      return {
+        edited,
+        sameWeek,
+        otherWeek,
+        changed,
+        invalid,
+        pending: yield* getPendingHomework,
+      };
+    }),
+  );
+  expect(result.sameWeek).toEqual([{ ...result.edited, action: 'skip' }]);
+  expect(result.otherWeek).toEqual([{ ...result.edited, action: 'add' }]);
+  expect(result.changed).toEqual([
+    {
+      ...result.edited,
+      action: 'modify',
+      isCompleted: true,
+      dueDate: '2026-09-12',
+    },
+  ]);
+  expect(result.invalid._tag).toBe('Left');
+  expect(result.pending).toHaveLength(1);
+  expect(result.pending[0].payload.isCompleted).toBe(false);
 });

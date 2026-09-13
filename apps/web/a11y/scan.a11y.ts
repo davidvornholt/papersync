@@ -18,7 +18,9 @@ let modelResponse = JSON.stringify({
   confidence: 1,
 });
 let endpoint = '';
+let modelRequests = 0;
 const server = createServer((_request, response) => {
+  modelRequests += 1;
   response.setHeader('content-type', 'application/json');
   response.end(JSON.stringify({ response: modelResponse }));
 });
@@ -144,6 +146,11 @@ test('a sheet uses OCR for its week and only asks for unreadable weeks', async (
   });
   await process.click();
   await expect(approve).toBeDisabled();
+  const requestsBeforeCorrection = modelRequests;
+  const homework = page.getByLabel('Homework or note');
+  await homework.fill('Exercises 1–4, corrected');
+  await completed.check();
+  await page.getByLabel('Due date').fill('2026-01-06');
   const weekInput = page.getByLabel('Week printed on the sheet');
   await expect(weekInput).toBeVisible();
   await weekInput.focus();
@@ -152,6 +159,8 @@ test('a sheet uses OCR for its week and only asks for unreadable weeks', async (
   await page.keyboard.press('ArrowRight');
   await page.keyboard.press('2');
   await expect(weekInput).toHaveValue('0002-W01');
+  await expect(homework).toHaveValue('Exercises 1–4, corrected');
+  await expect(approve).toBeDisabled();
   await expect(page.getByText('Sheet week: 0002-W01')).toBeVisible();
   await expect(
     page.locator('details').filter({ has: weekInput }),
@@ -160,21 +169,33 @@ test('a sheet uses OCR for its week and only asks for unreadable weeks', async (
   await page.keyboard.type('026');
   await expect(weekInput).toHaveValue('2026-W01');
   await expect(weekInput).toBeFocused();
-  modelResponse = JSON.stringify({
-    weekId: '2026-W01',
-    entries: [entry],
-    confidence: 1,
-  });
-  await process.click();
+  await expect(approve).toBeDisabled();
+  await page.route('**/scan', (route) => route.abort(), { times: 1 });
+  await page
+    .getByRole('button', { name: 'Use this week', exact: true })
+    .click();
+  await expect(
+    page.getByRole('alert').filter({ hasText: 'PaperSync could not complete' }),
+  ).toContainText('PaperSync could not complete the request');
+  await page
+    .getByRole('alert')
+    .filter({ hasText: 'PaperSync could not complete' })
+    .getByRole('button', { name: 'Dismiss', exact: true })
+    .click();
+  await expect(homework).toHaveValue('Exercises 1–4, corrected');
+  await expect(approve).toBeDisabled();
+  await page
+    .getByRole('button', { name: 'Use this week', exact: true })
+    .click();
   await expect(approve).toBeEnabled();
+  await expect(homework).toHaveValue('Exercises 1–4, corrected');
+  await expect(completed).toBeChecked();
+  await expect(page.getByLabel('Due date')).toHaveValue('2026-01-06');
+  expect(modelRequests).toBe(requestsBeforeCorrection);
   expect(await scanWcag22AaViolations(page)).toEqual([]);
   await expect(
     page.getByRole('button', { name: 'Dismiss', exact: true }),
   ).toHaveCount(0);
-  await page.screenshot({
-    path: test.info().outputPath('review.png'),
-    fullPage: true,
-  });
 });
 
 test('rescans collapse saved homework and allow deliberate corrections without losing typing focus', async ({
