@@ -1,8 +1,8 @@
 import AxeBuilder from '@axe-core/playwright';
+import { scanWcag22AaViolations } from '@davidvornholt/a11y-testing/axe';
 import { expect } from '@playwright/test';
 import { defaultSettings } from '../src/shared/settings/schema';
 import { createSessionCookies } from './auth-fixture';
-import { scanWcag22AaViolations } from './axe';
 import { test as it, test } from './settings-fixture';
 
 const timetable = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'].map(
