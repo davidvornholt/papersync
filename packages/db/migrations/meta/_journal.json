@@ -8,6 +8,13 @@
       "when": 1788953576272,
       "tag": "0000_last_meteorite",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1789386024377,
+      "tag": "0001_lame_longshot",
+      "breakpoints": true
     }
   ]
 }

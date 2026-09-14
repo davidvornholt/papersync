@@ -22,7 +22,7 @@ Run `bun run check:fix` with the database running. After schema changes, run `bu
 
 [personal-infra](https://github.com/davidvornholt/personal-infra) owns the hosted deployment. Self-hosting requires PostgreSQL and a GitHub OAuth application restricted to one numeric account ID. Configure all three managed Google Vertex values together to use server-owned OCR; omit all three to enable local Google API key or Ollama settings. Ollama endpoints and network scanners must be reachable from the server.
 
-Photos and unapproved OCR results are not persisted. Approved tasks remain in PostgreSQL for import and duplicate detection. Browser-local preferences are not part of a database backup.
+Photos and unapproved OCR results are not persisted. Approved tasks remain in PostgreSQL for import and duplicate detection. Subjects and the weekly timetable are stored in PostgreSQL and shared across signed-in browsers. AI preferences and credentials remain browser-local and are not part of a database backup. When no server timetable exists, settings offers the current browser’s subjects and timetable for the first save; after that, the server copy takes precedence. Concurrent edits require reloading before saving over another browser’s change.
 
 See the [Super Productivity plugin instructions](apps/super-productivity-plugin/README.md) for installation and changing its deployment address.
 

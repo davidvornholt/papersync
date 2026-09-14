@@ -10,8 +10,8 @@
     "lint:fix": "biome check --write --error-on-warnings .",
     "check-types": "tsc --noEmit",
     "test": "bun test",
-    "test:a11y": "playwright test && playwright test --config playwright-managed.config.ts",
-    "test:integration": "bun run --cwd ../../packages/db db:migrate && bun --env-file=.env.local test ./integration/homework.ts",
+    "test:a11y": "playwright test && playwright test --config playwright-managed.config.ts && playwright test --config playwright-settings.config.ts",
+    "test:integration": "bun run --cwd ../../packages/db db:migrate && bun --env-file=.env.local test ./integration/homework.ts ./integration/settings.ts",
     "test:container": "bash scripts/container-smoke.sh"
   },
   "dependencies": {

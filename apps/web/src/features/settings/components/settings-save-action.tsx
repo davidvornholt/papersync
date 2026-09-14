@@ -24,7 +24,8 @@ export const SettingsSaveAction = ({
       )}
     </Button>
     <p className="mt-2 text-center text-muted text-xs">
-      Saves AI settings, subjects, and timetable in this browser.
+      Subjects and timetable sync across your browsers. AI settings stay in this
+      browser.
     </p>
   </div>
 );

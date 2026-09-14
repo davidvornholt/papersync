@@ -3,7 +3,7 @@
 import { Button } from '@papersync/ui/button';
 import { Card, CardContent, CardHeader } from '@papersync/ui/card';
 import { AnimatePresence } from 'motion/react';
-import type { DayOfWeek, Settings } from '@/shared/hooks/use-settings-schema';
+import type { DayOfWeek, Settings } from '@/shared/settings/schema';
 import { SubjectListItem } from './subject-list-item';
 import { TimetableConfigPanel } from './timetable-config-panel';
 
@@ -13,12 +13,15 @@ type SettingsSubjectsCardProps = {
   readonly onOpenSubjectModal: () => void;
   readonly onEditSubject: (id: string) => void;
   readonly onDeleteSubject: (id: string) => void;
-  readonly onAddTimetableSlot: (day: DayOfWeek, subjectId: string) => void;
+  readonly onAddTimetableSlot: (
+    day: DayOfWeek,
+    subjectId: string | null,
+  ) => void;
   readonly onRemoveTimetableSlot: (day: DayOfWeek, slotId: string) => void;
   readonly onUpdateTimetableSlot: (
     day: DayOfWeek,
     slotId: string,
-    subjectId: string,
+    subjectId: string | null,
   ) => void;
 };
 

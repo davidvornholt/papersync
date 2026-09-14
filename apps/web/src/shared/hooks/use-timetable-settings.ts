@@ -1,5 +1,5 @@
 import { type Dispatch, type SetStateAction, useCallback } from 'react';
-import type { DayOfWeek, Settings, TimetableDay } from './use-settings-schema';
+import type { DayOfWeek, Settings, TimetableDay } from '../settings/schema';
 
 export const useTimetableSettings = (
   setSettings: Dispatch<SetStateAction<Settings>>,
@@ -11,7 +11,7 @@ export const useTimetableSettings = (
     [setSettings],
   );
   const addTimetableSlot = useCallback(
-    (day: DayOfWeek, subjectId: string): void => {
+    (day: DayOfWeek, subjectId: string | null): void => {
       setSettings((prev) => {
         const dayExists = prev.timetable.some(
           (timetableDay) => timetableDay.day === day,
@@ -54,7 +54,7 @@ export const useTimetableSettings = (
     [setSettings],
   );
   const updateTimetableSlot = useCallback(
-    (day: DayOfWeek, slotId: string, subjectId: string): void => {
+    (day: DayOfWeek, slotId: string, subjectId: string | null): void => {
       setSettings((prev) => ({
         ...prev,
         timetable: prev.timetable.map((timetableDay) =>

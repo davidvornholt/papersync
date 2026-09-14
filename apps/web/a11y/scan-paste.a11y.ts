@@ -1,9 +1,10 @@
 import { scanWcag22AaViolations } from '@davidvornholt/a11y-testing/axe';
 // biome-ignore lint/correctness/noUnresolvedImports: Playwright re-exports Page through its type declarations; TypeScript verifies this export.
 import type { Page } from '@playwright/test';
-import { expect, test } from '@playwright/test';
+import { expect } from '@playwright/test';
 import { createSessionCookies } from './auth-fixture';
 import { createPlannerImage } from './planner-image';
+import { test } from './settings-fixture';
 
 const pngDataUrlPattern = /^data:image\/png;base64,/u;
 

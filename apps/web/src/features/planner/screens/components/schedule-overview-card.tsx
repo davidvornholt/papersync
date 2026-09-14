@@ -1,7 +1,7 @@
 import { Button } from '@papersync/ui/button';
 import { Card, CardContent, CardHeader } from '@papersync/ui/card';
 import Link from 'next/link';
-import type { TimetableDay } from '@/shared/hooks/use-settings-schema';
+import type { TimetableDay } from '@/shared/settings/schema';
 import type { DayOfWeek, Subject } from '@/shared/types/schemas';
 import type { ScheduleException } from '../planner-screen-types';
 import { WeekScheduleOverview } from './week-schedule-overview';

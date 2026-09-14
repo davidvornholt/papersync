@@ -2,7 +2,7 @@ import type { Subject, WeekId } from '@/shared/types/schemas';
 
 type TimetableSlot = {
   readonly id: string;
-  readonly subjectId: string;
+  readonly subjectId: string | null;
 };
 
 export type TimetableDay = {

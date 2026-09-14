@@ -3,7 +3,7 @@
 import { Card, CardContent, CardHeader } from '@papersync/ui/card';
 import { AnimatePresence, motion } from 'motion/react';
 import { useId } from 'react';
-import type { Settings } from '@/shared/hooks/use-settings-schema';
+import type { Settings } from '@/shared/settings/schema';
 import {
   InputField,
   ToggleButtons,

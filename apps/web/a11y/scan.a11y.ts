@@ -1,9 +1,10 @@
 import { createServer } from 'node:http';
 import { scanWcag22AaViolations } from '@davidvornholt/a11y-testing/axe';
-import { expect, test } from '@playwright/test';
-import { defaultSettings } from '../src/shared/hooks/use-settings-schema';
+import { expect } from '@playwright/test';
+import { defaultSettings } from '../src/shared/settings/schema';
 import { createSessionCookies } from './auth-fixture';
 import { createPlannerImage } from './planner-image';
+import { test } from './settings-fixture';
 
 const entry = {
   day: 'Monday',

@@ -1,6 +1,7 @@
 import { scanWcag22AaViolations } from '@davidvornholt/a11y-testing/axe';
-import { expect, test } from '@playwright/test';
+import { expect } from '@playwright/test';
 import { createSessionCookies } from './auth-fixture';
+import { test } from './settings-fixture';
 
 const discoveryStatusPattern = /scanner|network/iu;
 

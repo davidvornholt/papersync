@@ -4,6 +4,7 @@ import { EditorialHeader } from '@papersync/ui/editorial-header';
 import { motion } from 'motion/react';
 import { PageTransition } from '@/shared/components/motion-layout';
 import { Spinner } from '@/shared/components/motion-loading';
+import { SettingsLoadError } from '@/shared/components/settings-load-error';
 import { ExceptionEditorModal } from './components/exception-editor-modal';
 import { PlannerConfigColumn } from './components/planner-config-column';
 import { PreviewPanel } from './components/preview-panel';
@@ -21,6 +22,7 @@ export const PlannerScreen = (): React.ReactElement => {
   const {
     settings,
     isSettingsLoading,
+    loadError,
     isWeekModalOpen,
     setIsWeekModalOpen,
     exceptionEditingDate,
@@ -37,6 +39,10 @@ export const PlannerScreen = (): React.ReactElement => {
     handleRemoveException,
     exceptions,
   } = usePlannerScreen();
+
+  if (loadError) {
+    return <SettingsLoadError message={loadError} />;
+  }
 
   if (isSettingsLoading) {
     return (
