@@ -73,8 +73,6 @@ export const TaskEntry = Schema.Struct({
   day: Schema.String,
   subject: Schema.String,
   content: Schema.String,
-  isTask: Schema.Boolean,
-  isCompleted: Schema.Boolean,
   action: TaskAction,
   dueDate: Schema.optional(ISODate),
 });

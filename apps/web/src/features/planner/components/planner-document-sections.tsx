@@ -5,69 +5,49 @@ import type { DayData } from './planner-document-types';
 
 type DayRowProps = {
   readonly dayData: DayData;
-  readonly isLast?: boolean;
+  readonly lineHeight: number;
 };
 
 export const DayRow = ({
   dayData,
-  isLast = false,
+  lineHeight,
 }: DayRowProps): React.ReactElement => {
-  const { day, subjects: daySubjects, weight, linesPerSubject } = dayData;
-  const baseStyle = isLast ? styles.dayRowLast : styles.dayRow;
-
+  const { day, subjects, height, cellHeight, linesPerSubject } = dayData;
+  // The cell's own bottom rule is the last ruled line.
+  const interiorLines = linesPerSubject - 1;
   return (
-    <View style={[baseStyle, { flexGrow: weight }]}>
+    <View style={[styles.dayRow, { height }]} wrap={false}>
       <View style={styles.dayHeader}>
         <Text style={styles.dayName}>{day.name}</Text>
         <Text style={styles.dayDate}>{formatDate(day.date)}</Text>
       </View>
-      <View style={styles.dayContent}>
-        {daySubjects.length > 0 ? (
-          daySubjects.map((subject) => (
-            <View key={subject.id} style={styles.subjectSection}>
-              <Text style={styles.subjectLabel}>{subject.name}</Text>
-              {generateLineKeys(subject.id, linesPerSubject).map((key) => (
-                <View key={key} style={styles.bulletRow}>
-                  <Text style={styles.bullet}>–</Text>
-                  <View style={styles.writingLine} />
-                </View>
+      {subjects.length > 0 ? (
+        subjects.map((subject) => (
+          <View
+            key={subject.id}
+            style={[styles.subjectCell, { height: cellHeight }]}
+          >
+            <View style={styles.subjectLabel}>
+              <Text style={styles.subjectLabelText}>{subject.name}</Text>
+            </View>
+            <View style={[styles.writingArea, { paddingBottom: lineHeight }]}>
+              {generateLineKeys(subject.id, interiorLines).map((key) => (
+                <View
+                  key={key}
+                  style={[styles.writingLine, { height: lineHeight }]}
+                />
               ))}
             </View>
-          ))
-        ) : (
-          <View style={styles.emptyDay}>
-            <Text style={styles.emptyDayText}>No classes</Text>
           </View>
-        )}
-      </View>
-    </View>
-  );
-};
-
-type NotesSectionProps = {
-  readonly flexGrow: number;
-  readonly lineCount: number;
-};
-
-export const NotesSection = ({
-  flexGrow,
-  lineCount,
-}: NotesSectionProps): React.ReactElement => {
-  const noteLineKeys = Array.from({ length: lineCount }, (_, i) => `n${i}`);
-
-  return (
-    <View style={[styles.notesSection, { flexGrow }]}>
-      <View style={styles.notesHeader}>
-        <Text style={styles.notesTitle}>Notes</Text>
-      </View>
-      <View style={styles.notesContent}>
-        {noteLineKeys.map((key) => (
-          <View key={key} style={styles.bulletRow}>
-            <Text style={styles.bullet}>–</Text>
-            <View style={styles.writingLine} />
+        ))
+      ) : (
+        <View style={[styles.subjectCell, { height: cellHeight }]}>
+          <View style={styles.subjectLabel}>
+            <Text style={styles.subjectLabelText}>No classes</Text>
           </View>
-        ))}
-      </View>
+          <View style={styles.writingArea} />
+        </View>
+      )}
     </View>
   );
 };
@@ -82,11 +62,20 @@ export const PlannerHeader = ({
   dateRange,
 }: HeaderProps): React.ReactElement => (
   <View style={styles.header}>
-    <View style={styles.headerLeft}>
-      <Text style={styles.appName}>PaperSync</Text>
-      <Text style={styles.weekInfo}>
-        {weekId} · {dateRange}
-      </Text>
+    <View>
+      <Text style={styles.weekId}>{weekId}</Text>
+      <Text style={styles.dateRange}>{dateRange}</Text>
     </View>
+    <Text style={styles.wordmark}>
+      Paper<Text style={styles.wordmarkItalic}>Sync</Text>
+    </Text>
+  </View>
+);
+
+export const PlannerFooter = (): React.ReactElement => (
+  <View style={styles.footer}>
+    <Text
+      render={({ pageNumber, totalPages }) => `${pageNumber} / ${totalPages}`}
+    />
   </View>
 );

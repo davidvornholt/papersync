@@ -12,14 +12,12 @@ Each entry object must contain these keys:
 - day (required): the printed day name.
 - subject (required): the subject or "General Tasks".
 - content (required): the handwritten wording.
-- isTask (required): a boolean.
-- isCompleted (optional): a boolean; use false when omitted.
 - dueDate (required): a YYYY-MM-DD date or null.
 Use these exact camelCase key names, never snake_case. Return JSON only, without markdown fences or other text.
 
-Read each printed day heading. The front contains Monday to Wednesday; the back contains Thursday, Friday, and general notes. Do not assume the first visible section is Monday.
-Extract every handwritten entry. The application compares them with saved homework before review, so do not omit entries or decide which are new.
-Preserve wording, abbreviations, accents, umlauts, and ß. Set isTask for homework or assignments, and isCompleted only when the paper clearly marks the task done. Use subject "General Tasks" for entries without a subject.
+Read each printed day heading. The front contains Monday to Wednesday; the back contains Thursday and Friday. Do not assume the first visible section is Monday.
+Extract every handwritten entry, including reminders, dates, and reference information. Do not classify or discard entries based on whether they sound like assignments. Do not rewrite information as an instruction or invent an action. The application compares them with saved homework before review, so do not omit entries or decide which are new.
+Preserve wording, abbreviations, accents, umlauts, and ß. Extract entries that are struck through or ticked like any other; progress is tracked outside the paper. Use subject "General Tasks" for entries without a subject.
 
 For each handwritten deadline, associate its line with the entry it belongs to before resolving the date. Set dueDate to YYYY-MM-DD only when a written deadline can be resolved. Resolve relative dates such as "bis Freitag" using the entry's printed day within the verified or detected week, not today's date. If the week is unknown, preserve relative deadline wording in content and set dueDate to null. Otherwise set dueDate to null. Remove the deadline phrase from content only when it has been captured as dueDate. If uncertain, preserve the original deadline wording in content, set dueDate to null, and explain the uncertainty in notes. Never invent a deadline.
 Return an empty entries array when no handwriting is present. Confidence is a number from 0 to 1 describing your confidence in the reading.`;

@@ -76,8 +76,6 @@ export const createOllamaVisionProvider = (
             day: normalizeDayName(entry.day),
             subject: entry.subject,
             content: entry.content,
-            isTask: entry.isTask,
-            isCompleted: entry.isCompleted,
             action: 'add' as const,
             dueDate: entry.dueDate ?? undefined,
           })),

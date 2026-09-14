@@ -16,6 +16,10 @@ import {
   validateGeneratePdfRequest,
 } from '../pdf-generation';
 
+const typicalSubjectCount = 6;
+const busySubjectCount = 8;
+const pdfPagePattern = /\/Type\s*\/Page\b/gu;
+
 const createRequest = (body: string): Request =>
   new Request('http://localhost/api/planner', {
     method: 'POST',
@@ -94,23 +98,43 @@ describe('planner PDF generation request handling', () => {
     });
   });
 
-  it('generates PDF bytes for a valid request', async () => {
-    const request = createRequest(
-      JSON.stringify({
-        weekId: '2026-W05',
-        subjects: [{ id: 'math', name: 'Math' }],
-        timetable: [
-          { day: 'monday', slots: [{ id: 's1', subjectId: 'math' }] },
-        ],
-      }),
-    );
-
-    const result = await Effect.runPromise(
-      generatePlannerPdfBufferEffect(request),
-    );
-    expect(String(result.weekId)).toBe('2026-W05');
-    expect(result.arrayBuffer.byteLength).toBeGreaterThan(0);
-  });
+  it.each([0, 1, typicalSubjectCount, busySubjectCount])(
+    'keeps a week with %i subjects per day on two A4 pages',
+    async (subjectCount) => {
+      const subjects = Array.from({ length: subjectCount }, (_, index) => ({
+        id: `subject-${index}`,
+        name: index === 0 ? 'Politics and social sciences' : `Subject ${index}`,
+      }));
+      const timetable = [
+        'monday',
+        'tuesday',
+        'wednesday',
+        'thursday',
+        'friday',
+      ].map((day) => ({
+        day,
+        slots: subjects.map((subject) => ({
+          id: `${day}-${subject.id}`,
+          subjectId: subject.id,
+        })),
+      }));
+      const result = await Effect.runPromise(
+        generatePlannerPdfBufferEffect(
+          createRequest(
+            JSON.stringify({
+              weekId: '2026-W05',
+              subjects,
+              timetable,
+            }),
+          ),
+        ),
+      );
+      expect(String(result.weekId)).toBe('2026-W05');
+      // Page dictionaries remain uncompressed even when text streams are compressed.
+      const document = Buffer.from(result.arrayBuffer).toString('latin1');
+      expect(document.match(pdfPagePattern)).toHaveLength(2);
+    },
+  );
 });
 
 it('prints full dates for cropped days, including weeks spanning New Year', () => {

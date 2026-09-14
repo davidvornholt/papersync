@@ -1,6 +1,5 @@
 'use client';
 
-import { Checkbox } from '@papersync/ui/checkbox';
 import { Select } from '@papersync/ui/select';
 import type { ExtractedEntry } from '@/shared/homework/entry';
 import { SCAN_DAY_OPTIONS } from '../scan-screen-types';
@@ -48,7 +47,7 @@ export const EditableEntryItem = ({
       </label>
     </div>
     <label className="block text-sm">
-      Homework or note
+      Task
       <textarea
         value={entry.content}
         onChange={(event) =>
@@ -69,37 +68,11 @@ export const EditableEntryItem = ({
         className="mt-1 block w-full border border-hairline bg-paper p-2"
       />
     </label>
-    <div className="flex flex-wrap items-center gap-4 text-sm">
-      <label htmlFor={`${entry.id}-type`} className="flex items-center gap-2">
-        Entry type
-        <Select
-          id={`${entry.id}-type`}
-          value={entry.isTask ? 'task' : 'note'}
-          onChange={(event) =>
-            onUpdate(entry.id, { isTask: event.target.value === 'task' })
-          }
-        >
-          <option value="task">Task</option>
-          <option value="note">Note</option>
-        </Select>
-      </label>
-      <label
-        htmlFor={`${entry.id}-completed`}
-        className="flex items-center gap-2"
-      >
-        <Checkbox
-          id={`${entry.id}-completed`}
-          checked={entry.isCompleted}
-          onChange={(event) =>
-            onUpdate(entry.id, { isCompleted: event.target.checked })
-          }
-        />
-        Completed on paper
-      </label>
+    <div className="flex justify-end text-sm">
       <button
         type="button"
         onClick={() => onDelete(entry.id)}
-        className="ml-auto min-h-10 underline"
+        className="min-h-10 underline"
         aria-label={`Remove entry: ${entry.content}`}
       >
         Remove

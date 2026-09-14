@@ -18,7 +18,6 @@ export const Homework = Schema.Struct({
   day: Schema.NonEmptyTrimmedString,
   subject: Schema.String,
   content: Schema.NonEmptyTrimmedString,
-  isCompleted: Schema.Boolean,
   dueDate: Schema.optional(DueDate),
 });
 export type Homework = typeof Homework.Type;

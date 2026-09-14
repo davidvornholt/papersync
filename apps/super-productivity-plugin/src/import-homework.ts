@@ -47,10 +47,7 @@ const importEntry = (
     }
     if (existing) {
       yield* call(() =>
-        api.updateTask(existing.id, {
-          isDone: existing.isDone === true || payload.isCompleted,
-          dueDay: payload.dueDate ?? null,
-        }),
+        api.updateTask(existing.id, { dueDay: payload.dueDate ?? null }),
       );
       return existing.id;
     }
@@ -64,13 +61,12 @@ const importEntry = (
       api.addTask({
         title: payload.content,
         notes,
-        isDone: payload.isCompleted,
         ...(payload.dueDate ? { dueDay: payload.dueDate } : {}),
         projectId: destination.projectId,
         tagIds: [...destination.tagIds],
       }),
     );
-    tasks.push({ id, notes, isDone: payload.isCompleted });
+    tasks.push({ id, notes });
     return id;
   });
 export const importHomework = (api: PluginApi) =>

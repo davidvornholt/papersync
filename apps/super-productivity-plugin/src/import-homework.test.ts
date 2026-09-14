@@ -48,7 +48,6 @@ const item: QueuedHomework = {
     day: 'Monday',
     subject: 'Math',
     content: 'Finish the worksheet',
-    isCompleted: false,
     dueDate: '2026-09-10',
   },
   revision: 'revision-1',
@@ -99,20 +98,15 @@ it('an interrupted acknowledgement retries without duplicating a task or reopeni
     importHomework(api).pipe(Effect.either),
   );
   expect(failed._tag).toBe('Left');
-  tasks[0] = {
-    id: 'task-1',
-    notes: getTaskMarker(item.payload.id),
-    isDone: true,
-  };
+  tasks[0] = { id: 'task-1', notes: getTaskMarker(item.payload.id) };
   await Effect.runPromise(importHomework(api));
   expect(api.addTask).toHaveBeenCalledTimes(1);
   expect(api.addTask).toHaveBeenCalledWith(
     expect.objectContaining({ dueDay: '2026-09-10' }),
   );
-  expect(api.updateTask).toHaveBeenCalledWith(
-    'task-1',
-    expect.objectContaining({ isDone: true }),
-  );
+  expect(api.updateTask).toHaveBeenCalledWith('task-1', {
+    dueDay: '2026-09-10',
+  });
   expect(api.request).toHaveBeenLastCalledWith(
     expect.any(String),
     expect.objectContaining({
@@ -124,35 +118,28 @@ it('an interrupted acknowledgement retries without duplicating a task or reopeni
 it('an archived task is acknowledged without recreating or editing it', async () => {
   const { api } = makeApi();
   api.getArchivedTasks.mockResolvedValue([
-    { id: 'archived-1', notes: getTaskMarker(item.payload.id), isDone: true },
+    { id: 'archived-1', notes: getTaskMarker(item.payload.id) },
   ]);
   await Effect.runPromise(importHomework(api));
   expect(api.addTask).not.toHaveBeenCalled();
   expect(api.updateTask).not.toHaveBeenCalled();
 });
 
-it('removes a reviewed due date while preserving completed state', async () => {
+it('removes a reviewed due date without touching completion', async () => {
   const { api, tasks } = makeApi();
   tasks.push({
     id: 'task-1',
     notes: getTaskMarker(item.payload.id),
-    isDone: true,
     dueDay: '2026-09-10',
   });
   const { dueDate: _dueDate, ...payloadWithoutDueDate } = item.payload;
   api.request.mockResolvedValue([
-    {
-      payload: { ...payloadWithoutDueDate, isCompleted: false },
-      revision: item.revision,
-    },
+    { payload: payloadWithoutDueDate, revision: item.revision },
   ]);
 
   await Effect.runPromise(importHomework(api));
 
-  expect(api.updateTask).toHaveBeenCalledWith('task-1', {
-    isDone: true,
-    dueDay: null,
-  });
+  expect(api.updateTask).toHaveBeenCalledWith('task-1', { dueDay: null });
   expect(api.addTask).not.toHaveBeenCalled();
 });
 

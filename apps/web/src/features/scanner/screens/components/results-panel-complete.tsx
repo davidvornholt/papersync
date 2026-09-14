@@ -35,7 +35,6 @@ export const ResultsPanelComplete = ({
 }: ResultsPanelCompleteProps): React.ReactElement => {
   const reviewEntries = entries.filter((entry) => entry.action !== 'skip');
   const savedEntries = entries.filter((entry) => entry.action === 'skip');
-  const tasks = reviewEntries.filter((entry) => entry.isTask);
   return (
     <motion.div
       key="results"
@@ -85,7 +84,6 @@ export const ResultsPanelComplete = ({
                 <li key={entry.id} className="border border-hairline p-3">
                   <p className="text-graphite text-sm">
                     {entry.day} · {entry.subject}
-                    {entry.isCompleted ? ' · Completed on paper' : ''}
                     {entry.dueDate ? ` · Due ${entry.dueDate}` : ''}
                   </p>
                   <p className="mt-1">{entry.content}</p>
@@ -106,9 +104,8 @@ export const ResultsPanelComplete = ({
 
       <div className="mt-4 border-hairline border-t pt-4">
         <p className="mb-3 text-graphite text-sm">
-          {tasks.length} new or changed tasks will be queued for Super
-          Productivity. Notes are shown for review and are not saved or
-          imported.
+          {reviewEntries.length} new or changed tasks will be queued for Super
+          Productivity. Remove any entries you do not want to import.
         </p>
         {canSave ? null : (
           <p className="mb-3 text-sm">
@@ -119,9 +116,9 @@ export const ResultsPanelComplete = ({
         <Button
           onClick={onSync}
           disabled={
-            !(canSave && tasks.length > 0) ||
+            !(canSave && reviewEntries.length > 0) ||
             isSyncing ||
-            tasks.some((entry) => !entry.content.trim())
+            reviewEntries.some((entry) => !entry.content.trim())
           }
           className="w-full"
         >

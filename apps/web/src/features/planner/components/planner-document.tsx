@@ -1,15 +1,14 @@
 // biome-ignore lint/correctness/noUnresolvedImports: Biome cannot resolve this conditional CommonJS export; TypeScript and the production build verify it.
 import { Document, Font, Page, View } from '@react-pdf/renderer';
-import { LAYOUT } from './planner-document-constants';
+import { FONT_SOURCES } from './planner-document-constants';
 import {
-  calculatePageData,
+  calculateSheetLayout,
   formatCompactDateRange,
   getDaysOfWeek,
-  getSubjectsForDay,
 } from './planner-document-helpers';
 import {
   DayRow,
-  NotesSection,
+  PlannerFooter,
   PlannerHeader,
 } from './planner-document-sections';
 import { styles } from './planner-document-styles';
@@ -17,29 +16,10 @@ import type { PlannerProps } from './planner-document-types';
 
 const frontPageDays = 3;
 const schoolDays = 5;
-const minimumNotesLines = 4;
 const registerFonts = (): void => {
-  Font.register({
-    family: 'Roboto',
-    src: 'https://cdnjs.cloudflare.com/ajax/libs/ink/3.1.10/fonts/Roboto/roboto-regular-webfont.ttf',
-    fontWeight: 400,
-  });
-  Font.register({
-    family: 'Roboto',
-    src: 'https://cdnjs.cloudflare.com/ajax/libs/ink/3.1.10/fonts/Roboto/roboto-medium-webfont.ttf',
-    fontWeight: 500,
-  });
-  Font.register({
-    family: 'Roboto',
-    src: 'https://cdnjs.cloudflare.com/ajax/libs/ink/3.1.10/fonts/Roboto/roboto-bold-webfont.ttf',
-    fontWeight: 700,
-  });
-  Font.register({
-    family: 'Roboto',
-    src: 'https://cdnjs.cloudflare.com/ajax/libs/ink/3.1.10/fonts/Roboto/roboto-italic-webfont.ttf',
-    fontWeight: 400,
-    fontStyle: 'italic',
-  });
+  for (const source of FONT_SOURCES) {
+    Font.register(source);
+  }
   Font.registerHyphenationCallback((word) => [word]);
 };
 
@@ -54,67 +34,29 @@ export const PlannerDocument = ({
   const days = getDaysOfWeek(dateRange.start);
   const dateRangeStr = formatCompactDateRange(dateRange.start);
 
-  const page1Days = days.slice(0, frontPageDays);
-  const page2Days = days.slice(frontPageDays, schoolDays);
-
-  const page1Data = calculatePageData(
-    page1Days,
+  const sheet = calculateSheetLayout(
+    [days.slice(0, frontPageDays), days.slice(frontPageDays, schoolDays)],
     timetable,
     subjects,
-    LAYOUT.contentHeight,
-  );
-
-  const page2Weights = page2Days.map((day) => {
-    const daySubjects = getSubjectsForDay(day.dayKey, timetable, subjects);
-    return Math.max(1, daySubjects.length);
-  });
-
-  const page2DaysWeight = page2Weights.reduce((sum, value) => sum + value, 0);
-  const notesWeight = Math.max(
-    LAYOUT.notesWeight,
-    Math.ceil(page2DaysWeight / 2),
-  );
-  const page2TotalWeight = page2DaysWeight + notesWeight;
-  const page2DaysHeight =
-    (page2DaysWeight / page2TotalWeight) * LAYOUT.contentHeight;
-
-  const page2Data = calculatePageData(
-    page2Days,
-    timetable,
-    subjects,
-    page2DaysHeight,
-  );
-
-  const notesHeight = (notesWeight / page2TotalWeight) * LAYOUT.contentHeight;
-  const notesLines = Math.max(
-    minimumNotesLines,
-    Math.floor((notesHeight - LAYOUT.dayHeaderHeight) / LAYOUT.lineHeight),
   );
 
   return (
     <Document>
-      <Page size="A4" style={styles.page}>
-        <PlannerHeader weekId={weekId} dateRange={dateRangeStr} />
-        <View style={styles.pageContent}>
-          {page1Data.map((dayData, index) => (
-            <DayRow
-              key={dayData.day.dayKey}
-              dayData={dayData}
-              isLast={index === page1Data.length - 1}
-            />
-          ))}
-        </View>
-      </Page>
-
-      <Page size="A4" style={styles.page}>
-        <PlannerHeader weekId={weekId} dateRange={dateRangeStr} />
-        <View style={styles.pageContent}>
-          {page2Data.map((dayData) => (
-            <DayRow key={dayData.day.dayKey} dayData={dayData} />
-          ))}
-          <NotesSection flexGrow={notesWeight} lineCount={notesLines} />
-        </View>
-      </Page>
+      {sheet.pages.map((pageDays) => (
+        <Page key={pageDays[0]?.day.dayKey} size="A4" style={styles.page}>
+          <PlannerHeader weekId={weekId} dateRange={dateRangeStr} />
+          <View style={styles.pageContent}>
+            {pageDays.map((dayData) => (
+              <DayRow
+                key={dayData.day.dayKey}
+                dayData={dayData}
+                lineHeight={sheet.lineHeight}
+              />
+            ))}
+          </View>
+          <PlannerFooter />
+        </Page>
+      ))}
     </Document>
   );
 };

@@ -1,7 +1,12 @@
 import { getIsoDate } from '@/shared/planner/week';
 import type { Subject } from '@/shared/types/schemas';
 import { LAYOUT, WEEKDAYS } from './planner-document-constants';
-import type { DayData, DayInfo, TimetableDay } from './planner-document-types';
+import type {
+  DayData,
+  DayInfo,
+  SheetLayout,
+  TimetableDay,
+} from './planner-document-types';
 
 const fridayOffset = 4;
 export const getDaysOfWeek = (startDate: Date): ReadonlyArray<DayInfo> =>
@@ -52,57 +57,106 @@ export const getSubjectsForDay = (
   return result;
 };
 
-const calculateLinesPerSubject = (
-  subjectCount: number,
-  availableHeight: number,
-): number => {
-  if (subjectCount === 0) {
-    return 0;
-  }
+type PageDays = ReadonlyArray<{
+  readonly day: DayInfo;
+  readonly subjects: ReadonlyArray<Subject>;
+}>;
 
-  const contentHeight =
-    availableHeight - LAYOUT.dayHeaderHeight - LAYOUT.dayPadding;
-  const perSubjectOverhead = LAYOUT.subjectLabelHeight + 2;
-  const heightPerSubject = contentHeight / subjectCount;
-  const heightForLines = heightPerSubject - perSubjectOverhead;
-  const lines = Math.floor(heightForLines / LAYOUT.lineHeight);
+const dayOverhead = LAYOUT.dayHeaderHeight + LAYOUT.dayGap;
 
-  return Math.min(
-    LAYOUT.maxLinesPerSubject,
-    Math.max(LAYOUT.minLinesPerSubject, lines),
-  );
+// A day without classes keeps one cell so its heading is not orphaned.
+const cellCount = (subjects: ReadonlyArray<Subject>): number =>
+  Math.max(1, subjects.length);
+
+type PageMetrics = {
+  /** Space available per subject cell if the side were filled exactly. */
+  readonly cellBudget: number;
+  readonly cells: number;
 };
 
-export const calculatePageData = (
-  days: ReadonlyArray<DayInfo>,
+const measurePage = (page: PageDays): PageMetrics => {
+  const cells = page.reduce((sum, item) => sum + cellCount(item.subjects), 0);
+  const writingHeight = LAYOUT.contentHeight - page.length * dayOverhead;
+  return { cellBudget: writingHeight / cells, cells };
+};
+
+const linesFor = (cellBudget: number, lineHeight: number): number =>
+  Math.max(1, Math.floor(cellBudget / lineHeight));
+
+// Below this difference in unruled points, prefer the taller pitch.
+const wasteTolerance = 0.5;
+
+/**
+ * Picks one ruling pitch for the whole sheet. Every pitch that fills some
+ * side exactly is a candidate; the one leaving the least unruled space across
+ * both sides wins. When even one minimum-pitch line per cell does not fit on
+ * the most crowded side, the pitch shrinks to fit.
+ */
+const sheetLineHeight = (pages: ReadonlyArray<PageMetrics>): number => {
+  const minBudget = Math.min(...pages.map((page) => page.cellBudget));
+  if (minBudget < LAYOUT.minLineHeight) {
+    return Math.max(1, minBudget);
+  }
+
+  const candidates = pages.flatMap(({ cellBudget }) => {
+    const maxLines = Math.floor(cellBudget / LAYOUT.minLineHeight);
+    return Array.from({ length: maxLines }, (_, index) =>
+      Math.min(LAYOUT.maxLineHeight, cellBudget / (index + 1)),
+    ).filter((lineHeight) => lineHeight <= minBudget);
+  });
+  const waste = (lineHeight: number): number =>
+    pages.reduce(
+      (sum, { cellBudget, cells }) =>
+        sum +
+        (cellBudget - linesFor(cellBudget, lineHeight) * lineHeight) * cells,
+      0,
+    );
+
+  return candidates.reduce((best, candidate) => {
+    const difference = waste(candidate) - waste(best);
+    return difference < -wasteTolerance ||
+      (Math.abs(difference) <= wasteTolerance && candidate > best)
+      ? candidate
+      : best;
+  });
+};
+
+/**
+ * Lays out both sides of the sheet with a single ruling pitch. Every subject
+ * cell on a side has the same height and the same whole number of lines; the
+ * less crowded side gets more lines per cell rather than taller lines. Lines
+ * sit at the bottom of the cell, so any excess widens the first writing zone.
+ */
+export const calculateSheetLayout = (
+  pages: ReadonlyArray<ReadonlyArray<DayInfo>>,
   timetable: ReadonlyArray<TimetableDay>,
   subjects: ReadonlyArray<Subject>,
-  availableHeight: number,
-): Array<DayData> => {
-  const daysWithSubjects = days.map((day) => ({
-    day,
-    subjects: getSubjectsForDay(day.dayKey, timetable, subjects),
-  }));
-
-  const weights = daysWithSubjects.map((item) =>
-    Math.max(1, item.subjects.length),
+): SheetLayout => {
+  const pageDays: ReadonlyArray<PageDays> = pages.map((days) =>
+    days.map((day) => ({
+      day,
+      subjects: getSubjectsForDay(day.dayKey, timetable, subjects),
+    })),
   );
-  const totalWeight = weights.reduce((sum, value) => sum + value, 0);
+  const metrics = pageDays.map(measurePage);
+  const lineHeight = sheetLineHeight(metrics);
 
-  return daysWithSubjects.map((item, index) => {
-    const weight = weights[index];
-    const dayHeight = (weight / totalWeight) * availableHeight;
-
-    return {
-      day: item.day,
-      subjects: item.subjects,
-      weight,
-      linesPerSubject: calculateLinesPerSubject(
-        item.subjects.length,
-        dayHeight,
-      ),
-    };
-  });
+  return {
+    lineHeight,
+    pages: pageDays.map((page, pageIndex) => {
+      const { cellBudget: cellHeight } = metrics[pageIndex];
+      const linesPerSubject = linesFor(cellHeight, lineHeight);
+      return page.map(
+        (item): DayData => ({
+          day: item.day,
+          subjects: item.subjects,
+          height: dayOverhead + cellCount(item.subjects) * cellHeight,
+          cellHeight,
+          linesPerSubject,
+        }),
+      );
+    }),
+  };
 };
 
 export const generateLineKeys = (

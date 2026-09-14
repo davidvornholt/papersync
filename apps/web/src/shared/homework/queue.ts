@@ -25,7 +25,6 @@ const toHomework = (
       day: entry.day,
       subject: entry.subject,
       content: entry.content.trim(),
-      isCompleted: entry.isCompleted,
       ...(entry.dueDate ? { dueDate: entry.dueDate } : {}),
     });
   });
@@ -48,21 +47,18 @@ export const enqueueHomework = (
           day: Schema.String,
           subject: Schema.String,
           content: Schema.String,
-          isTask: Schema.Boolean,
-          isCompleted: Schema.Boolean,
           dueDate: Schema.optional(Schema.String),
         }),
       ),
     )(entries);
-    const tasks = decoded.filter((entry) => entry.isTask);
-    if (tasks.length === 0) {
+    if (decoded.length === 0) {
       return yield* Effect.fail(
         new HomeworkError({
           message: 'Select at least one entry to create a task.',
         }),
       );
     }
-    const payloads = yield* Effect.forEach(tasks, (entry) =>
+    const payloads = yield* Effect.forEach(decoded, (entry) =>
       toHomework(entry, options),
     );
     const sql = yield* PgClient.PgClient;

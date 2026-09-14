@@ -106,15 +106,12 @@ describe('TaskEntry Schema', () => {
       day: 'Monday',
       subject: 'Math',
       content: 'Complete problem set',
-      isTask: true,
-      isCompleted: false,
       action: 'add',
     });
 
     expect(entry.day).toBe('Monday');
     expect(entry.subject).toBe('Math');
     expect(entry.content).toBe('Complete problem set');
-    expect(entry.isCompleted).toBe(false);
     expect(entry.action).toBe('add');
   });
 });
