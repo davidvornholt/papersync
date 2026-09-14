@@ -38,7 +38,7 @@ export const getSubjectsForDay = (
   const result: Array<Subject> = [];
 
   for (const slot of daySchedule.slots) {
-    if (!seenIds.has(slot.subjectId)) {
+    if (slot.subjectId !== null && !seenIds.has(slot.subjectId)) {
       const subject = subjects.find(
         (candidate) => candidate.id === slot.subjectId,
       );

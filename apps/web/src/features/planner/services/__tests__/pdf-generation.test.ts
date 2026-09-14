@@ -7,6 +7,7 @@ import {
   formatCompactDateRange,
   formatDate,
   getDaysOfWeek,
+  getSubjectsForDay,
 } from '../../components/planner-document-helpers';
 import {
   type GeneratePdfRequest,
@@ -122,4 +123,26 @@ it('prints full dates for cropped days, including weeks spanning New Year', () =
     '2026-01-01',
     '2026-01-02',
   ]);
+});
+
+it('omits free periods from homework rows and keeps subjects after the gap', () => {
+  const math = { id: 'math', name: 'Mathematics' };
+  const arts = { id: 'arts', name: 'Arts' };
+  expect(
+    getSubjectsForDay(
+      'monday',
+      [
+        {
+          day: 'monday',
+          slots: [
+            { id: '1', subjectId: 'math' },
+            { id: '2', subjectId: null },
+            { id: '3', subjectId: 'arts' },
+            { id: '4', subjectId: 'arts' },
+          ],
+        },
+      ],
+      [math, arts],
+    ),
+  ).toEqual([math, arts]);
 });

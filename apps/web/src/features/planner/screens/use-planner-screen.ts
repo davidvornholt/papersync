@@ -15,7 +15,7 @@ import {
 import type { ScheduleException } from './planner-screen-types';
 
 export const usePlannerScreen = () => {
-  const { settings, isLoading: isSettingsLoading } = useSettings();
+  const { settings, isLoading: isSettingsLoading, loadError } = useSettings();
   const [selectedWeekId, setSelectedWeekId] = useState<WeekId | null>(null);
   const [exceptions, setExceptions] = useState<Array<ScheduleException>>([]);
   const [isWeekModalOpen, setIsWeekModalOpen] = useState(false);
@@ -89,6 +89,7 @@ export const usePlannerScreen = () => {
   return {
     settings,
     isSettingsLoading,
+    loadError,
     isWeekModalOpen,
     setIsWeekModalOpen,
     exceptionEditingDate,

@@ -3,10 +3,10 @@ import { Select } from '@papersync/ui/select';
 import type { Subject } from '@/shared/types/schemas';
 
 type ExceptionSlotEditorProps = {
-  readonly slots: Array<{ id: string; subjectId: string }>;
+  readonly slots: Array<{ id: string; subjectId: string | null }>;
   readonly subjects: ReadonlyArray<Subject>;
   readonly onAddSlot: () => void;
-  readonly onChangeSlot: (slotId: string, subjectId: string) => void;
+  readonly onChangeSlot: (slotId: string, subjectId: string | null) => void;
   readonly onRemoveSlot: (slotId: string) => void;
 };
 
@@ -46,10 +46,11 @@ export const ExceptionSlotEditor = ({
             </span>
             <Select
               aria-label={`Exception class ${index + 1}`}
-              value={slot.subjectId}
-              onChange={(e) => onChangeSlot(slot.id, e.target.value)}
+              value={slot.subjectId ?? ''}
+              onChange={(e) => onChangeSlot(slot.id, e.target.value || null)}
               className="min-w-0 flex-1 text-[14px]"
             >
+              <option value="">Free period</option>
               {subjects.map((subject) => (
                 <option key={subject.id} value={subject.id}>
                   {subject.name}

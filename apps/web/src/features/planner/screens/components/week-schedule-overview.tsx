@@ -2,8 +2,8 @@
 
 import { Button } from '@papersync/ui/button';
 import { motion } from 'motion/react';
-import type { TimetableDay } from '@/shared/hooks/use-settings-schema';
 import { getIsoDate } from '@/shared/planner/week';
+import type { TimetableDay } from '@/shared/settings/schema';
 import type { DayOfWeek, Subject } from '@/shared/types/schemas';
 import {
   DAY_SHORT_LABELS,
@@ -27,8 +27,11 @@ export const WeekScheduleOverview = ({
   subjects,
   onEditException,
 }: WeekScheduleOverviewProps): React.ReactElement => {
-  const getSubjectName = (subjectId: string): string =>
-    subjects.find((subject) => subject.id === subjectId)?.name ?? 'Unknown';
+  const getSubjectName = (subjectId: string | null): string =>
+    subjectId === null
+      ? 'Free period'
+      : (subjects.find((subject) => subject.id === subjectId)?.name ??
+        'Unknown');
 
   return (
     <ul className="-mx-1">
