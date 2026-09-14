@@ -1,8 +1,8 @@
 import { createServer } from 'node:http';
+import { scanWcag22AaViolations } from '@davidvornholt/a11y-testing/axe';
 import { expect } from '@playwright/test';
 import { defaultSettings } from '../src/shared/settings/schema';
 import { createSessionCookies } from './auth-fixture';
-import { scanWcag22AaViolations } from './axe';
 import { createPlannerImage } from './planner-image';
 import { test } from './settings-fixture';
 
