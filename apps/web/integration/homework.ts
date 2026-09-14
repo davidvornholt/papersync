@@ -35,7 +35,6 @@ const entry = {
   day: 'Monday',
   subject: 'Math',
   content: `Integration homework ${crypto.randomUUID()}`,
-  isTask: true,
   isCompleted: false,
   action: 'add' as const,
   dueDate: '2026-09-10',
@@ -120,7 +119,7 @@ it('rescans separate saved homework from new entries and changed paper details',
       { ...entry, isCompleted: true },
       { ...entry, dueDate: '2026-09-11' },
       { ...entry, dueDate: undefined },
-      { ...entry, isTask: false },
+      { ...entry, content: 'Exam topics: chapters 3–5' },
     ],
   });
   const result = await runIsolated(
@@ -208,4 +207,33 @@ it('changing a reviewed week rechecks duplicates and preserves edits without que
   expect(result.invalid._tag).toBe('Left');
   expect(result.pending).toHaveLength(1);
   expect(result.pending[0].payload.isCompleted).toBe(false);
+});
+
+it('saves reference information and dates unchanged alongside assignments', async () => {
+  const entries = [
+    entry,
+    {
+      ...entry,
+      id: 'reference',
+      content: 'Exam topics: chapters 3–5',
+      dueDate: undefined,
+    },
+    {
+      ...entry,
+      id: 'event',
+      content: 'Class trip on 18 September',
+      dueDate: undefined,
+    },
+  ];
+  const result = await runIsolated(
+    Effect.gen(function* () {
+      const count = yield* enqueueHomework(entries, options);
+      const pending = yield* getPendingHomework;
+      return { count, pending };
+    }),
+  );
+  expect(result.count).toBe(entries.length);
+  expect(new Set(result.pending.map((item) => item.payload.content))).toEqual(
+    new Set(entries.map((item) => item.content)),
+  );
 });

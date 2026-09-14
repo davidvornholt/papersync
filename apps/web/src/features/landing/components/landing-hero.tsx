@@ -12,7 +12,7 @@ export const LandingHero = () => (
       <p className="mt-6 max-w-prose text-ink-soft text-lg">
         Write down homework while you're in class. When you get home, scan your
         planner, check the assignments and deadlines, and send them to your task
-        manager or notes.
+        manager.
       </p>
       <div className="mt-8 flex flex-wrap gap-4">
         <Button asChild={true} size="lg">

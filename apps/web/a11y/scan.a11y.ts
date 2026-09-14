@@ -9,7 +9,6 @@ const entry = {
   day: 'Monday',
   subject: 'Math',
   content: 'Exercises 1–3',
-  isTask: true,
   dueDate: '2026-01-02',
 };
 let modelResponse = JSON.stringify({
@@ -63,7 +62,7 @@ test('an older sheet retains its week and supports review, empty scans, and extr
   });
   await page.getByRole('button', { name: 'Process scan' }).click();
   await expect(page.getByText(`Sheet week: ${week}`)).toBeVisible();
-  await expect(page.getByLabel('Homework or note')).toHaveValue(entry.content);
+  await expect(page.getByLabel('Task')).toHaveValue(entry.content);
   await expect(page.getByLabel('Due date')).toHaveValue(entry.dueDate);
   await page.getByLabel('Due date').fill('2026-01-05');
   await expect(page.getByLabel('Due date')).toHaveValue('2026-01-05');
@@ -121,12 +120,7 @@ test('a sheet uses OCR for its week and only asks for unreadable weeks', async (
   await expect(page.getByText('Sheet week: 2026-W01')).toBeVisible();
   const approve = page.getByRole('button', { name: 'Approve and save' });
   await expect(approve).toBeEnabled();
-  await page.getByLabel('Entry type').selectOption('note');
-  await expect(approve).toBeDisabled();
-  await expect(
-    page.getByText('Notes are shown for review', { exact: false }),
-  ).toBeVisible();
-  await page.getByLabel('Entry type').selectOption('task');
+  await expect(page.getByLabel('Entry type')).toHaveCount(0);
   const completed = page.getByLabel('Completed on paper');
   await completed.focus();
   await page.keyboard.press('Space');
@@ -147,7 +141,7 @@ test('a sheet uses OCR for its week and only asks for unreadable weeks', async (
   await process.click();
   await expect(approve).toBeDisabled();
   const requestsBeforeCorrection = modelRequests;
-  const homework = page.getByLabel('Homework or note');
+  const homework = page.getByLabel('Task');
   await homework.fill('Exercises 1–4, corrected');
   await completed.check();
   await page.getByLabel('Due date').fill('2026-01-06');
@@ -237,17 +231,15 @@ test('rescans collapse saved homework and allow deliberate corrections without l
   const process = page.getByRole('button', { name: 'Process scan' });
   const approve = page.getByRole('button', { name: 'Approve and save' });
   await process.click();
-  await expect(page.getByLabel('Homework or note')).toHaveCount(1);
-  await expect(page.getByLabel('Homework or note')).toHaveValue(
-    newEntry.content,
-  );
+  await expect(page.getByLabel('Task')).toHaveCount(1);
+  await expect(page.getByLabel('Task')).toHaveValue(newEntry.content);
   await expect(approve).toBeEnabled();
   const saved = page.getByText('1 already saved — show entries');
   await saved.click();
   await expect(page.getByText(oldEntry.content, { exact: true })).toBeVisible();
   expect(await scanWcag22AaViolations(page)).toEqual([]);
   await page.getByRole('button', { name: 'Review entry', exact: true }).click();
-  const correction = page.getByLabel('Homework or note').first();
+  const correction = page.getByLabel('Task').first();
   await correction.fill('Corrected');
   await correction.press('End');
   await page.keyboard.type(' homework');
@@ -259,6 +251,73 @@ test('rescans collapse saved homework and allow deliberate corrections without l
     page.getByText('All recognized homework is already saved.'),
   ).toBeVisible();
   await expect(approve).toBeDisabled();
-  await expect(page.getByLabel('Homework or note')).toHaveCount(0);
+  await expect(page.getByLabel('Task')).toHaveCount(0);
   expect(await scanWcag22AaViolations(page)).toEqual([]);
+});
+
+test('review retains informational entries and only excludes entries explicitly removed', async ({
+  page,
+  context,
+}) => {
+  await context.addCookies(await createSessionCookies());
+  await page.goto('/scan');
+  const [, imageData] = (await createPlannerImage(page)).split(',');
+  await expect(page.getByLabel('Select image from device')).toBeEnabled();
+  await page.getByLabel('Select image from device').setInputFiles({
+    name: 'all-entries.png',
+    mimeType: 'image/png',
+    buffer: Buffer.from(imageData, 'base64'),
+  });
+  const reference = 'Exam topics: chapters 3–5';
+  const unwanted = 'Bring an umbrella';
+  const recognizedContents = [entry.content, reference, unwanted];
+  let saving = false;
+  let savedRequest = '';
+  await page.route('**/scan', async (route) => {
+    if (!route.request().headers()['next-action']) {
+      await route.continue();
+      return;
+    }
+    if (saving) {
+      savedRequest = route.request().postData() ?? '';
+    }
+    const result = saving
+      ? { success: true, count: 2 }
+      : {
+          success: true,
+          data: {
+            weekId: '2026-W01',
+            confidence: 1,
+            entries: recognizedContents.map((content) => ({
+              ...entry,
+              content,
+              isCompleted: false,
+              action: 'add',
+            })),
+          },
+        };
+    await route.fulfill({
+      contentType: 'text/x-component',
+      body: `0:{"a":"$@1","f":"","b":"test"}\n1:${JSON.stringify(result)}\n`,
+    });
+  });
+  await page.getByRole('button', { name: 'Process scan' }).click();
+  await expect(page.getByLabel('Task')).toHaveCount(recognizedContents.length);
+  await expect(page.getByLabel('Task').nth(1)).toHaveValue(reference);
+  await page
+    .getByRole('button', { name: `Remove entry: ${unwanted}`, exact: true })
+    .click();
+  await expect(page.getByLabel('Task')).toHaveCount(2);
+  await expect(
+    page.getByText('2 new or changed tasks will be queued', { exact: false }),
+  ).toBeVisible();
+  expect(await scanWcag22AaViolations(page)).toEqual([]);
+  saving = true;
+  await page.getByRole('button', { name: 'Approve and save' }).click();
+  await expect(
+    page.getByText('2 tasks waiting for Super Productivity.', { exact: false }),
+  ).toBeVisible();
+  expect(savedRequest).toContain(entry.content);
+  expect(savedRequest).toContain(reference);
+  expect(savedRequest).not.toContain(unwanted);
 });

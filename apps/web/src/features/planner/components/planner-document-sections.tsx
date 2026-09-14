@@ -5,69 +5,39 @@ import type { DayData } from './planner-document-types';
 
 type DayRowProps = {
   readonly dayData: DayData;
-  readonly isLast?: boolean;
 };
 
-export const DayRow = ({
-  dayData,
-  isLast = false,
-}: DayRowProps): React.ReactElement => {
-  const { day, subjects: daySubjects, weight, linesPerSubject } = dayData;
-  const baseStyle = isLast ? styles.dayRowLast : styles.dayRow;
-
+export const DayRow = ({ dayData }: DayRowProps): React.ReactElement => {
+  const { day, subjects, height, subjectHeight, linesPerSubject } = dayData;
   return (
-    <View style={[baseStyle, { flexGrow: weight }]}>
+    <View style={[styles.dayRow, { height }]} wrap={false}>
       <View style={styles.dayHeader}>
         <Text style={styles.dayName}>{day.name}</Text>
         <Text style={styles.dayDate}>{formatDate(day.date)}</Text>
       </View>
-      <View style={styles.dayContent}>
-        {daySubjects.length > 0 ? (
-          daySubjects.map((subject) => (
-            <View key={subject.id} style={styles.subjectSection}>
-              <Text style={styles.subjectLabel}>{subject.name}</Text>
+      {subjects.length > 0 ? (
+        subjects.map((subject) => (
+          <View
+            key={subject.id}
+            style={[styles.subjectSection, { height: subjectHeight }]}
+          >
+            <Text style={styles.subjectLabel}>{subject.name}</Text>
+            <View style={styles.writingArea}>
               {generateLineKeys(subject.id, linesPerSubject).map((key) => (
-                <View key={key} style={styles.bulletRow}>
-                  <Text style={styles.bullet}>–</Text>
-                  <View style={styles.writingLine} />
-                </View>
+                <View
+                  key={key}
+                  style={[
+                    styles.writingLine,
+                    { height: subjectHeight / linesPerSubject },
+                  ]}
+                />
               ))}
             </View>
-          ))
-        ) : (
-          <View style={styles.emptyDay}>
-            <Text style={styles.emptyDayText}>No classes</Text>
           </View>
-        )}
-      </View>
-    </View>
-  );
-};
-
-type NotesSectionProps = {
-  readonly flexGrow: number;
-  readonly lineCount: number;
-};
-
-export const NotesSection = ({
-  flexGrow,
-  lineCount,
-}: NotesSectionProps): React.ReactElement => {
-  const noteLineKeys = Array.from({ length: lineCount }, (_, i) => `n${i}`);
-
-  return (
-    <View style={[styles.notesSection, { flexGrow }]}>
-      <View style={styles.notesHeader}>
-        <Text style={styles.notesTitle}>Notes</Text>
-      </View>
-      <View style={styles.notesContent}>
-        {noteLineKeys.map((key) => (
-          <View key={key} style={styles.bulletRow}>
-            <Text style={styles.bullet}>–</Text>
-            <View style={styles.writingLine} />
-          </View>
-        ))}
-      </View>
+        ))
+      ) : (
+        <Text style={styles.emptyDayText}>No classes</Text>
+      )}
     </View>
   );
 };
@@ -82,11 +52,19 @@ export const PlannerHeader = ({
   dateRange,
 }: HeaderProps): React.ReactElement => (
   <View style={styles.header}>
-    <View style={styles.headerLeft}>
-      <Text style={styles.appName}>PaperSync</Text>
-      <Text style={styles.weekInfo}>
-        {weekId} · {dateRange}
-      </Text>
+    <Text style={styles.appName}>PaperSync</Text>
+    <View style={styles.weekHeading}>
+      <Text style={styles.weekInfo}>{weekId}</Text>
+      <Text style={styles.dateRange}>{dateRange}</Text>
     </View>
+  </View>
+);
+
+export const PlannerFooter = (): React.ReactElement => (
+  <View style={styles.footer}>
+    <Text>Write homework and deadlines beside each subject.</Text>
+    <Text
+      render={({ pageNumber, totalPages }) => `${pageNumber} / ${totalPages}`}
+    />
   </View>
 );

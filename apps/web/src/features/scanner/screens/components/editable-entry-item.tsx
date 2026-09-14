@@ -48,7 +48,7 @@ export const EditableEntryItem = ({
       </label>
     </div>
     <label className="block text-sm">
-      Homework or note
+      Task
       <textarea
         value={entry.content}
         onChange={(event) =>
@@ -70,19 +70,6 @@ export const EditableEntryItem = ({
       />
     </label>
     <div className="flex flex-wrap items-center gap-4 text-sm">
-      <label htmlFor={`${entry.id}-type`} className="flex items-center gap-2">
-        Entry type
-        <Select
-          id={`${entry.id}-type`}
-          value={entry.isTask ? 'task' : 'note'}
-          onChange={(event) =>
-            onUpdate(entry.id, { isTask: event.target.value === 'task' })
-          }
-        >
-          <option value="task">Task</option>
-          <option value="note">Note</option>
-        </Select>
-      </label>
       <label
         htmlFor={`${entry.id}-completed`}
         className="flex items-center gap-2"

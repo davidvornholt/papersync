@@ -30,6 +30,7 @@ export type DayInfo = {
 export type DayData = {
   readonly day: DayInfo;
   readonly subjects: ReadonlyArray<Subject>;
-  readonly weight: number;
+  readonly height: number;
+  readonly subjectHeight: number;
   readonly linesPerSubject: number;
 };

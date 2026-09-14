@@ -14,7 +14,6 @@ const entry = {
   day: 'Montag',
   subject: 'Mathematik',
   content: 'Aufgabe 3',
-  isTask: true,
   dueDate: Schema.decodeUnknownSync(ISODate)('2026-09-10'),
 };
 const googleResponse = (value: unknown) =>

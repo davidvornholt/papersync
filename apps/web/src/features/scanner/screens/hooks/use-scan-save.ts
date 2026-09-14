@@ -24,7 +24,7 @@ export const useScanSave = ({ scan, entries, clear }: SaveOptions) => {
     Effect.runFork(
       requestAction(() =>
         saveHomework(
-          entries.filter((entry) => entry.isTask && entry.action !== 'skip'),
+          entries.filter((entry) => entry.action !== 'skip'),
           weekId,
         ),
       ).pipe(

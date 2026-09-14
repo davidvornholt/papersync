@@ -97,7 +97,6 @@ export const processExtractionEffect = (
           day: entry.day,
           subject: entry.subject,
           content: entry.content,
-          isTask: entry.isTask,
           isCompleted: entry.isCompleted,
           action: entry.action,
           dueDate: entry.dueDate,

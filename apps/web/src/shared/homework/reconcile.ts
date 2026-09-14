@@ -21,9 +21,6 @@ export const reconcileHomework = (data: OCRResponse) =>
     const week = data.weekId;
     const entries = yield* Effect.forEach(data.entries, (entry) =>
       Effect.gen(function* () {
-        if (!entry.isTask) {
-          return entry;
-        }
         const id = yield* getHomeworkId(
           week,
           entry.day,

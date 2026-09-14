@@ -52,27 +52,6 @@ export const getSubjectsForDay = (
   return result;
 };
 
-const calculateLinesPerSubject = (
-  subjectCount: number,
-  availableHeight: number,
-): number => {
-  if (subjectCount === 0) {
-    return 0;
-  }
-
-  const contentHeight =
-    availableHeight - LAYOUT.dayHeaderHeight - LAYOUT.dayPadding;
-  const perSubjectOverhead = LAYOUT.subjectLabelHeight + 2;
-  const heightPerSubject = contentHeight / subjectCount;
-  const heightForLines = heightPerSubject - perSubjectOverhead;
-  const lines = Math.floor(heightForLines / LAYOUT.lineHeight);
-
-  return Math.min(
-    LAYOUT.maxLinesPerSubject,
-    Math.max(LAYOUT.minLinesPerSubject, lines),
-  );
-};
-
 export const calculatePageData = (
   days: ReadonlyArray<DayInfo>,
   timetable: ReadonlyArray<TimetableDay>,
@@ -89,17 +68,27 @@ export const calculatePageData = (
   );
   const totalWeight = weights.reduce((sum, value) => sum + value, 0);
 
+  const dayOverhead = LAYOUT.dayHeaderHeight + LAYOUT.dayPadding;
+  const writingHeight = availableHeight - days.length * dayOverhead;
+
   return daysWithSubjects.map((item, index) => {
     const weight = weights[index];
-    const dayHeight = (weight / totalWeight) * availableHeight;
+    const dayHeight = dayOverhead + (weight / totalWeight) * writingHeight;
+
+    const subjectHeight =
+      item.subjects.length > 0
+        ? (dayHeight - LAYOUT.dayHeaderHeight - LAYOUT.dayPadding) /
+          item.subjects.length
+        : 0;
 
     return {
       day: item.day,
       subjects: item.subjects,
-      weight,
-      linesPerSubject: calculateLinesPerSubject(
-        item.subjects.length,
-        dayHeight,
+      height: dayHeight,
+      subjectHeight,
+      linesPerSubject: Math.max(
+        1,
+        Math.floor(subjectHeight / LAYOUT.lineHeight),
       ),
     };
   });

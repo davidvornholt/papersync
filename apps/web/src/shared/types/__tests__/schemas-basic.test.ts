@@ -106,7 +106,6 @@ describe('TaskEntry Schema', () => {
       day: 'Monday',
       subject: 'Math',
       content: 'Complete problem set',
-      isTask: true,
       isCompleted: false,
       action: 'add',
     });

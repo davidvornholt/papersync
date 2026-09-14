@@ -5,11 +5,10 @@ import {
   calculatePageData,
   formatCompactDateRange,
   getDaysOfWeek,
-  getSubjectsForDay,
 } from './planner-document-helpers';
 import {
   DayRow,
-  NotesSection,
+  PlannerFooter,
   PlannerHeader,
 } from './planner-document-sections';
 import { styles } from './planner-document-styles';
@@ -17,7 +16,6 @@ import type { PlannerProps } from './planner-document-types';
 
 const frontPageDays = 3;
 const schoolDays = 5;
-const minimumNotesLines = 4;
 const registerFonts = (): void => {
   Font.register({
     family: 'Roboto',
@@ -64,31 +62,11 @@ export const PlannerDocument = ({
     LAYOUT.contentHeight,
   );
 
-  const page2Weights = page2Days.map((day) => {
-    const daySubjects = getSubjectsForDay(day.dayKey, timetable, subjects);
-    return Math.max(1, daySubjects.length);
-  });
-
-  const page2DaysWeight = page2Weights.reduce((sum, value) => sum + value, 0);
-  const notesWeight = Math.max(
-    LAYOUT.notesWeight,
-    Math.ceil(page2DaysWeight / 2),
-  );
-  const page2TotalWeight = page2DaysWeight + notesWeight;
-  const page2DaysHeight =
-    (page2DaysWeight / page2TotalWeight) * LAYOUT.contentHeight;
-
   const page2Data = calculatePageData(
     page2Days,
     timetable,
     subjects,
-    page2DaysHeight,
-  );
-
-  const notesHeight = (notesWeight / page2TotalWeight) * LAYOUT.contentHeight;
-  const notesLines = Math.max(
-    minimumNotesLines,
-    Math.floor((notesHeight - LAYOUT.dayHeaderHeight) / LAYOUT.lineHeight),
+    LAYOUT.contentHeight,
   );
 
   return (
@@ -96,14 +74,11 @@ export const PlannerDocument = ({
       <Page size="A4" style={styles.page}>
         <PlannerHeader weekId={weekId} dateRange={dateRangeStr} />
         <View style={styles.pageContent}>
-          {page1Data.map((dayData, index) => (
-            <DayRow
-              key={dayData.day.dayKey}
-              dayData={dayData}
-              isLast={index === page1Data.length - 1}
-            />
+          {page1Data.map((dayData) => (
+            <DayRow key={dayData.day.dayKey} dayData={dayData} />
           ))}
         </View>
+        <PlannerFooter />
       </Page>
 
       <Page size="A4" style={styles.page}>
@@ -112,8 +87,8 @@ export const PlannerDocument = ({
           {page2Data.map((dayData) => (
             <DayRow key={dayData.day.dayKey} dayData={dayData} />
           ))}
-          <NotesSection flexGrow={notesWeight} lineCount={notesLines} />
         </View>
+        <PlannerFooter />
       </Page>
     </Document>
   );

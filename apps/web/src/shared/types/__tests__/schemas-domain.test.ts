@@ -13,7 +13,6 @@ describe('OCRResponse Schema', () => {
           day: 'Monday',
           subject: 'Math',
           content: 'Homework',
-          isTask: true,
           isCompleted: false,
           action: 'add',
         },

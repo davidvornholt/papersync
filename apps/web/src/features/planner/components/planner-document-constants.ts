@@ -2,24 +2,27 @@ import type { TimetableDay } from './planner-document-types';
 export const colors = {
   black: '#000000',
   darkGray: '#444444',
-  mediumGray: '#888888',
   lightGray: '#BBBBBB',
-  veryLightGray: '#DDDDDD',
   white: '#FFFFFF',
 } as const;
 
+const a4Height = 841.89;
+const pagePadding = 20;
+const headerHeight = 28;
+const headerMargin = 8;
+const footerHeight = 12;
+
 export const LAYOUT = {
-  pagePadding: 16,
-  headerHeight: 28,
-  headerMargin: 6,
-  contentHeight: 770,
-  lineHeight: 14,
-  dayHeaderHeight: 18,
-  subjectLabelHeight: 12,
-  dayPadding: 8,
-  minLinesPerSubject: 2,
-  maxLinesPerSubject: 4,
-  notesWeight: 2,
+  pagePadding,
+  headerHeight,
+  headerMargin,
+  footerHeight,
+  // Reserve the entire header and footer before allocating handwriting space.
+  contentHeight:
+    a4Height - pagePadding * 2 - headerHeight - headerMargin - footerHeight - 1,
+  lineHeight: 18,
+  dayHeaderHeight: 24,
+  dayPadding: 6,
 } as const;
 
 export const WEEKDAYS: ReadonlyArray<{
