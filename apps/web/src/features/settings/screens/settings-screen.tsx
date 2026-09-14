@@ -5,6 +5,7 @@ import { motion } from 'motion/react';
 import { PageTransition } from '@/shared/components/motion-layout';
 import { Spinner } from '@/shared/components/motion-loading';
 import { SettingsLoadError } from '@/shared/components/settings-load-error';
+import { revealOnce, rise } from '@/shared/motion/presets';
 import { AddSubjectModal } from '../components/add-subject-modal';
 import { SettingsAICard } from '../components/settings-ai-card';
 import { SettingsSaveStatus } from '../components/settings-save-status';
@@ -12,8 +13,6 @@ import { aiOptions } from '../components/settings-screen-options';
 import { SettingsSubjectsCard } from '../components/settings-subjects-card';
 import { SettingsSuperProductivityPanel } from '../components/settings-super-productivity-panel';
 import { useSettingsScreenController } from './hooks/use-settings-screen-controller';
-
-const easeOut = 'easeOut' as const;
 
 const SECTIONS = [
   {
@@ -88,12 +87,7 @@ export const SettingsScreen = ({
         />
 
         <div className="mt-8 space-y-12 sm:mt-10 sm:space-y-16 md:mt-14">
-          <motion.section
-            initial={false}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: '-60px' }}
-            transition={{ duration: 0.7, ease: easeOut }}
-          >
+          <motion.section variants={rise} {...revealOnce}>
             <p className="section-number">01 — Super Productivity</p>
             <h2 className="mt-3 mb-5 text-[24px] sm:mb-6 sm:text-[28px]">
               Connect your <span className="serif-italic">task manager</span>.
@@ -101,12 +95,7 @@ export const SettingsScreen = ({
             <SettingsSuperProductivityPanel />
           </motion.section>
 
-          <motion.section
-            initial={false}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: '-60px' }}
-            transition={{ duration: 0.7, ease: easeOut }}
-          >
+          <motion.section variants={rise} {...revealOnce}>
             <p className="section-number">02 — Vision</p>
             <h2 className="mt-3 mb-5 text-[24px] sm:mb-6 sm:text-[28px]">
               The model that{' '}
@@ -122,12 +111,7 @@ export const SettingsScreen = ({
             />
           </motion.section>
 
-          <motion.section
-            initial={false}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: '-60px' }}
-            transition={{ duration: 0.7, ease: easeOut }}
-          >
+          <motion.section variants={rise} {...revealOnce}>
             <p className="section-number">03 — Timetable</p>
             <h2 className="mt-3 mb-5 text-[24px] sm:mb-6 sm:text-[28px]">
               Subjects, days, and{' '}

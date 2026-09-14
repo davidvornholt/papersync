@@ -56,6 +56,10 @@
   --shadow-soft: 0 1px 0 0 oklch(0.85 0.008 75 / 0.6);
 
   /* --- Motion -------------------------------------------------------------- */
+  /* Opens are direct; closes are quicker and quieter. Both share one ease. */
+  --ease-smooth-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --transition-open: 250ms var(--ease-smooth-out);
+  --transition-close: 150ms var(--ease-smooth-out);
   --transition-quick: 180ms cubic-bezier(0.32, 0.08, 0.24, 1);
   --transition-flow: 420ms cubic-bezier(0.22, 0.61, 0.36, 1);
   --transition-stately: 800ms cubic-bezier(0.2, 0.6, 0.2, 1);

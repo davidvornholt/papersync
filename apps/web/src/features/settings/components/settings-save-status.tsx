@@ -4,19 +4,12 @@ import { Check } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { Spinner } from '@/shared/components/motion-loading';
 import type { SaveStatus } from '@/shared/hooks/use-settings';
-import { blur, distance, duration, ease } from '@/shared/motion/tokens';
+import { presence, textSwap } from '@/shared/motion/presets';
 
 type SettingsSaveStatusProps = {
   readonly status: SaveStatus;
   readonly onRetry: () => void;
 };
-
-const swap = {
-  initial: { opacity: 0, y: distance.micro, filter: blur.small },
-  animate: { opacity: 1, y: 0, filter: blur.none },
-  exit: { opacity: 0, y: -distance.micro, filter: blur.small },
-  transition: { duration: duration.quick, ease: ease.inOut },
-} as const;
 
 /** Sticky autosave indicator: changes persist as they happen. */
 export const SettingsSaveStatus = ({
@@ -38,7 +31,8 @@ export const SettingsSaveStatus = ({
         {status.kind === 'saving' ? (
           <motion.span
             key="saving"
-            {...swap}
+            variants={textSwap}
+            {...presence}
             className="flex items-center gap-2 text-graphite"
           >
             <Spinner size="sm" />
@@ -48,7 +42,8 @@ export const SettingsSaveStatus = ({
         {status.kind === 'saved' ? (
           <motion.span
             key="saved"
-            {...swap}
+            variants={textSwap}
+            {...presence}
             className="flex items-center gap-2 text-positive"
           >
             <Check size={14} aria-hidden={true} />
@@ -58,7 +53,8 @@ export const SettingsSaveStatus = ({
         {status.kind === 'error' ? (
           <motion.span
             key="error"
-            {...swap}
+            variants={textSwap}
+            {...presence}
             className="flex items-center gap-3 text-accent normal-case tracking-normal"
           >
             <span className="text-[13px]">{status.message}</span>

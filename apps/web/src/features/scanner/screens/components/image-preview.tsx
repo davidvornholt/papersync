@@ -4,6 +4,7 @@ import { Button } from '@papersync/ui/button';
 import { motion } from 'motion/react';
 import Image from 'next/image';
 import { Spinner } from '@/shared/components/motion-loading';
+import { presence, rise } from '@/shared/motion/presets';
 
 type ImagePreviewProps = {
   readonly preview: string;
@@ -18,11 +19,7 @@ export const ImagePreview = ({
   onProcess,
   isProcessing,
 }: ImagePreviewProps): React.ReactElement => (
-  <motion.div
-    initial={false}
-    animate={{ opacity: 1, y: 0 }}
-    className="space-y-4"
-  >
+  <motion.div variants={rise} {...presence} className="space-y-4">
     <div className="relative overflow-hidden border border-hairline">
       <Image
         src={preview}

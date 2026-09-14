@@ -2,6 +2,7 @@
 
 import { Button } from '@papersync/ui/button';
 import { motion } from 'motion/react';
+import { rise, riseGroup } from '@/shared/motion/presets';
 import { getIsoDate } from '@/shared/planner/week';
 import type { TimetableDay } from '@/shared/settings/schema';
 import type { DayOfWeek, Subject } from '@/shared/types/schemas';
@@ -11,7 +12,6 @@ import {
   WEEKDAYS,
 } from '../planner-screen-types';
 
-const staggerSeconds = 0.04;
 type WeekScheduleOverviewProps = {
   readonly weekStartDate: Date;
   readonly timetable: ReadonlyArray<TimetableDay>;
@@ -31,7 +31,12 @@ export const WeekScheduleOverview = ({
     subjects.find((subject) => subject.id === subjectId)?.name ?? 'Unknown';
 
   return (
-    <ul className="-mx-1">
+    <motion.ul
+      className="-mx-1"
+      variants={riseGroup}
+      initial="hidden"
+      animate="visible"
+    >
       {WEEKDAYS.map((day, index) => {
         const daySchedule = timetable.find((entry) => entry.day === day);
         const dayDate = new Date(weekStartDate);
@@ -54,9 +59,7 @@ export const WeekScheduleOverview = ({
         return (
           <motion.li
             key={day}
-            initial={false}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * staggerSeconds }}
+            variants={rise}
             className={`relative border-hairline border-b px-1 py-3 last:border-b-0 ${
               hasException ? 'bg-warning/5' : ''
             }`}
@@ -116,6 +119,6 @@ export const WeekScheduleOverview = ({
           </motion.li>
         );
       })}
-    </ul>
+    </motion.ul>
   );
 };
