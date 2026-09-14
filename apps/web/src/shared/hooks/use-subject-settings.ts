@@ -20,7 +20,7 @@ export const useSubjectSettings = (
         subjects: prev.subjects.filter((subject) => subject.id !== id),
         timetable: prev.timetable.map((day) => ({
           ...day,
-          slots: day.slots.filter((slot) => slot.subjectId !== id),
+          subjectIds: day.subjectIds.filter((subjectId) => subjectId !== id),
         })),
       }));
     },

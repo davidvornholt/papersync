@@ -15,6 +15,13 @@
       "when": 1789386024377,
       "tag": "0001_lame_longshot",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1789393779766,
+      "tag": "0002_collapse_timetable_periods",
+      "breakpoints": true
     }
   ]
 }

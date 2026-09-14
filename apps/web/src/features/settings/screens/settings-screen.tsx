@@ -7,7 +7,7 @@ import { Spinner } from '@/shared/components/motion-loading';
 import { SettingsLoadError } from '@/shared/components/settings-load-error';
 import { AddSubjectModal } from '../components/add-subject-modal';
 import { SettingsAICard } from '../components/settings-ai-card';
-import { SettingsSaveAction } from '../components/settings-save-action';
+import { SettingsSaveStatus } from '../components/settings-save-status';
 import { aiOptions } from '../components/settings-screen-options';
 import { SettingsSubjectsCard } from '../components/settings-subjects-card';
 import { SettingsSuperProductivityPanel } from '../components/settings-super-productivity-panel';
@@ -29,7 +29,7 @@ const SECTIONS = [
   {
     number: '03',
     title: 'Timetable',
-    italic: 'subjects and slots',
+    italic: 'subjects by day',
   },
 ] as const;
 
@@ -130,7 +130,7 @@ export const SettingsScreen = ({
           >
             <p className="section-number">03 — Timetable</p>
             <h2 className="mt-3 mb-5 text-[24px] sm:mb-6 sm:text-[28px]">
-              Subjects, slots, and{' '}
+              Subjects, days, and{' '}
               <span className="serif-italic">the shape of a week</span>.
             </h2>
             <SettingsSubjectsCard
@@ -139,25 +139,16 @@ export const SettingsScreen = ({
               onOpenSubjectModal={controller.handleOpenSubjectModal}
               onEditSubject={controller.handleOpenSubjectEditor}
               onDeleteSubject={controller.handleDeleteSubject}
-              onAddTimetableSlot={controller.addTimetableSlot}
-              onRemoveTimetableSlot={controller.removeTimetableSlot}
-              onUpdateTimetableSlot={controller.updateTimetableSlot}
+              onAddSubjectToDay={controller.addSubjectToDay}
+              onRemoveSubjectFromDay={controller.removeSubjectFromDay}
             />
           </motion.section>
-
-          <motion.div
-            initial={false}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: '-60px' }}
-            transition={{ duration: 0.7, ease: easeOut }}
-            className="border-hairline border-t pt-8"
-          >
-            <SettingsSaveAction
-              isSaving={controller.isSaving}
-              onSave={() => controller.handleSave()}
-            />
-          </motion.div>
         </div>
+
+        <SettingsSaveStatus
+          status={controller.saveStatus}
+          onRetry={controller.retrySave}
+        />
       </div>
 
       <AddSubjectModal

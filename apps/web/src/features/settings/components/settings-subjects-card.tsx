@@ -13,16 +13,8 @@ type SettingsSubjectsCardProps = {
   readonly onOpenSubjectModal: () => void;
   readonly onEditSubject: (id: string) => void;
   readonly onDeleteSubject: (id: string) => void;
-  readonly onAddTimetableSlot: (
-    day: DayOfWeek,
-    subjectId: string | null,
-  ) => void;
-  readonly onRemoveTimetableSlot: (day: DayOfWeek, slotId: string) => void;
-  readonly onUpdateTimetableSlot: (
-    day: DayOfWeek,
-    slotId: string,
-    subjectId: string | null,
-  ) => void;
+  readonly onAddSubjectToDay: (day: DayOfWeek, subjectId: string) => void;
+  readonly onRemoveSubjectFromDay: (day: DayOfWeek, subjectId: string) => void;
 };
 
 export const SettingsSubjectsCard = ({
@@ -31,9 +23,8 @@ export const SettingsSubjectsCard = ({
   onOpenSubjectModal,
   onEditSubject,
   onDeleteSubject,
-  onAddTimetableSlot,
-  onRemoveTimetableSlot,
-  onUpdateTimetableSlot,
+  onAddSubjectToDay,
+  onRemoveSubjectFromDay,
 }: SettingsSubjectsCardProps): React.ReactElement => (
   <Card>
     <CardHeader>
@@ -41,7 +32,7 @@ export const SettingsSubjectsCard = ({
         Subjects & timetable
       </h2>
       <p className="mt-0.5 text-[13px] text-graphite">
-        {`${settings.subjects.length} subject${settings.subjects.length === 1 ? '' : 's'} · ${configuredDaysCount} day${configuredDaysCount === 1 ? '' : 's'} configured`}
+        {`${settings.subjects.length} subject${settings.subjects.length === 1 ? '' : 's'} · ${configuredDaysCount} day${configuredDaysCount === 1 ? '' : 's'} with classes`}
       </p>
     </CardHeader>
 
@@ -74,15 +65,18 @@ export const SettingsSubjectsCard = ({
       <div className="rule" />
 
       <div>
-        <h3 className="serif mb-3 text-[16px] text-ink tracking-[-0.018em]">
+        <h3 className="serif mb-1 text-[16px] text-ink tracking-[-0.018em]">
           Weekly schedule
         </h3>
+        <p className="mb-4 text-[13px] text-graphite">
+          Pick which subjects you have on each day. Each becomes a row on the
+          printed sheet, in this order.
+        </p>
         <TimetableConfigPanel
           subjects={settings.subjects}
           timetable={settings.timetable}
-          onAddSlot={onAddTimetableSlot}
-          onRemoveSlot={onRemoveTimetableSlot}
-          onUpdateSlot={onUpdateTimetableSlot}
+          onAddSubjectToDay={onAddSubjectToDay}
+          onRemoveSubjectFromDay={onRemoveSubjectFromDay}
         />
       </div>
     </CardContent>

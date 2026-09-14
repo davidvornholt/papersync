@@ -1,44 +1,16 @@
 'use client';
 
-import { Effect } from 'effect';
 import { useState } from 'react';
-import { useToast } from '@/shared/components/use-toast';
 import { useSettings } from '@/shared/hooks/use-settings';
 import type { Subject } from '@/shared/settings/schema';
 import { getConfiguredDaysCount } from '../settings-screen-helpers';
 export const useSettingsScreenController = () => {
   const settingsApi = useSettings();
-  const { addToast } = useToast();
   const [isSubjectModalOpen, setIsSubjectModalOpen] = useState(false);
   const [editingSubject, setEditingSubject] = useState<Subject | null>(null);
-
-  const [isSaving, setIsSaving] = useState(false);
   const configuredDaysCount = getConfiguredDaysCount(
     settingsApi.settings.timetable,
   );
-
-  const handleSave = () => {
-    if (isSaving) {
-      return;
-    }
-    setIsSaving(true);
-    Effect.runFork(
-      settingsApi.save().pipe(
-        Effect.tap(() =>
-          Effect.sync(() =>
-            addToast(
-              'Timetable saved. AI settings saved in this browser.',
-              'success',
-            ),
-          ),
-        ),
-        Effect.catchAll((error) =>
-          Effect.sync(() => addToast(error.message, 'error')),
-        ),
-        Effect.ensuring(Effect.sync(() => setIsSaving(false))),
-      ),
-    );
-  };
 
   const handleOpenSubjectModal = (): void => {
     setEditingSubject(null);
@@ -61,24 +33,8 @@ export const useSettingsScreenController = () => {
     setEditingSubject(null);
   };
 
-  const handleDeleteSubject = (id: string): void => {
-    const subject = settingsApi.settings.subjects.find(
-      (entry) => entry.id === id,
-    );
-    settingsApi.removeSubject(id);
-    if (subject) {
-      addToast(`Deleted "${subject.name}"`, 'info');
-    }
-  };
-
-  const handleAddSubject = (name: string): void => {
-    settingsApi.addSubject(name);
-    addToast(`Added "${name}"`, 'success');
-  };
-
   const handleEditSubject = (id: string, name: string): void => {
     settingsApi.updateSubject(id, name);
-    addToast('Updated subject', 'success');
     setEditingSubject(null);
   };
 
@@ -86,14 +42,13 @@ export const useSettingsScreenController = () => {
     settings: settingsApi.settings,
     isLoading: settingsApi.isLoading,
     loadError: settingsApi.loadError,
+    saveStatus: settingsApi.saveStatus,
+    retrySave: settingsApi.retrySave,
     isSubjectModalOpen,
     editingSubject,
     configuredDaysCount,
-    addTimetableSlot: settingsApi.addTimetableSlot,
-    removeTimetableSlot: settingsApi.removeTimetableSlot,
-    updateTimetableSlot: settingsApi.updateTimetableSlot,
-    isSaving,
-    handleSave,
+    addSubjectToDay: settingsApi.addSubjectToDay,
+    removeSubjectFromDay: settingsApi.removeSubjectFromDay,
     handleAIProviderChange: (provider: 'google' | 'ollama'): void =>
       settingsApi.updateAI({ provider }),
     handleGoogleApiKeyChange: (googleApiKey: string): void =>
@@ -103,8 +58,8 @@ export const useSettingsScreenController = () => {
     handleOpenSubjectModal,
     handleOpenSubjectEditor,
     handleCloseSubjectModal,
-    handleDeleteSubject,
-    handleAddSubject,
+    handleDeleteSubject: settingsApi.removeSubject,
+    handleAddSubject: settingsApi.addSubject,
     handleEditSubject,
   };
 };

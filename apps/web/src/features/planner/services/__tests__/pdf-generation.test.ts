@@ -33,9 +33,7 @@ describe('planner PDF generation request handling', () => {
       JSON.stringify({
         weekId: '2026-W05',
         subjects: [{ id: 'math', name: 'Math' }],
-        timetable: [
-          { day: 'monday', slots: [{ id: 's1', subjectId: 'math' }] },
-        ],
+        timetable: [{ day: 'monday', subjectIds: ['math'] }],
       }),
     );
 
@@ -59,7 +57,7 @@ describe('planner PDF generation request handling', () => {
     const requestBody: GeneratePdfRequest = {
       weekId: '2026-W05' as WeekId,
       subjects: [{ id: 'math', name: 'Math' }],
-      timetable: [{ day: 'monday', slots: [{ id: 's1', subjectId: 'math' }] }],
+      timetable: [{ day: 'monday', subjectIds: ['math'] }],
     };
 
     const result = await Effect.runPromise(
@@ -70,7 +68,7 @@ describe('planner PDF generation request handling', () => {
 
   it('fails validation when subjects is missing', async () => {
     const requestBody = {
-      timetable: [{ day: 'monday', slots: [] }],
+      timetable: [{ day: 'monday', subjectIds: [] }],
     } as unknown as GeneratePdfRequest;
 
     const error = await Effect.runPromise(
@@ -113,10 +111,7 @@ describe('planner PDF generation request handling', () => {
         'friday',
       ].map((day) => ({
         day,
-        slots: subjects.map((subject) => ({
-          id: `${day}-${subject.id}`,
-          subjectId: subject.id,
-        })),
+        subjectIds: subjects.map((subject) => subject.id),
       }));
       const result = await Effect.runPromise(
         generatePlannerPdfBufferEffect(
@@ -149,24 +144,14 @@ it('prints full dates for cropped days, including weeks spanning New Year', () =
   ]);
 });
 
-it('omits free periods from homework rows and keeps subjects after the gap', () => {
+it('keeps the day order of subjects and skips ids without a subject', () => {
   const math = { id: 'math', name: 'Mathematics' };
   const arts = { id: 'arts', name: 'Arts' };
   expect(
     getSubjectsForDay(
       'monday',
-      [
-        {
-          day: 'monday',
-          slots: [
-            { id: '1', subjectId: 'math' },
-            { id: '2', subjectId: null },
-            { id: '3', subjectId: 'arts' },
-            { id: '4', subjectId: 'arts' },
-          ],
-        },
-      ],
+      [{ day: 'monday', subjectIds: ['arts', 'deleted', 'math'] }],
       [math, arts],
     ),
-  ).toEqual([math, arts]);
+  ).toEqual([arts, math]);
 });

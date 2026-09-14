@@ -1,13 +1,8 @@
 import type { Subject, WeekId } from '@/shared/types/schemas';
 
-type TimetableSlot = {
-  readonly id: string;
-  readonly subjectId: string | null;
-};
-
 export type TimetableDay = {
   readonly day: 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday';
-  readonly slots: ReadonlyArray<TimetableSlot>;
+  readonly subjectIds: ReadonlyArray<string>;
 };
 
 export type PlannerProps = {

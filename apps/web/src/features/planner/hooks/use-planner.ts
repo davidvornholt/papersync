@@ -6,14 +6,9 @@ import { getWeekDateRange, getWeekId } from '@/shared/planner/week';
 import type { Subject, WeekId } from '@/shared/types/schemas';
 import { downloadPlannerPdf } from '../services/generator';
 
-type TimetableSlot = {
-  readonly id: string;
-  readonly subjectId: string | null;
-};
-
 type TimetableDay = {
-  readonly day: 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday';
-  readonly slots: ReadonlyArray<TimetableSlot>;
+  readonly day: string;
+  readonly subjectIds: ReadonlyArray<string>;
 };
 
 export type PlannerState =

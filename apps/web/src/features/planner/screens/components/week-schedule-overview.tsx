@@ -27,11 +27,8 @@ export const WeekScheduleOverview = ({
   subjects,
   onEditException,
 }: WeekScheduleOverviewProps): React.ReactElement => {
-  const getSubjectName = (subjectId: string | null): string =>
-    subjectId === null
-      ? 'Free period'
-      : (subjects.find((subject) => subject.id === subjectId)?.name ??
-        'Unknown');
+  const getSubjectName = (subjectId: string): string =>
+    subjects.find((subject) => subject.id === subjectId)?.name ?? 'Unknown';
 
   return (
     <ul className="-mx-1">
@@ -46,9 +43,9 @@ export const WeekScheduleOverview = ({
         const exceptionAction = hasException
           ? { text: 'Edit', label: 'Edit exception' }
           : { text: 'Exception', label: 'Exception' };
-        const slots = hasException
-          ? exception.slots
-          : (daySchedule?.slots ?? []);
+        const subjectIds = hasException
+          ? exception.subjectIds
+          : (daySchedule?.subjectIds ?? []);
         const dateStr = dayDate.toLocaleDateString('en-US', {
           month: 'short',
           day: 'numeric',
@@ -81,18 +78,18 @@ export const WeekScheduleOverview = ({
               </div>
 
               <div className="min-w-0">
-                {slots.length === 0 ? (
+                {subjectIds.length === 0 ? (
                   <span className="serif-italic text-[13px] text-graphite">
                     No classes
                   </span>
                 ) : (
                   <div className="flex flex-wrap gap-1">
-                    {slots.map((slot, slotIndex) => (
+                    {subjectIds.map((subjectId) => (
                       <span
-                        key={slot.id}
+                        key={subjectId}
                         className="border border-hairline bg-paper-deep px-2 py-0.5 text-[12px] text-ink"
                       >
-                        {slotIndex + 1}. {getSubjectName(slot.subjectId)}
+                        {getSubjectName(subjectId)}
                       </span>
                     ))}
                   </div>

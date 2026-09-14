@@ -1,11 +1,7 @@
 'use client';
 
-import { Button } from '@papersync/ui/button';
-import { Select } from '@papersync/ui/select';
-import { Trash2 } from 'lucide-react';
-import { AnimatePresence, motion } from 'motion/react';
 import { useState } from 'react';
-import { IconButton } from '@/shared/components/icon-button';
+import { SubjectPicker } from '@/shared/components/subject-picker';
 import {
   DAYS_OF_WEEK,
   type DayOfWeek,
@@ -40,24 +36,19 @@ const WEEKDAY_KEYS = DAYS_OF_WEEK.filter(
 type TimetableConfigPanelProps = {
   readonly subjects: ReadonlyArray<Subject>;
   readonly timetable: ReadonlyArray<TimetableDay>;
-  readonly onAddSlot: (day: DayOfWeek, subjectId: string | null) => void;
-  readonly onRemoveSlot: (day: DayOfWeek, slotId: string) => void;
-  readonly onUpdateSlot: (
-    day: DayOfWeek,
-    slotId: string,
-    subjectId: string | null,
-  ) => void;
+  readonly onAddSubjectToDay: (day: DayOfWeek, subjectId: string) => void;
+  readonly onRemoveSubjectFromDay: (day: DayOfWeek, subjectId: string) => void;
 };
 
 export const TimetableConfigPanel = ({
   subjects,
   timetable,
-  onAddSlot,
-  onRemoveSlot,
-  onUpdateSlot,
+  onAddSubjectToDay,
+  onRemoveSubjectFromDay,
 }: TimetableConfigPanelProps): React.ReactElement => {
   const [activeDay, setActiveDay] = useState<DayOfWeek>('monday');
-  const activeSchedule = timetable.find((day) => day.day === activeDay);
+  const selectedIds =
+    timetable.find((day) => day.day === activeDay)?.subjectIds ?? [];
 
   return (
     <div className="flex flex-col gap-5 md:flex-row md:gap-6">
@@ -68,6 +59,9 @@ export const TimetableConfigPanel = ({
       >
         {WEEKDAY_KEYS.map((day) => {
           const isActive = activeDay === day;
+          const count =
+            timetable.find((entry) => entry.day === day)?.subjectIds.length ??
+            0;
           return (
             <button
               key={day}
@@ -75,7 +69,7 @@ export const TimetableConfigPanel = ({
               role="tab"
               aria-selected={isActive}
               onClick={() => setActiveDay(day)}
-              className={`mono relative flex-1 cursor-pointer touch-manipulation px-3 py-2 text-center text-[11px] uppercase tracking-[0.18em] transition-colors duration-200 md:flex-none md:text-left ${
+              className={`mono relative flex flex-1 cursor-pointer touch-manipulation items-baseline justify-center gap-2 px-3 py-2 text-[11px] uppercase tracking-[0.18em] transition-colors duration-200 md:flex-none md:justify-start md:text-left ${
                 isActive
                   ? 'text-ink'
                   : 'text-graphite hover:text-ink focus-visible:text-ink'
@@ -88,73 +82,37 @@ export const TimetableConfigPanel = ({
                 />
               ) : null}
               {DAY_SHORT_LABELS[day]}
+              {count > 0 ? (
+                <span aria-hidden={true} className="text-[10px] text-graphite">
+                  {count}
+                </span>
+              ) : null}
             </button>
           );
         })}
       </div>
 
       <div className="min-w-0 flex-1">
-        <div className="mb-3 flex items-baseline justify-between">
-          <h4 className="serif text-[18px] text-ink tracking-[-0.022em]">
-            {DAY_LABELS[activeDay]}
-          </h4>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() =>
-              subjects.length > 0 && onAddSlot(activeDay, subjects[0].id)
-            }
-            disabled={subjects.length === 0}
-          >
-            Add class
-          </Button>
-        </div>
-
-        {!activeSchedule || activeSchedule.slots.length === 0 ? (
+        <h4 className="serif mb-3 text-[18px] text-ink tracking-[-0.022em]">
+          {DAY_LABELS[activeDay]}
+        </h4>
+        {subjects.length === 0 ? (
           <div className="border border-hairline-strong border-dashed py-6 text-center text-graphite">
             <p className="serif-italic text-[14px]">
-              No classes on {DAY_LABELS[activeDay]}
+              Add a subject first, then place it on a day.
             </p>
           </div>
         ) : (
-          <ul className="-mx-1">
-            <AnimatePresence>
-              {activeSchedule.slots.map((slot, index) => (
-                <motion.li
-                  key={slot.id}
-                  initial={false}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, x: -10 }}
-                  className="flex items-center gap-3 border-hairline border-b px-1 py-2 last:border-b-0"
-                >
-                  <span className="mono w-6 text-right text-[11px] text-graphite">
-                    {String(index + 1).padStart(2, '0')}
-                  </span>
-                  <Select
-                    aria-label={`${DAY_LABELS[activeDay]} class ${index + 1}`}
-                    value={slot.subjectId ?? ''}
-                    onChange={(e) =>
-                      onUpdateSlot(activeDay, slot.id, e.target.value || null)
-                    }
-                    className="flex-1 cursor-pointer border-0 border-hairline-strong border-b bg-transparent px-0 py-2 text-[14px] text-ink focus:border-ink focus:outline-none"
-                  >
-                    <option value="">Free period</option>
-                    {subjects.map((subject) => (
-                      <option key={subject.id} value={subject.id}>
-                        {subject.name}
-                      </option>
-                    ))}
-                  </Select>
-                  <IconButton
-                    label={`Remove ${DAY_LABELS[activeDay]} class ${index + 1}`}
-                    onClick={() => onRemoveSlot(activeDay, slot.id)}
-                  >
-                    <Trash2 size={16} aria-hidden={true} />
-                  </IconButton>
-                </motion.li>
-              ))}
-            </AnimatePresence>
-          </ul>
+          <SubjectPicker
+            scope={DAY_LABELS[activeDay]}
+            subjects={subjects}
+            selectedIds={selectedIds}
+            onAdd={(subjectId) => onAddSubjectToDay(activeDay, subjectId)}
+            onRemove={(subjectId) =>
+              onRemoveSubjectFromDay(activeDay, subjectId)
+            }
+            emptyLabel={`No classes on ${DAY_LABELS[activeDay]}`}
+          />
         )}
       </div>
     </div>

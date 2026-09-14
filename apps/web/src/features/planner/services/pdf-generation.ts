@@ -9,14 +9,9 @@ import { getWeekDateRange, getWeekId } from '@/shared/planner/week';
 import type { Subject, WeekId } from '@/shared/types/schemas';
 import { PlannerDocument } from '../components/planner-document';
 
-type TimetableSlot = {
-  readonly id: string;
-  readonly subjectId: string | null;
-};
-
 type TimetableDay = {
   readonly day: 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday';
-  readonly slots: ReadonlyArray<TimetableSlot>;
+  readonly subjectIds: ReadonlyArray<string>;
 };
 
 export type GeneratePdfRequest = {

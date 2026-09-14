@@ -10,7 +10,7 @@ import { PlannerConfigColumn } from './components/planner-config-column';
 import { PreviewPanel } from './components/preview-panel';
 import { WeekSelectionModal } from './components/week-selection-modal';
 import {
-  getDefaultSlotsForDay,
+  getDefaultSubjectIdsForDay,
   getExceptionForDate,
   getPreviewState,
 } from './planner-screen-helpers';
@@ -165,7 +165,7 @@ export const PlannerScreen = (): React.ReactElement => {
           date={exceptionEditingDate.date}
           dayOfWeek={exceptionEditingDate.dayOfWeek}
           subjects={settings.subjects}
-          defaultSlots={getDefaultSlotsForDay(
+          defaultSubjectIds={getDefaultSubjectIdsForDay(
             settings.timetable,
             exceptionEditingDate.dayOfWeek,
           )}

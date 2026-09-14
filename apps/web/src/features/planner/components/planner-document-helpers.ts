@@ -35,26 +35,10 @@ export const getSubjectsForDay = (
   subjects: ReadonlyArray<Subject>,
 ): ReadonlyArray<Subject> => {
   const daySchedule = timetable.find((t) => t.day === dayKey);
-  if (!daySchedule || daySchedule.slots.length === 0) {
-    return [];
-  }
-
-  const seenIds = new Set<string>();
-  const result: Array<Subject> = [];
-
-  for (const slot of daySchedule.slots) {
-    if (slot.subjectId !== null && !seenIds.has(slot.subjectId)) {
-      const subject = subjects.find(
-        (candidate) => candidate.id === slot.subjectId,
-      );
-      if (subject) {
-        seenIds.add(slot.subjectId);
-        result.push(subject);
-      }
-    }
-  }
-
-  return result;
+  return (daySchedule?.subjectIds ?? []).flatMap((subjectId) => {
+    const subject = subjects.find((candidate) => candidate.id === subjectId);
+    return subject ? [subject] : [];
+  });
 };
 
 type PageDays = ReadonlyArray<{
