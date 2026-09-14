@@ -73,7 +73,7 @@ describe('planner sheet layout', () => {
         for (const day of page) {
           expect(day.linesPerSubject).toBeGreaterThanOrEqual(1);
           expect(day.linesPerSubject * sheet.lineHeight).toBeLessThanOrEqual(
-            day.subjectHeight + tolerance,
+            day.cellHeight + tolerance,
           );
         }
       }
@@ -89,12 +89,22 @@ describe('planner sheet layout', () => {
     expect(backFull).toBe((frontFull ?? 0) + 1);
   });
 
-  it('keeps one block of space for a day without classes', () => {
+  it('gives every cell on a side the same height and fills the side', () => {
+    const sheet = layoutFor(unevenWeek);
+    for (const page of sheet.pages) {
+      const cellHeights = new Set(page.map((day) => day.cellHeight));
+      expect(cellHeights.size).toBe(1);
+      const used = page.reduce((sum, day) => sum + day.height, 0);
+      expect(used).toBeCloseTo(LAYOUT.contentHeight);
+    }
+  });
+
+  it('keeps one cell for a day without classes', () => {
     const sheet = layoutFor(unevenWeek);
     const wednesday = sheet.pages[0]?.at(-1);
     expect(wednesday?.subjects).toHaveLength(0);
     expect(wednesday?.height).toBeCloseTo(
-      LAYOUT.dayHeaderHeight + LAYOUT.dayGap + (wednesday?.subjectHeight ?? 0),
+      LAYOUT.dayHeaderHeight + LAYOUT.dayGap + (wednesday?.cellHeight ?? 0),
     );
   });
 });

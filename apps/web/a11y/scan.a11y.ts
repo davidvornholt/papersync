@@ -121,10 +121,7 @@ test('a sheet uses OCR for its week and only asks for unreadable weeks', async (
   const approve = page.getByRole('button', { name: 'Approve and save' });
   await expect(approve).toBeEnabled();
   await expect(page.getByLabel('Entry type')).toHaveCount(0);
-  const completed = page.getByLabel('Completed on paper');
-  await completed.focus();
-  await page.keyboard.press('Space');
-  await expect(completed).toBeChecked();
+  await expect(page.getByLabel('Completed on paper')).toHaveCount(0);
   expect(await scanWcag22AaViolations(page)).toEqual([]);
 
   await page.getByRole('button', { name: 'Change image' }).click();
@@ -143,7 +140,6 @@ test('a sheet uses OCR for its week and only asks for unreadable weeks', async (
   const requestsBeforeCorrection = modelRequests;
   const homework = page.getByLabel('Task');
   await homework.fill('Exercises 1–4, corrected');
-  await completed.check();
   await page.getByLabel('Due date').fill('2026-01-06');
   const weekInput = page.getByLabel('Week printed on the sheet');
   await expect(weekInput).toBeVisible();
@@ -183,7 +179,6 @@ test('a sheet uses OCR for its week and only asks for unreadable weeks', async (
     .click();
   await expect(approve).toBeEnabled();
   await expect(homework).toHaveValue('Exercises 1–4, corrected');
-  await expect(completed).toBeChecked();
   await expect(page.getByLabel('Due date')).toHaveValue('2026-01-06');
   expect(modelRequests).toBe(requestsBeforeCorrection);
   expect(await scanWcag22AaViolations(page)).toEqual([]);
@@ -205,11 +200,10 @@ test('rescans collapse saved homework and allow deliberate corrections without l
     mimeType: 'image/png',
     buffer: Buffer.from(imageData, 'base64'),
   });
-  const oldEntry = { ...entry, isCompleted: false, action: 'skip' };
+  const oldEntry = { ...entry, action: 'skip' };
   const newEntry = {
     ...entry,
     content: 'An additional assignment',
-    isCompleted: false,
     action: 'add',
   };
   let entries = [oldEntry, newEntry];
@@ -291,7 +285,6 @@ test('review retains informational entries and only excludes entries explicitly 
             entries: recognizedContents.map((content) => ({
               ...entry,
               content,
-              isCompleted: false,
               action: 'add',
             })),
           },

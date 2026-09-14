@@ -31,9 +31,7 @@ export const reconcileHomework = (data: OCRResponse) =>
         if (!previous) {
           return entry;
         }
-        const unchanged =
-          previous.isCompleted === entry.isCompleted &&
-          previous.dueDate === entry.dueDate;
+        const unchanged = previous.dueDate === entry.dueDate;
         return {
           ...entry,
           // Identity already ignores whitespace; retain the reviewed wording.

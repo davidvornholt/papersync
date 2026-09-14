@@ -12,7 +12,9 @@ export const DayRow = ({
   dayData,
   lineHeight,
 }: DayRowProps): React.ReactElement => {
-  const { day, subjects, height, subjectHeight, linesPerSubject } = dayData;
+  const { day, subjects, height, cellHeight, linesPerSubject } = dayData;
+  // The cell's own bottom rule is the last ruled line.
+  const interiorLines = linesPerSubject - 1;
   return (
     <View style={[styles.dayRow, { height }]} wrap={false}>
       <View style={styles.dayHeader}>
@@ -23,13 +25,13 @@ export const DayRow = ({
         subjects.map((subject) => (
           <View
             key={subject.id}
-            style={[styles.subjectSection, { height: subjectHeight }]}
+            style={[styles.subjectCell, { height: cellHeight }]}
           >
-            <View style={[styles.subjectLabel, { height: lineHeight }]}>
+            <View style={styles.subjectLabel}>
               <Text style={styles.subjectLabelText}>{subject.name}</Text>
             </View>
-            <View style={styles.writingArea}>
-              {generateLineKeys(subject.id, linesPerSubject).map((key) => (
+            <View style={[styles.writingArea, { paddingBottom: lineHeight }]}>
+              {generateLineKeys(subject.id, interiorLines).map((key) => (
                 <View
                   key={key}
                   style={[styles.writingLine, { height: lineHeight }]}
@@ -39,7 +41,12 @@ export const DayRow = ({
           </View>
         ))
       ) : (
-        <Text style={styles.emptyDayText}>No classes</Text>
+        <View style={[styles.subjectCell, { height: cellHeight }]}>
+          <View style={styles.subjectLabel}>
+            <Text style={styles.subjectLabelText}>No classes</Text>
+          </View>
+          <View style={styles.writingArea} />
+        </View>
       )}
     </View>
   );

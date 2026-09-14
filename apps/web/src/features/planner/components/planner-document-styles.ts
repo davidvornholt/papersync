@@ -61,21 +61,26 @@ export const styles = StyleSheet.create({
     color: colors.graphite,
     paddingBottom: 1,
   },
-  subjectSection: { flexDirection: 'row', flexShrink: 0 },
+  subjectCell: {
+    flexDirection: 'row',
+    flexShrink: 0,
+    borderBottomWidth: 0.5,
+    borderBottomColor: colors.hairlineStrong,
+  },
   subjectLabel: {
     width: LAYOUT.labelWidth,
     paddingRight: LAYOUT.labelGap,
-    paddingBottom: 1.5,
-    justifyContent: 'flex-end',
+    justifyContent: 'center',
   },
-  // Two wrapped label lines must fit inside one 8 mm ruled line.
+  // Two wrapped label lines must fit inside one 8 mm cell.
   subjectLabelText: {
     fontSize: 9,
     lineHeight: 1.1,
-    color: colors.graphite,
+    color: colors.ink,
   },
   writingArea: {
     flex: 1,
+    justifyContent: 'flex-end',
     borderLeftWidth: 0.5,
     borderLeftColor: colors.hairlineStrong,
   },
@@ -84,7 +89,6 @@ export const styles = StyleSheet.create({
     borderBottomColor: colors.hairline,
     flexShrink: 0,
   },
-  emptyDayText: { paddingTop: 8, fontSize: 9, color: colors.graphite },
   footer: {
     height: LAYOUT.footerHeight,
     flexDirection: 'row',

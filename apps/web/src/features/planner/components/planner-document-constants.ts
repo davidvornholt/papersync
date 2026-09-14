@@ -4,8 +4,8 @@ import type { TimetableDay } from './planner-document-types';
 export const colors = {
   ink: '#000000',
   graphite: '#444444',
-  hairlineStrong: '#999999',
-  hairline: '#BBBBBB',
+  hairlineStrong: '#8A8A8A',
+  hairline: '#C8C8C8',
   paper: '#FFFFFF',
 } as const;
 
@@ -81,7 +81,6 @@ export const LAYOUT = {
   dayGap: 12,
   labelWidth: 100,
   labelGap: 10,
-  subjectGap: 6,
   minLineHeight: minLinePitchMillimetres * pointsPerMillimetre,
   maxLineHeight: maxLinePitchMillimetres * pointsPerMillimetre,
 } as const;

@@ -25,7 +25,6 @@ const toHomework = (
       day: entry.day,
       subject: entry.subject,
       content: entry.content.trim(),
-      isCompleted: entry.isCompleted,
       ...(entry.dueDate ? { dueDate: entry.dueDate } : {}),
     });
   });
@@ -48,7 +47,6 @@ export const enqueueHomework = (
           day: Schema.String,
           subject: Schema.String,
           content: Schema.String,
-          isCompleted: Schema.Boolean,
           dueDate: Schema.optional(Schema.String),
         }),
       ),

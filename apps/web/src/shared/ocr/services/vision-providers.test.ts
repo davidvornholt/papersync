@@ -39,7 +39,7 @@ it('validates Google output, defaults completion, and normalizes the written day
   };
   expect(body.generationConfig.thinkingConfig.thinkingLevel).toBe('high');
   expect(result.data.entries).toEqual([
-    { ...entry, day: 'Monday', isCompleted: false, action: 'add' },
+    { ...entry, day: 'Monday', action: 'add' },
   ]);
 });
 it.each([
@@ -97,7 +97,6 @@ it('sends Ollama the OCR schema and rejects malformed model output', async () =>
     {
       ...entry,
       day: 'Monday',
-      isCompleted: false,
       action: 'add',
       dueDate: undefined,
     },
@@ -109,7 +108,7 @@ it('sends Ollama the OCR schema and rejects malformed model output', async () =>
   };
   expect(payload.format).toEqual(OCRResponseJsonSchema);
   expect(payload.prompt).toContain('Use these exact camelCase key names');
-  expect(payload.prompt).toContain('isCompleted (optional)');
+  expect(payload.prompt).not.toContain('isCompleted');
   expect(payload.prompt).toContain('dueDate (required)');
   expect(payload.prompt).toContain('YYYY-MM-DD date or null');
   expect(payload.prompt).toContain(

@@ -31,7 +31,7 @@ export type DayData = {
   readonly day: DayInfo;
   readonly subjects: ReadonlyArray<Subject>;
   readonly height: number;
-  readonly subjectHeight: number;
+  readonly cellHeight: number;
   readonly linesPerSubject: number;
 };
 

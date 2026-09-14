@@ -84,7 +84,6 @@ export const ResultsPanelComplete = ({
                 <li key={entry.id} className="border border-hairline p-3">
                   <p className="text-graphite text-sm">
                     {entry.day} · {entry.subject}
-                    {entry.isCompleted ? ' · Completed on paper' : ''}
                     {entry.dueDate ? ` · Due ${entry.dueDate}` : ''}
                   </p>
                   <p className="mt-1">{entry.content}</p>

@@ -4,7 +4,6 @@ export type ExtractedEntry = {
   readonly day: string;
   readonly subject: string;
   readonly content: string;
-  readonly isCompleted: boolean;
   readonly action: TaskAction;
   readonly dueDate?: string;
 };

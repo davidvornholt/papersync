@@ -64,26 +64,24 @@ type PageDays = ReadonlyArray<{
 
 const dayOverhead = LAYOUT.dayHeaderHeight + LAYOUT.dayGap;
 
-// A day without classes keeps one block of space so its heading is not orphaned.
-const dayWeight = (subjects: ReadonlyArray<Subject>): number =>
+// A day without classes keeps one cell so its heading is not orphaned.
+const cellCount = (subjects: ReadonlyArray<Subject>): number =>
   Math.max(1, subjects.length);
 
-const subjectHeightForPage = (page: PageDays): number => {
-  const totalWeight = page.reduce(
-    (sum, item) => sum + dayWeight(item.subjects),
-    0,
-  );
-  const writingHeight = LAYOUT.contentHeight - page.length * dayOverhead;
-  return writingHeight / totalWeight;
-};
-
-const linesFor = (subjectHeight: number, lineHeight: number): number =>
-  Math.max(1, Math.floor((subjectHeight - LAYOUT.subjectGap) / lineHeight));
-
 type PageMetrics = {
-  readonly subjectHeight: number;
-  readonly subjectCount: number;
+  /** Space available per subject cell if the side were filled exactly. */
+  readonly cellBudget: number;
+  readonly cells: number;
 };
+
+const measurePage = (page: PageDays): PageMetrics => {
+  const cells = page.reduce((sum, item) => sum + cellCount(item.subjects), 0);
+  const writingHeight = LAYOUT.contentHeight - page.length * dayOverhead;
+  return { cellBudget: writingHeight / cells, cells };
+};
+
+const linesFor = (cellBudget: number, lineHeight: number): number =>
+  Math.max(1, Math.floor(cellBudget / lineHeight));
 
 // Below this difference in unruled points, prefer the taller pitch.
 const wasteTolerance = 0.5;
@@ -91,29 +89,26 @@ const wasteTolerance = 0.5;
 /**
  * Picks one ruling pitch for the whole sheet. Every pitch that fills some
  * side exactly is a candidate; the one leaving the least unruled space across
- * both sides wins. When even one 8 mm line per subject does not fit on the
- * most crowded side, the gap between subjects goes first and the pitch last.
+ * both sides wins. When even one 8 mm line per cell does not fit on the most
+ * crowded side, the pitch shrinks to fit.
  */
 const sheetLineHeight = (pages: ReadonlyArray<PageMetrics>): number => {
-  const minSubjectHeight = Math.min(...pages.map((p) => p.subjectHeight));
-  const minWritable = minSubjectHeight - LAYOUT.subjectGap;
-  if (minWritable < LAYOUT.minLineHeight) {
-    return Math.max(1, Math.min(LAYOUT.minLineHeight, minSubjectHeight));
+  const minBudget = Math.min(...pages.map((page) => page.cellBudget));
+  if (minBudget < LAYOUT.minLineHeight) {
+    return Math.max(1, minBudget);
   }
 
-  const candidates = pages.flatMap(({ subjectHeight }) => {
-    const writable = subjectHeight - LAYOUT.subjectGap;
-    const maxLines = Math.floor(writable / LAYOUT.minLineHeight);
+  const candidates = pages.flatMap(({ cellBudget }) => {
+    const maxLines = Math.floor(cellBudget / LAYOUT.minLineHeight);
     return Array.from({ length: maxLines }, (_, index) =>
-      Math.min(LAYOUT.maxLineHeight, writable / (index + 1)),
-    ).filter((lineHeight) => lineHeight <= minWritable);
+      Math.min(LAYOUT.maxLineHeight, cellBudget / (index + 1)),
+    ).filter((lineHeight) => lineHeight <= minBudget);
   });
   const waste = (lineHeight: number): number =>
     pages.reduce(
-      (sum, { subjectHeight, subjectCount }) =>
+      (sum, { cellBudget, cells }) =>
         sum +
-        (subjectHeight - linesFor(subjectHeight, lineHeight) * lineHeight) *
-          subjectCount,
+        (cellBudget - linesFor(cellBudget, lineHeight) * lineHeight) * cells,
       0,
     );
 
@@ -127,9 +122,10 @@ const sheetLineHeight = (pages: ReadonlyArray<PageMetrics>): number => {
 };
 
 /**
- * Lays out both sides of the sheet with a single ruling pitch. The less
- * crowded side gets more lines per subject rather than taller lines, and any
- * remainder becomes space after each block.
+ * Lays out both sides of the sheet with a single ruling pitch. Every subject
+ * cell on a side has the same height and the same whole number of lines; the
+ * less crowded side gets more lines per cell rather than taller lines. Lines
+ * sit at the bottom of the cell, so any excess widens the first writing zone.
  */
 export const calculateSheetLayout = (
   pages: ReadonlyArray<ReadonlyArray<DayInfo>>,
@@ -142,23 +138,20 @@ export const calculateSheetLayout = (
       subjects: getSubjectsForDay(day.dayKey, timetable, subjects),
     })),
   );
-  const metrics: ReadonlyArray<PageMetrics> = pageDays.map((page) => ({
-    subjectHeight: subjectHeightForPage(page),
-    subjectCount: page.reduce((sum, item) => sum + item.subjects.length, 0),
-  }));
+  const metrics = pageDays.map(measurePage);
   const lineHeight = sheetLineHeight(metrics);
 
   return {
     lineHeight,
     pages: pageDays.map((page, pageIndex) => {
-      const { subjectHeight } = metrics[pageIndex];
-      const linesPerSubject = linesFor(subjectHeight, lineHeight);
+      const { cellBudget: cellHeight } = metrics[pageIndex];
+      const linesPerSubject = linesFor(cellHeight, lineHeight);
       return page.map(
         (item): DayData => ({
           day: item.day,
           subjects: item.subjects,
-          height: dayOverhead + dayWeight(item.subjects) * subjectHeight,
-          subjectHeight,
+          height: dayOverhead + cellCount(item.subjects) * cellHeight,
+          cellHeight,
           linesPerSubject,
         }),
       );
