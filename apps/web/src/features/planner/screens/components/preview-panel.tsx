@@ -2,8 +2,10 @@
 
 import { Button } from '@papersync/ui/button';
 import { Card, CardContent, CardHeader } from '@papersync/ui/card';
-import { AnimatePresence, motion } from 'motion/react';
+import { AnimatePresence } from 'motion/react';
+import { StateView } from '@/shared/components/motion-layout';
 import { Spinner } from '@/shared/components/motion-loading';
+import { SuccessCheck } from '@/shared/components/success-check';
 import type { PreviewPanelState } from '../planner-screen-types';
 
 type PreviewPanelProps = {
@@ -49,13 +51,7 @@ export const PreviewPanel = ({
 );
 
 const PreviewGeneratingState = (): React.ReactElement => (
-  <motion.div
-    key="generating"
-    initial={false}
-    animate={{ opacity: 1 }}
-    exit={{ opacity: 0 }}
-    className="space-y-4 text-center"
-  >
+  <StateView key="generating" className="space-y-4 text-center">
     <div className="mx-auto flex size-16 items-center justify-center">
       <Spinner size="lg" />
     </div>
@@ -65,7 +61,7 @@ const PreviewGeneratingState = (): React.ReactElement => (
         Setting your weekly planner
       </p>
     </div>
-  </motion.div>
+  </StateView>
 );
 
 type PreviewGeneratedStateProps = {
@@ -79,29 +75,11 @@ const PreviewGeneratedState = ({
   onDownload,
   onOpen,
 }: PreviewGeneratedStateProps): React.ReactElement => (
-  <motion.div
+  <StateView
     key="generated"
-    initial={false}
-    animate={{ opacity: 1, scale: 1 }}
-    exit={{ opacity: 0 }}
     className="mx-auto w-full max-w-xs space-y-6 text-center"
   >
-    <div className="mx-auto flex size-16 items-center justify-center rounded-full bg-accent-soft">
-      <svg
-        className="size-8 text-accent"
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke="currentColor"
-      >
-        <title>Success</title>
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={1.6}
-          d="M5 13l4 4L19 7"
-        />
-      </svg>
-    </div>
+    <SuccessCheck className="mx-auto size-16" title="Success" />
     <div>
       <p className="serif text-[22px] text-ink tracking-[-0.022em]">
         PDF generated
@@ -124,17 +102,11 @@ const PreviewGeneratedState = ({
         Download
       </Button>
     </div>
-  </motion.div>
+  </StateView>
 );
 
 const PreviewConfigureState = (): React.ReactElement => (
-  <motion.div
-    key="configure"
-    initial={false}
-    animate={{ opacity: 1 }}
-    exit={{ opacity: 0 }}
-    className="text-center"
-  >
+  <StateView key="configure" className="text-center">
     <div className="mx-auto mb-4 flex h-56 w-40 items-center justify-center border border-hairline-strong border-dashed transition-colors hover:border-accent/60 sm:h-64 sm:w-48">
       <svg
         className="size-10 text-graphite sm:size-12"
@@ -154,7 +126,7 @@ const PreviewConfigureState = (): React.ReactElement => (
     <p className="text-[13px] text-graphite">
       Review the schedule, then generate your PDF
     </p>
-  </motion.div>
+  </StateView>
 );
 
 const PreviewErrorState = ({
@@ -162,13 +134,7 @@ const PreviewErrorState = ({
 }: {
   readonly errorMessage: string;
 }): React.ReactElement => (
-  <motion.div
-    key="error"
-    initial={false}
-    animate={{ opacity: 1 }}
-    exit={{ opacity: 0 }}
-    className="mx-auto max-w-xs space-y-4 text-center"
-  >
+  <StateView key="error" className="mx-auto max-w-xs space-y-4 text-center">
     <div className="mx-auto flex size-14 items-center justify-center rounded-full bg-accent-soft/60">
       <svg
         className="size-7 text-accent"
@@ -189,5 +155,5 @@ const PreviewErrorState = ({
       <p className="serif text-[18px] text-ink">Generation failed</p>
       <p className="mt-1 text-[13px] text-graphite">{errorMessage}</p>
     </div>
-  </motion.div>
+  </StateView>
 );

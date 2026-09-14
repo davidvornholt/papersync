@@ -1,7 +1,9 @@
 'use client';
 
+import { motion } from 'motion/react';
 import { useState } from 'react';
 import { SubjectPicker } from '@/shared/components/subject-picker';
+import { indicator } from '@/shared/motion/presets';
 import {
   DAYS_OF_WEEK,
   type DayOfWeek,
@@ -76,7 +78,9 @@ export const TimetableConfigPanel = ({
               }`}
             >
               {isActive ? (
-                <span
+                <motion.span
+                  layoutId="timetable-day-indicator"
+                  transition={indicator}
                   aria-hidden={true}
                   className="absolute inset-x-2 bottom-0 h-[2px] bg-accent md:inset-y-0 md:left-0 md:h-auto md:w-[2px]"
                 />

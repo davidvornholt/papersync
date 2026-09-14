@@ -218,3 +218,49 @@
     display: none;
   }
 }
+
+/* Dialogs scale up on open and settle back on close. `display` and `overlay`
+   transition discretely so the closing frame still renders. */
+.paper-dialog {
+  opacity: 0;
+  transform: scale(0.96);
+  transition:
+    opacity var(--transition-close),
+    transform var(--transition-close),
+    overlay var(--transition-close) allow-discrete,
+    display var(--transition-close) allow-discrete;
+}
+.paper-dialog[open] {
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity var(--transition-open),
+    transform var(--transition-open),
+    overlay var(--transition-open) allow-discrete,
+    display var(--transition-open) allow-discrete;
+}
+@starting-style {
+  .paper-dialog[open] {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}
+.paper-dialog::backdrop {
+  background: transparent;
+  transition:
+    background var(--transition-close),
+    overlay var(--transition-close) allow-discrete,
+    display var(--transition-close) allow-discrete;
+}
+.paper-dialog[open]::backdrop {
+  background: oklch(0.19 0.012 60 / 0.4);
+  transition:
+    background var(--transition-open),
+    overlay var(--transition-open) allow-discrete,
+    display var(--transition-open) allow-discrete;
+}
+@starting-style {
+  .paper-dialog[open]::backdrop {
+    background: transparent;
+  }
+}

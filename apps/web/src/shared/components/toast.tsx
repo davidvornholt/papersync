@@ -2,13 +2,12 @@
 
 import { AnimatePresence, motion } from 'motion/react';
 import type { ReactNode } from 'react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
+import { presence, toast as toastMotion } from '@/shared/motion/presets';
 import { type Toast, ToastContext, type ToastType } from './use-toast';
 
 const identifierRadix = 36;
-const percentageScale = 100;
-const toastDurationMilliseconds = 4000;
-const progressIntervalMilliseconds = 50;
+const millisecondsPerSecond = 1000;
 type ToastProviderProps = {
   readonly children: ReactNode;
 };
@@ -83,60 +82,38 @@ const toastIcons: Record<ToastType, string> = {
 const ToastItem = ({
   toast,
   onDismiss,
-}: ToastItemProps): React.ReactElement => {
-  const [progress, setProgress] = useState(percentageScale);
-
-  useEffect(() => {
-    if (!toast.duration) {
-      return;
-    }
-
-    const interval = setInterval(() => {
-      setProgress((prev) => {
-        const duration = toast.duration ?? toastDurationMilliseconds;
-        const next =
-          prev - percentageScale / (duration / progressIntervalMilliseconds);
-        return Math.max(next, 0);
-      });
-    }, progressIntervalMilliseconds);
-
-    return () => clearInterval(interval);
-  }, [toast.duration]);
-
-  return (
-    <motion.div
-      role={toast.type === 'error' ? 'alert' : 'status'}
-      layout={true}
-      initial={false}
-      animate={{ opacity: 1, x: 0, scale: 1 }}
-      exit={{ opacity: 0, x: 50, scale: 0.9 }}
-      transition={{ duration: 0.3, ease: 'easeOut' }}
-      className={`pointer-events-auto w-full overflow-hidden shadow-soft sm:min-w-[280px] sm:max-w-[400px] ${toastStyles[toast.type]}`}
-    >
-      <div className="flex items-center gap-3 px-4 py-3">
-        <span className="font-medium text-lg">{toastIcons[toast.type]}</span>
-        <p className="flex-1 font-medium text-inherit text-sm">
-          {toast.message}
-        </p>
-        <button
-          type="button"
-          onClick={() => onDismiss(toast.id)}
-          className="opacity-70 transition-opacity hover:opacity-100"
-          aria-label="Dismiss"
-        >
-          ✕
-        </button>
+}: ToastItemProps): React.ReactElement => (
+  <motion.div
+    role={toast.type === 'error' ? 'alert' : 'status'}
+    layout={true}
+    variants={toastMotion}
+    {...presence}
+    className={`pointer-events-auto w-full overflow-hidden shadow-soft sm:min-w-[280px] sm:max-w-[400px] ${toastStyles[toast.type]}`}
+  >
+    <div className="flex items-center gap-3 px-4 py-3">
+      <span className="font-medium text-lg">{toastIcons[toast.type]}</span>
+      <p className="flex-1 font-medium text-inherit text-sm">{toast.message}</p>
+      <button
+        type="button"
+        onClick={() => onDismiss(toast.id)}
+        className="opacity-70 transition-opacity hover:opacity-100"
+        aria-label="Dismiss"
+      >
+        ✕
+      </button>
+    </div>
+    {toast.duration && toast.duration > 0 ? (
+      <div className="h-px bg-paper/20">
+        <motion.div
+          className="h-full origin-left bg-paper/50"
+          initial={{ scaleX: 1 }}
+          animate={{ scaleX: 0 }}
+          transition={{
+            duration: toast.duration / millisecondsPerSecond,
+            ease: 'linear',
+          }}
+        />
       </div>
-      {toast.duration && toast.duration > 0 ? (
-        <div className="h-px bg-paper/20">
-          <motion.div
-            className="h-full bg-paper/50"
-            initial={false}
-            animate={{ width: `${progress}%` }}
-            transition={{ duration: 0.05, ease: 'linear' }}
-          />
-        </div>
-      ) : null}
-    </motion.div>
-  );
-};
+    ) : null}
+  </motion.div>
+);

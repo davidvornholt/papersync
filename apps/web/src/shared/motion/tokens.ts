@@ -67,9 +67,12 @@ export const scale = {
 
 const smallBlurPixels = 2;
 const mediumBlurPixels = 3;
+const largeBlurPixels = 8;
 
 export const blur = {
   small: `blur(${smallBlurPixels}px)`,
   medium: `blur(${mediumBlurPixels}px)`,
+  /** Success check entrance. */
+  large: `blur(${largeBlurPixels}px)`,
   none: 'blur(0px)',
 } as const;

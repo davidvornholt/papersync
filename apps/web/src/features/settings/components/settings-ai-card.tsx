@@ -1,8 +1,9 @@
 'use client';
 
 import { Card, CardContent, CardHeader } from '@papersync/ui/card';
-import { AnimatePresence, motion } from 'motion/react';
+import { AnimatePresence } from 'motion/react';
 import { useId } from 'react';
+import { StateView } from '@/shared/components/motion-layout';
 import type { Settings } from '@/shared/settings/schema';
 import {
   InputField,
@@ -61,7 +62,7 @@ export const SettingsAICard = ({
 
         <AnimatePresence mode="wait">
           {settings.ai.provider === 'google' ? (
-            <motion.div key="google" initial={false} animate={{ opacity: 1 }}>
+            <StateView key="google">
               <InputField
                 id={`${instanceId}-api-key`}
                 label="API key"
@@ -70,9 +71,9 @@ export const SettingsAICard = ({
                 onChange={onChangeGoogleApiKey}
                 placeholder="Enter your Gemini API key"
               />
-            </motion.div>
+            </StateView>
           ) : (
-            <motion.div key="ollama" initial={false} animate={{ opacity: 1 }}>
+            <StateView key="ollama">
               <InputField
                 id={`${instanceId}-ollama-endpoint`}
                 label="Ollama endpoint"
@@ -80,7 +81,7 @@ export const SettingsAICard = ({
                 onChange={onChangeOllamaEndpoint}
                 placeholder="http://localhost:11434"
               />
-            </motion.div>
+            </StateView>
           )}
         </AnimatePresence>
       </CardContent>

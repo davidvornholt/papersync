@@ -1,5 +1,8 @@
 'use client';
 
+import { motion } from 'motion/react';
+import { indicator } from '@/shared/motion/presets';
+
 const wideToggleCount = 3;
 export type ToggleOption = {
   readonly value: string;
@@ -47,7 +50,9 @@ export const ToggleButtons = ({
           }`}
         >
           {isActive ? (
-            <span
+            <motion.span
+              layoutId="toggle-buttons-indicator"
+              transition={indicator}
               aria-hidden={true}
               className="absolute inset-y-0 left-0 w-[2px] bg-accent"
             />

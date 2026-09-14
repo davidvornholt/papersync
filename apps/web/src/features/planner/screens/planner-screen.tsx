@@ -5,6 +5,7 @@ import { motion } from 'motion/react';
 import { PageTransition } from '@/shared/components/motion-layout';
 import { Spinner } from '@/shared/components/motion-loading';
 import { SettingsLoadError } from '@/shared/components/settings-load-error';
+import { rise, riseGroup } from '@/shared/motion/presets';
 import { ExceptionEditorModal } from './components/exception-editor-modal';
 import { PlannerConfigColumn } from './components/planner-config-column';
 import { PreviewPanel } from './components/preview-panel';
@@ -15,8 +16,6 @@ import {
   getPreviewState,
 } from './planner-screen-helpers';
 import { usePlannerScreen } from './use-planner-screen';
-
-const easeOut = 'easeOut' as const;
 
 export const PlannerScreen = (): React.ReactElement => {
   const {
@@ -84,13 +83,13 @@ export const PlannerScreen = (): React.ReactElement => {
           }
         />
 
-        <div className="mt-8 grid grid-cols-1 gap-y-10 sm:mt-10 sm:gap-y-12 md:mt-14 lg:grid-cols-12 lg:gap-x-12">
-          <motion.div
-            initial={false}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, delay: 0.1, ease: easeOut }}
-            className="lg:col-span-5"
-          >
+        <motion.div
+          className="mt-8 grid grid-cols-1 gap-y-10 sm:mt-10 sm:gap-y-12 md:mt-14 lg:grid-cols-12 lg:gap-x-12"
+          variants={riseGroup}
+          initial="hidden"
+          animate="visible"
+        >
+          <motion.div variants={rise} className="lg:col-span-5">
             <p className="section-number">01 — Compose</p>
             <h2 className="mt-3 text-[24px] sm:text-[28px]">
               Set the week, <span className="serif-italic">bend the rules</span>
@@ -121,9 +120,7 @@ export const PlannerScreen = (): React.ReactElement => {
           </motion.div>
 
           <motion.div
-            initial={false}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.2, ease: easeOut }}
+            variants={rise}
             className="lg:col-span-7 lg:border-hairline lg:border-l lg:pl-12"
           >
             <p className="section-number">02 — Proof</p>
@@ -148,7 +145,7 @@ export const PlannerScreen = (): React.ReactElement => {
               />
             </div>
           </motion.div>
-        </div>
+        </motion.div>
       </div>
 
       <WeekSelectionModal

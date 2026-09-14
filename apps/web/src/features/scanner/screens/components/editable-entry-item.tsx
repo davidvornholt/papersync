@@ -1,7 +1,9 @@
 'use client';
 
 import { Select } from '@papersync/ui/select';
+import { motion } from 'motion/react';
 import type { ExtractedEntry } from '@/shared/homework/entry';
+import { listItem, presence } from '@/shared/motion/presets';
 import { SCAN_DAY_OPTIONS } from '../scan-screen-types';
 
 type EditableEntryItemProps = {
@@ -15,7 +17,12 @@ export const EditableEntryItem = ({
   onUpdate,
   onDelete,
 }: EditableEntryItemProps): React.ReactElement => (
-  <fieldset className="space-y-3 border border-hairline bg-paper p-4">
+  <motion.fieldset
+    layout={true}
+    variants={listItem}
+    {...presence}
+    className="space-y-3 border border-hairline bg-paper p-4"
+  >
     <legend className="px-1 text-graphite text-sm">
       {entry.subject || 'Homework'}
     </legend>
@@ -78,5 +85,5 @@ export const EditableEntryItem = ({
         Remove
       </button>
     </div>
-  </fieldset>
+  </motion.fieldset>
 );

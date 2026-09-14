@@ -1,6 +1,6 @@
-import { scanWcag22AaViolations } from '@davidvornholt/a11y-testing/axe';
 import { expect, test as it } from '@playwright/test';
 import { browserAuth, createSessionCookies } from './auth-fixture';
+import { scanWcag22AaViolations } from './axe';
 
 const conflictStatus = 409;
 const forbiddenStatus = 403;

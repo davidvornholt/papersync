@@ -1,7 +1,7 @@
-import { scanWcag22AaViolations } from '@davidvornholt/a11y-testing/axe';
 import { expect } from '@playwright/test';
 import { defaultSettings } from '../src/shared/settings/schema';
 import { createSessionCookies } from './auth-fixture';
+import { scanWcag22AaViolations } from './axe';
 import { test } from './settings-fixture';
 
 test('managed AI hides browser credentials even with an old provider selection', async ({
