@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { DM_Sans, Fraunces, JetBrains_Mono } from 'next/font/google';
 import './globals.css';
+import { MotionProvider } from '@/shared/components/motion-provider';
 import { MainLayout } from '@/shared/components/navigation';
 import { ToastProvider } from '@/shared/components/toast';
 
@@ -48,9 +49,11 @@ const RootLayout = ({ children }: RootLayoutProps): React.ReactElement => (
     className={`${fraunces.variable} ${dmSans.variable} ${jetbrainsMono.variable}`}
   >
     <body>
-      <ToastProvider>
-        <MainLayout>{children}</MainLayout>
-      </ToastProvider>
+      <MotionProvider>
+        <ToastProvider>
+          <MainLayout>{children}</MainLayout>
+        </ToastProvider>
+      </MotionProvider>
     </body>
   </html>
 );

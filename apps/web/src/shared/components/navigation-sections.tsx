@@ -1,7 +1,9 @@
 'use client';
 
+import { motion } from 'motion/react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { indicator } from '@/shared/motion/presets';
 import { NAV_ITEMS } from './navigation-config';
 
 const isItemActive = (
@@ -43,14 +45,19 @@ export const DesktopTopNav = (): React.ReactElement => {
                     >
                       {item.label}
                     </span>
-                    <span
-                      aria-hidden={true}
-                      className={`absolute -bottom-[6px] h-px bg-accent transition-all duration-300 ${
-                        active
-                          ? 'w-full opacity-100'
-                          : 'w-0 opacity-0 group-hover:w-full group-hover:opacity-60'
-                      }`}
-                    />
+                    {active ? (
+                      <motion.span
+                        layoutId="desktop-nav-indicator"
+                        transition={indicator}
+                        aria-hidden={true}
+                        className="absolute -bottom-[6px] h-px w-full bg-accent"
+                      />
+                    ) : (
+                      <span
+                        aria-hidden={true}
+                        className="absolute -bottom-[6px] h-px w-0 bg-accent opacity-0 transition-all duration-300 group-hover:w-full group-hover:opacity-60"
+                      />
+                    )}
                   </Link>
                 </li>
               );
@@ -87,9 +94,11 @@ export const MobileBottomNav = (): React.ReactElement => {
                   {item.label}
                 </span>
                 {active ? (
-                  <span
+                  <motion.span
+                    layoutId="mobile-nav-indicator"
+                    transition={indicator}
                     aria-hidden={true}
-                    className="absolute top-0 left-1/2 h-px w-10 -translate-x-1/2 bg-accent"
+                    className="absolute top-0 left-1/2 -ml-5 h-px w-10 bg-accent"
                   />
                 ) : null}
               </Link>

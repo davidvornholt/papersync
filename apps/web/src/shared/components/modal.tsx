@@ -86,7 +86,7 @@ export const Modal = ({
           onClose();
         }
       }}
-      className={`m-auto max-h-[90dvh] w-[calc(100%-2rem)] overflow-y-auto border border-hairline bg-paper p-6 text-ink backdrop:bg-ink/40 ${sizeClasses[size]}`}
+      className={`paper-dialog m-auto max-h-[90dvh] w-[calc(100%-2rem)] overflow-y-auto border border-hairline bg-paper p-6 text-ink ${sizeClasses[size]}`}
     >
       <div className="flex items-start justify-between gap-4">
         <div>

@@ -2,7 +2,7 @@
 
 import { Plus, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
-import { duration, ease, scale } from '@/shared/motion/tokens';
+import { chip, open, presence } from '@/shared/motion/presets';
 import type { Subject } from '@/shared/settings/schema';
 
 type SubjectPickerProps = {
@@ -14,8 +14,6 @@ type SubjectPickerProps = {
   readonly onRemove: (subjectId: string) => void;
   readonly emptyLabel: string;
 };
-
-const chipTransition = { duration: duration.fast, ease: ease.smoothOut };
 
 /**
  * Picks the distinct subjects for one day. Chosen subjects sit in sheet
@@ -49,10 +47,8 @@ export const SubjectPicker = ({
             <motion.li
               key="empty"
               layout={true}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={chipTransition}
+              variants={chip}
+              {...presence}
               className="serif-italic list-none text-[14px] text-graphite"
             >
               {emptyLabel}
@@ -63,10 +59,9 @@ export const SubjectPicker = ({
                 key={subject.id}
                 layout={true}
                 layoutId={`subject-chip-${scope}-${subject.id}`}
-                initial={{ opacity: 0, scale: scale.small }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: scale.small }}
-                transition={chipTransition}
+                variants={chip}
+                {...presence}
+                transition={open}
                 className="flex items-center gap-1 bg-ink pr-1 pl-3 text-paper"
               >
                 <span className="mono text-[10px] text-paper/60">
@@ -98,10 +93,9 @@ export const SubjectPicker = ({
                 key={subject.id}
                 layout={true}
                 layoutId={`subject-chip-${scope}-${subject.id}`}
-                initial={{ opacity: 0, scale: scale.small }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: scale.small }}
-                transition={chipTransition}
+                variants={chip}
+                {...presence}
+                transition={open}
               >
                 <button
                   type="button"

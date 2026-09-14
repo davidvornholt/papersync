@@ -1,6 +1,6 @@
-import { scanWcag22AaViolations } from '@davidvornholt/a11y-testing/axe';
 import { expect } from '@playwright/test';
 import { createSessionCookies } from './auth-fixture';
+import { scanWcag22AaViolations } from './axe';
 import { test } from './settings-fixture';
 
 for (const route of ['/', '/scan', '/planner', '/settings']) {

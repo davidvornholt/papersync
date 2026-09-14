@@ -1,7 +1,8 @@
 'use client';
 
 import { Button } from '@papersync/ui/button';
-import { AnimatePresence, motion } from 'motion/react';
+import { AnimatePresence } from 'motion/react';
+import { StateView } from '@/shared/components/motion-layout';
 import { Spinner } from '@/shared/components/motion-loading';
 import type { ExtractedEntry } from '@/shared/homework/entry';
 import { EditableEntryItem } from './editable-entry-item';
@@ -36,13 +37,7 @@ export const ResultsPanelComplete = ({
   const reviewEntries = entries.filter((entry) => entry.action !== 'skip');
   const savedEntries = entries.filter((entry) => entry.action === 'skip');
   return (
-    <motion.div
-      key="results"
-      initial={false}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="flex min-h-0 flex-1 flex-col"
-    >
+    <StateView key="results" className="flex min-h-0 flex-1 flex-col">
       <div className="mb-4 flex flex-col gap-1 border-hairline border-b pb-4 sm:flex-row sm:items-baseline sm:justify-between sm:gap-4">
         <p className="serif text-[18px] text-ink">
           {reviewEntries.length} new or changed entr
@@ -132,6 +127,6 @@ export const ResultsPanelComplete = ({
           )}
         </Button>
       </div>
-    </motion.div>
+    </StateView>
   );
 };
