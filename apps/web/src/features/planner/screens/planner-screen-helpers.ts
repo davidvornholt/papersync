@@ -1,5 +1,5 @@
-import type { TimetableDay } from '@/shared/hooks/use-settings-schema';
 import { getIsoDate } from '@/shared/planner/week';
+import type { TimetableDay } from '@/shared/settings/schema';
 import type { DayOfWeek, Subject } from '@/shared/types/schemas';
 import type { PlannerState } from '../hooks/use-planner';
 import type {
@@ -45,13 +45,17 @@ export const getSubjectsForWeek = (
 
   for (const day of timetable) {
     for (const slot of day.slots) {
-      subjectIds.add(slot.subjectId);
+      if (slot.subjectId !== null) {
+        subjectIds.add(slot.subjectId);
+      }
     }
   }
 
   for (const exception of exceptions) {
     for (const slot of exception.slots) {
-      subjectIds.add(slot.subjectId);
+      if (slot.subjectId !== null) {
+        subjectIds.add(slot.subjectId);
+      }
     }
   }
 
@@ -89,7 +93,7 @@ export const applyExceptionsToTimetable = (
 export const getDefaultSlotsForDay = (
   timetable: ReadonlyArray<TimetableDay>,
   dayOfWeek: DayOfWeek,
-): Array<{ id: string; subjectId: string }> => {
+): Array<{ id: string; subjectId: string | null }> => {
   const daySchedule = timetable.find((day) => day.day === dayOfWeek);
   return daySchedule?.slots.map((slot) => ({ ...slot })) ?? [];
 };

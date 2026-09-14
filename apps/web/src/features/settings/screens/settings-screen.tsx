@@ -4,6 +4,7 @@ import { EditorialHeader } from '@papersync/ui/editorial-header';
 import { motion } from 'motion/react';
 import { PageTransition } from '@/shared/components/motion-layout';
 import { Spinner } from '@/shared/components/motion-loading';
+import { SettingsLoadError } from '@/shared/components/settings-load-error';
 import { AddSubjectModal } from '../components/add-subject-modal';
 import { SettingsAICard } from '../components/settings-ai-card';
 import { SettingsSaveAction } from '../components/settings-save-action';
@@ -38,6 +39,10 @@ export const SettingsScreen = ({
   readonly isManagedAI: boolean;
 }): React.ReactElement => {
   const controller = useSettingsScreenController();
+
+  if (controller.loadError) {
+    return <SettingsLoadError message={controller.loadError} />;
+  }
 
   if (controller.isLoading) {
     return (

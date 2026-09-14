@@ -2,7 +2,7 @@ import {
   StaggerContainer,
   StaggerItem,
 } from '@/shared/components/motion-layout';
-import type { TimetableDay } from '@/shared/hooks/use-settings-schema';
+import type { TimetableDay } from '@/shared/settings/schema';
 import type { DayOfWeek, Subject } from '@/shared/types/schemas';
 import type { ScheduleException } from '../planner-screen-types';
 import { GeneratePlannerButton } from './generate-planner-button';

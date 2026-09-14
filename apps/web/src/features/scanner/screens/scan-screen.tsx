@@ -2,6 +2,7 @@
 
 import { Button } from '@papersync/ui/button';
 import { useState } from 'react';
+import { SettingsLoadError } from '@/shared/components/settings-load-error';
 import type { UseScanReturn } from '../hooks/use-scan-types';
 import { NetworkScannersPanel } from './components/network-scanners-panel';
 import { ResultsPanel } from './components/results-panel';
@@ -70,6 +71,10 @@ const WeekEditor = ({
 
 export const ScanScreen = (): React.ReactElement => {
   const controller = useScanScreen();
+  if (controller.loadError) {
+    return <SettingsLoadError message={controller.loadError} />;
+  }
+
   const { scan, isBusy } = controller;
   return (
     <div className="shell page-shell">

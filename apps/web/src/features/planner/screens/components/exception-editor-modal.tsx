@@ -14,7 +14,7 @@ type ExceptionEditorModalProps = {
   readonly date: Date;
   readonly dayOfWeek: DayOfWeek;
   readonly subjects: ReadonlyArray<Subject>;
-  readonly defaultSlots: Array<{ id: string; subjectId: string }>;
+  readonly defaultSlots: Array<{ id: string; subjectId: string | null }>;
   readonly exception: ScheduleException | null;
   readonly onSave: (exception: Omit<ScheduleException, 'id'>) => void;
   readonly onRemove: () => void;

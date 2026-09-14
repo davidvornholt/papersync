@@ -11,7 +11,7 @@ import { useScanImagePaste } from './use-scan-image-paste';
 import { useScanSave } from './use-scan-save';
 
 export const useScanScreen = () => {
-  const { settings, isLoading } = useSettings();
+  const { settings, isLoading, loadError } = useSettings();
   const { addToast } = useToast();
   const scan = useScan({
     aiSettings: settings.ai,
@@ -51,6 +51,7 @@ export const useScanScreen = () => {
   };
   const isBusy =
     isLoading ||
+    loadError !== null ||
     scan.state.status === 'processing' ||
     scan.state.status === 'uploading' ||
     saving.isSyncing ||
@@ -95,6 +96,7 @@ export const useScanScreen = () => {
   };
   return {
     scan,
+    loadError,
     isBusy,
     isDragging,
     setIsDragging,

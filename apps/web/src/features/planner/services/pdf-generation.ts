@@ -11,7 +11,7 @@ import { PlannerDocument } from '../components/planner-document';
 
 type TimetableSlot = {
   readonly id: string;
-  readonly subjectId: string;
+  readonly subjectId: string | null;
 };
 
 type TimetableDay = {

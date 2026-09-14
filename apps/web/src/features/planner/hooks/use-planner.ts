@@ -8,7 +8,7 @@ import { downloadPlannerPdf } from '../services/generator';
 
 type TimetableSlot = {
   readonly id: string;
-  readonly subjectId: string;
+  readonly subjectId: string | null;
 };
 
 type TimetableDay = {

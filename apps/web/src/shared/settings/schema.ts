@@ -19,12 +19,26 @@ const SubjectSchema = S.Struct({
 
 const TimetableSlotSchema = S.Struct({
   id: S.String,
-  subjectId: S.String,
+  subjectId: S.NullOr(S.String),
 });
 
 const TimetableDaySchema = S.Struct({
   day: DayOfWeekSchema,
   slots: S.Array(TimetableSlotSchema),
+});
+
+export const SchoolSettingsSchema = S.Struct({
+  subjects: S.Array(SubjectSchema),
+  timetable: S.Array(TimetableDaySchema),
+});
+export type SchoolSettings = S.Schema.Type<typeof SchoolSettingsSchema>;
+export const StoredSchoolSettingsSchema = S.Struct({
+  revision: S.NullOr(S.String),
+  school: S.NullOr(SchoolSettingsSchema),
+});
+export const SaveSchoolSettingsSchema = S.Struct({
+  revision: S.NullOr(S.String),
+  school: SchoolSettingsSchema,
 });
 
 export const SettingsSchema = S.Struct({

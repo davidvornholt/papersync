@@ -4,8 +4,7 @@ import { Effect } from 'effect';
 import { useState } from 'react';
 import { useToast } from '@/shared/components/use-toast';
 import { useSettings } from '@/shared/hooks/use-settings';
-import type { Subject } from '@/shared/hooks/use-settings-schema';
-import { requestAction } from '@/shared/http/action';
+import type { Subject } from '@/shared/settings/schema';
 import { getConfiguredDaysCount } from '../settings-screen-helpers';
 export const useSettingsScreenController = () => {
   const settingsApi = useSettings();
@@ -24,10 +23,13 @@ export const useSettingsScreenController = () => {
     }
     setIsSaving(true);
     Effect.runFork(
-      requestAction(settingsApi.save).pipe(
+      settingsApi.save().pipe(
         Effect.tap(() =>
           Effect.sync(() =>
-            addToast('Settings saved on this browser.', 'success'),
+            addToast(
+              'Timetable saved. AI settings saved in this browser.',
+              'success',
+            ),
           ),
         ),
         Effect.catchAll((error) =>
@@ -83,6 +85,7 @@ export const useSettingsScreenController = () => {
   return {
     settings: settingsApi.settings,
     isLoading: settingsApi.isLoading,
+    loadError: settingsApi.loadError,
     isSubjectModalOpen,
     editingSubject,
     configuredDaysCount,

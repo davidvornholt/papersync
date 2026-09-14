@@ -1,5 +1,5 @@
 import { type Dispatch, type SetStateAction, useCallback } from 'react';
-import type { Settings, Subject } from './use-settings-schema';
+import type { Settings, Subject } from '../settings/schema';
 
 export const useSubjectSettings = (
   setSettings: Dispatch<SetStateAction<Settings>>,

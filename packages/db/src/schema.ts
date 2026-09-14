@@ -14,3 +14,9 @@ export const integration = pgTable('integration', {
   id: text('id').primaryKey(),
   tokenHash: text('token_hash').notNull(),
 });
+
+export const schoolSettings = pgTable('school_settings', {
+  id: text('id').primaryKey(),
+  payload: jsonb('payload').notNull(),
+  revision: text('revision').notNull(),
+});

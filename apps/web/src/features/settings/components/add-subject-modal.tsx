@@ -3,7 +3,7 @@
 import { Button } from '@papersync/ui/button';
 import { useCallback, useEffect, useId, useState } from 'react';
 import { Modal } from '@/shared/components/modal';
-import type { Subject } from '@/shared/hooks/use-settings-schema';
+import type { Subject } from '@/shared/settings/schema';
 
 type AddSubjectModalProps = {
   readonly isOpen: boolean;

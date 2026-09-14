@@ -3,7 +3,7 @@
 import { Pencil, Trash2 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { IconButton } from '@/shared/components/icon-button';
-import type { Subject } from '@/shared/hooks/use-settings-schema';
+import type { Subject } from '@/shared/settings/schema';
 
 type SubjectListItemProps = {
   readonly subject: Subject;

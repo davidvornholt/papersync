@@ -1,6 +1,7 @@
 import { scanWcag22AaViolations } from '@davidvornholt/a11y-testing/axe';
-import { expect, test } from '@playwright/test';
+import { expect } from '@playwright/test';
 import { createSessionCookies } from './auth-fixture';
+import { test } from './settings-fixture';
 
 for (const route of ['/', '/scan', '/planner', '/settings']) {
   test(`${route} is accessible after sign-in`, async ({ page, context }) => {
@@ -176,3 +177,30 @@ test('pointer tooltips respect touch devices and dismiss without moving focus', 
   await expect(tooltip).not.toBeVisible();
   await expect(help).toBeFocused();
 });
+
+for (const route of ['/settings', '/planner', '/scan']) {
+  test(`${route} reports unavailable settings without exposing an editable default timetable`, async ({
+    page,
+    context,
+  }) => {
+    await context.addCookies(await createSessionCookies());
+    await context.route('**/api/settings', (request) =>
+      request.fulfill({
+        status: 503,
+        json: {
+          error:
+            'Could not access your timetable. Check your connection and retry.',
+        },
+      }),
+    );
+    await page.goto(route);
+    await expect(
+      page.getByRole('heading', { name: 'Timetable unavailable' }),
+    ).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Reload' })).toBeVisible();
+    await expect(
+      page.getByRole('button', { name: 'Save all settings' }),
+    ).toHaveCount(0);
+    expect(await scanWcag22AaViolations(page)).toEqual([]);
+  });
+}
