@@ -34,3 +34,9 @@ export type DayData = {
   readonly subjectHeight: number;
   readonly linesPerSubject: number;
 };
+
+export type SheetLayout = {
+  /** One ruling pitch shared by both sides of the sheet. */
+  readonly lineHeight: number;
+  readonly pages: ReadonlyArray<ReadonlyArray<DayData>>;
+};

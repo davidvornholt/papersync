@@ -5,9 +5,13 @@ import type { DayData } from './planner-document-types';
 
 type DayRowProps = {
   readonly dayData: DayData;
+  readonly lineHeight: number;
 };
 
-export const DayRow = ({ dayData }: DayRowProps): React.ReactElement => {
+export const DayRow = ({
+  dayData,
+  lineHeight,
+}: DayRowProps): React.ReactElement => {
   const { day, subjects, height, subjectHeight, linesPerSubject } = dayData;
   return (
     <View style={[styles.dayRow, { height }]} wrap={false}>
@@ -21,15 +25,14 @@ export const DayRow = ({ dayData }: DayRowProps): React.ReactElement => {
             key={subject.id}
             style={[styles.subjectSection, { height: subjectHeight }]}
           >
-            <Text style={styles.subjectLabel}>{subject.name}</Text>
+            <View style={[styles.subjectLabel, { height: lineHeight }]}>
+              <Text style={styles.subjectLabelText}>{subject.name}</Text>
+            </View>
             <View style={styles.writingArea}>
               {generateLineKeys(subject.id, linesPerSubject).map((key) => (
                 <View
                   key={key}
-                  style={[
-                    styles.writingLine,
-                    { height: subjectHeight / linesPerSubject },
-                  ]}
+                  style={[styles.writingLine, { height: lineHeight }]}
                 />
               ))}
             </View>
@@ -52,17 +55,18 @@ export const PlannerHeader = ({
   dateRange,
 }: HeaderProps): React.ReactElement => (
   <View style={styles.header}>
-    <Text style={styles.appName}>PaperSync</Text>
-    <View style={styles.weekHeading}>
-      <Text style={styles.weekInfo}>{weekId}</Text>
+    <View>
+      <Text style={styles.weekId}>{weekId}</Text>
       <Text style={styles.dateRange}>{dateRange}</Text>
     </View>
+    <Text style={styles.wordmark}>
+      Paper<Text style={styles.wordmarkItalic}>Sync</Text>
+    </Text>
   </View>
 );
 
 export const PlannerFooter = (): React.ReactElement => (
   <View style={styles.footer}>
-    <Text>Write homework and deadlines beside each subject.</Text>
     <Text
       render={({ pageNumber, totalPages }) => `${pageNumber} / ${totalPages}`}
     />
