@@ -72,7 +72,7 @@ export const styles = StyleSheet.create({
     paddingRight: LAYOUT.labelGap,
     justifyContent: 'center',
   },
-  // Two wrapped label lines must fit inside one 8 mm cell.
+  // Two wrapped label lines must fit inside the cell of an eight-subject day.
   subjectLabelText: {
     fontSize: 9,
     lineHeight: 1.1,

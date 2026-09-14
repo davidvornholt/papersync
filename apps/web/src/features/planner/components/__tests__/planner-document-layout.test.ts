@@ -62,7 +62,7 @@ describe('planner sheet layout', () => {
     [everyDay(busyDay)],
     [unevenWeek],
   ])(
-    'rules both sides at one pitch of 8–10 mm and fits each side for %j subjects per day',
+    'rules both sides at one pitch within the configured range and fits each side for %j subjects per day',
     (countsPerDay) => {
       const sheet = layoutFor(countsPerDay);
       expect(sheet.lineHeight).toBeGreaterThanOrEqual(LAYOUT.minLineHeight);

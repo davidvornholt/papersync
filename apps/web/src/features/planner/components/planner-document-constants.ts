@@ -59,9 +59,9 @@ export const FONT_SOURCES: ReadonlyArray<{
 const pointsPerInch = 72;
 const millimetresPerInch = 25.4;
 const pointsPerMillimetre = pointsPerInch / millimetresPerInch;
-// Ruling pitch: school exercise books run 8–9 mm, and wider handwriting scans better.
-const minLinePitchMillimetres = 8;
-const maxLinePitchMillimetres = 10;
+// Ruling pitch: narrow-ruled paper for small handwriting; cells fill the page regardless.
+const minLinePitchMillimetres = 6;
+const maxLinePitchMillimetres = 8;
 const a4Height = 841.89;
 const pagePadding = 24;
 const headerHeight = 40;

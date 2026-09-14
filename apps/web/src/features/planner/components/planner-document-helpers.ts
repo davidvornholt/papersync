@@ -89,8 +89,8 @@ const wasteTolerance = 0.5;
 /**
  * Picks one ruling pitch for the whole sheet. Every pitch that fills some
  * side exactly is a candidate; the one leaving the least unruled space across
- * both sides wins. When even one 8 mm line per cell does not fit on the most
- * crowded side, the pitch shrinks to fit.
+ * both sides wins. When even one minimum-pitch line per cell does not fit on
+ * the most crowded side, the pitch shrinks to fit.
  */
 const sheetLineHeight = (pages: ReadonlyArray<PageMetrics>): number => {
   const minBudget = Math.min(...pages.map((page) => page.cellBudget));
