@@ -4,7 +4,7 @@ export type ScheduleException = {
   date: ISODate;
   dayOfWeek: DayOfWeek;
   reason?: string;
-  slots: Array<{ id: string; subjectId: string | null }>;
+  subjectIds: Array<string>;
 };
 
 export const WEEKDAYS: Array<DayOfWeek> = [

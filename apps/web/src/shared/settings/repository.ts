@@ -52,24 +52,22 @@ export const saveSchoolSettings = (input: unknown) =>
     const { school } = decoded;
     const subjectIds = new Set(school.subjects.map((subject) => subject.id));
     const days = new Set(school.timetable.map((day) => day.day));
-    const slots = school.timetable.flatMap((day) => day.slots);
     if (
       subjectIds.size !== school.subjects.length ||
       days.size !== school.timetable.length ||
-      new Set(slots.map((slot) => slot.id)).size !== slots.length ||
       school.subjects.some(
         (subject) => !(subject.id.trim() && subject.name.trim()),
       ) ||
-      slots.some(
-        (slot) =>
-          !slot.id.trim() ||
-          (slot.subjectId !== null && !subjectIds.has(slot.subjectId)),
+      school.timetable.some(
+        (day) =>
+          new Set(day.subjectIds).size !== day.subjectIds.length ||
+          day.subjectIds.some((subjectId) => !subjectIds.has(subjectId)),
       )
     ) {
       return yield* Effect.fail(
         new SchoolSettingsError({
           message:
-            'Use unique subjects, days, and classes, and select an existing subject for each class.',
+            'Use unique subjects and days, and list each existing subject at most once per day.',
           status: 400,
         }),
       );

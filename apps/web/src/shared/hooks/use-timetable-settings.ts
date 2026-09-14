@@ -1,6 +1,17 @@
 import { type Dispatch, type SetStateAction, useCallback } from 'react';
 import type { DayOfWeek, Settings, TimetableDay } from '../settings/schema';
 
+export const setDaySubjects = (
+  timetable: ReadonlyArray<TimetableDay>,
+  day: DayOfWeek,
+  subjectIds: ReadonlyArray<string>,
+): Array<TimetableDay> =>
+  timetable.some((entry) => entry.day === day)
+    ? timetable.map((entry) =>
+        entry.day === day ? { ...entry, subjectIds } : entry,
+      )
+    : [...timetable, { day, subjectIds }];
+
 export const useTimetableSettings = (
   setSettings: Dispatch<SetStateAction<Settings>>,
 ) => {
@@ -10,71 +21,39 @@ export const useTimetableSettings = (
     },
     [setSettings],
   );
-  const addTimetableSlot = useCallback(
-    (day: DayOfWeek, subjectId: string | null): void => {
+  const addSubjectToDay = useCallback(
+    (day: DayOfWeek, subjectId: string): void => {
       setSettings((prev) => {
-        const dayExists = prev.timetable.some(
-          (timetableDay) => timetableDay.day === day,
-        );
-        const newSlot = { id: `slot-${Date.now()}`, subjectId };
-
-        if (dayExists) {
-          return {
-            ...prev,
-            timetable: prev.timetable.map((timetableDay) =>
-              timetableDay.day === day
-                ? { ...timetableDay, slots: [...timetableDay.slots, newSlot] }
-                : timetableDay,
-            ),
-          };
-        }
-
-        return {
-          ...prev,
-          timetable: [...prev.timetable, { day, slots: [newSlot] }],
-        };
+        const current =
+          prev.timetable.find((entry) => entry.day === day)?.subjectIds ?? [];
+        return current.includes(subjectId)
+          ? prev
+          : {
+              ...prev,
+              timetable: setDaySubjects(prev.timetable, day, [
+                ...current,
+                subjectId,
+              ]),
+            };
       });
     },
     [setSettings],
   );
-  const removeTimetableSlot = useCallback(
-    (day: DayOfWeek, slotId: string): void => {
+  const removeSubjectFromDay = useCallback(
+    (day: DayOfWeek, subjectId: string): void => {
       setSettings((prev) => ({
         ...prev,
-        timetable: prev.timetable.map((timetableDay) =>
-          timetableDay.day === day
+        timetable: prev.timetable.map((entry) =>
+          entry.day === day
             ? {
-                ...timetableDay,
-                slots: timetableDay.slots.filter((slot) => slot.id !== slotId),
+                ...entry,
+                subjectIds: entry.subjectIds.filter((id) => id !== subjectId),
               }
-            : timetableDay,
+            : entry,
         ),
       }));
     },
     [setSettings],
   );
-  const updateTimetableSlot = useCallback(
-    (day: DayOfWeek, slotId: string, subjectId: string | null): void => {
-      setSettings((prev) => ({
-        ...prev,
-        timetable: prev.timetable.map((timetableDay) =>
-          timetableDay.day === day
-            ? {
-                ...timetableDay,
-                slots: timetableDay.slots.map((slot) =>
-                  slot.id === slotId ? { ...slot, subjectId } : slot,
-                ),
-              }
-            : timetableDay,
-        ),
-      }));
-    },
-    [setSettings],
-  );
-  return {
-    updateTimetable,
-    addTimetableSlot,
-    removeTimetableSlot,
-    updateTimetableSlot,
-  };
+  return { updateTimetable, addSubjectToDay, removeSubjectFromDay };
 };

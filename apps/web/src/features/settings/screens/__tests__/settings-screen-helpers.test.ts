@@ -2,11 +2,11 @@ import { describe, expect, it } from 'bun:test';
 import { getConfiguredDaysCount } from '../settings-screen-helpers';
 
 describe('settings-screen-helpers', () => {
-  it('getConfiguredDaysCount counts only days that have slots', () => {
+  it('getConfiguredDaysCount counts only days that have subjects', () => {
     const timetable = [
-      { day: 'monday', slots: [{ id: 'slot-1', subjectId: '1' }] },
-      { day: 'tuesday', slots: [] },
-      { day: 'wednesday', slots: [{ id: 'slot-2', subjectId: '2' }] },
+      { day: 'monday', subjectIds: ['1'] },
+      { day: 'tuesday', subjectIds: [] },
+      { day: 'wednesday', subjectIds: ['2'] },
     ] as const;
 
     expect(getConfiguredDaysCount(timetable)).toBe(2);

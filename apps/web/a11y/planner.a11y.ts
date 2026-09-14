@@ -8,9 +8,10 @@ import { test as it, test } from './settings-fixture';
 const timetable = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'].map(
   (day) => ({
     day,
-    slots: [{ id: `${day}-1`, subjectId: 'math' }],
+    subjectIds: ['math'],
   }),
 );
+const removeMath = /^Remove Math from /u;
 const plannerSettings = {
   ...defaultSettings,
   subjects: [{ id: 'math', name: 'Math' }],
@@ -42,7 +43,7 @@ for (const timezoneId of ['Europe/Berlin', 'America/Los_Angeles']) {
         const dialog = page.getByRole('dialog');
         await expect(dialog).toContainText('Tuesday');
         await dialog.getByLabel('Reason (optional)').fill('Museum visit');
-        await dialog.getByRole('button', { name: 'Remove class' }).click();
+        await dialog.getByRole('button', { name: removeMath }).click();
         expect(await scanWcag22AaViolations(page)).toEqual([]);
         await dialog
           .getByRole('button', { name: 'Add exception', exact: true })
@@ -76,7 +77,7 @@ for (const timezoneId of ['Europe/Berlin', 'America/Los_Angeles']) {
           const payload = route.request().postDataJSON();
           expect(payload.timetable).toEqual(
             timetable.map((day) =>
-              day.day === 'tuesday' ? { ...day, slots: [] } : day,
+              day.day === 'tuesday' ? { ...day, subjectIds: [] } : day,
             ),
           );
           await route.fulfill({

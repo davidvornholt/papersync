@@ -6,7 +6,7 @@ const conflictStatus = 409;
 const forbiddenStatus = 403;
 const redirectStatus = 307;
 
-it('a saved timetable reaches another browser, keeps free periods, and rejects stale or cross-origin saves', async ({
+it('a saved timetable reaches another browser, autosaves edits, and rejects stale or cross-origin saves', async ({
   page,
   context,
   browser,
@@ -16,17 +16,11 @@ it('a saved timetable reaches another browser, keeps free periods, and rejects s
   expect(previousResponse.ok()).toBe(true);
   const previous = await previousResponse.json();
   const school = {
-    subjects: [{ id: 'demo-math', name: 'Mathematics' }],
-    timetable: [
-      {
-        day: 'monday',
-        slots: [
-          { id: 'demo-1', subjectId: 'demo-math' },
-          { id: 'demo-2', subjectId: null },
-          { id: 'demo-3', subjectId: 'demo-math' },
-        ],
-      },
+    subjects: [
+      { id: 'demo-math', name: 'Mathematics' },
+      { id: 'demo-arts', name: 'Arts' },
     ],
+    timetable: [{ day: 'monday', subjectIds: ['demo-math'] }],
   };
   const write = await context.request.put('/api/settings', {
     headers: { origin: browserAuth.baseUrl },
@@ -39,37 +33,37 @@ it('a saved timetable reaches another browser, keeps free periods, and rejects s
     await second.addCookies(await createSessionCookies());
     const secondPage = await second.newPage();
     await secondPage.goto('/planner');
+    const mondayRow = secondPage.getByRole('listitem').filter({
+      hasText: 'Mon',
+    });
     await expect(
-      secondPage.getByText('2. Free period', { exact: true }),
+      mondayRow.getByText('Mathematics', { exact: true }),
     ).toBeVisible();
-    await expect(
-      secondPage.getByText('3. Mathematics', { exact: true }),
-    ).toBeVisible();
+    await expect(mondayRow.getByText('Arts', { exact: true })).toHaveCount(0);
     expect(await scanWcag22AaViolations(secondPage)).toEqual([]);
     await secondPage.goto('/settings');
     await expect(
-      secondPage.getByLabel('Monday class 2', { exact: true }),
-    ).toHaveValue('');
+      secondPage.getByRole('button', { name: 'Add Arts to Monday' }),
+    ).toBeVisible();
     await page.goto('/settings');
-    await page
-      .getByLabel('Monday class 2', { exact: true })
-      .selectOption('demo-math');
-    await page.getByRole('button', { name: 'Save all settings' }).click();
+    await page.getByRole('button', { name: 'Add Arts to Monday' }).click();
     await expect(
-      page.getByText('Timetable saved. AI settings saved in this browser.', {
-        exact: true,
-      }),
-    ).toBeVisible();
-    await secondPage.getByRole('button', { name: 'Save all settings' }).click();
+      page.getByRole('status', { name: 'Save status' }),
+    ).toContainText('Saved');
+    await secondPage
+      .getByRole('button', { name: 'Add Arts to Monday' })
+      .click();
     await expect(
-      secondPage.getByText(
-        'Your timetable changed in another browser. Reload before saving again.',
-        { exact: true },
-      ),
-    ).toBeVisible();
+      secondPage.getByRole('status', { name: 'Save status' }),
+    ).toContainText(
+      'Your timetable changed in another browser. Reload before saving again.',
+    );
     await secondPage.goto('/planner');
     await expect(
-      secondPage.getByText('2. Mathematics', { exact: true }),
+      secondPage
+        .getByRole('listitem')
+        .filter({ hasText: 'Mon' })
+        .getByText('Arts', { exact: true }),
     ).toBeVisible();
     const stale = await second.request.put('/api/settings', {
       headers: { origin: browserAuth.baseUrl },

@@ -38,7 +38,7 @@ export const usePlannerScreen = () => {
   );
 
   const hasTimetableConfigured = settings.timetable.some(
-    (day) => day.slots.length > 0,
+    (day) => day.subjectIds.length > 0,
   );
 
   const handleGenerate = () => {
@@ -54,10 +54,7 @@ export const usePlannerScreen = () => {
       exceptions,
     );
 
-    return planner.generate(
-      subjectsToUse,
-      timetableWithExceptions as Parameters<typeof planner.generate>[1],
-    );
+    return planner.generate(subjectsToUse, timetableWithExceptions);
   };
 
   const handleWeekSelect = (weekId: WeekId): void => {

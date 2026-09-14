@@ -84,17 +84,23 @@ test('settings help and icon actions work with a keyboard', async ({
   await expect(page.getByRole('dialog')).toBeVisible();
   await page.keyboard.press('Escape');
   await expect(edit).toBeFocused();
-  await page.getByRole('button', { name: 'Add class', exact: true }).click();
-  await expect(
-    page.getByRole('combobox', { name: 'Monday class 1' }),
-  ).toBeVisible();
-  expect(await scanWcag22AaViolations(page)).toEqual([]);
   await page
-    .getByRole('button', { name: 'Remove Monday class 1', exact: true })
+    .getByRole('button', { name: 'Add Chemistry to Monday', exact: true })
     .click();
+  const remove = page.getByRole('button', {
+    name: 'Remove Chemistry from Monday',
+    exact: true,
+  });
+  await expect(remove).toBeVisible();
   await expect(
-    page.getByRole('combobox', { name: 'Monday class 1' }),
-  ).toHaveCount(0);
+    page.getByRole('list', { name: 'Subjects on Monday' }),
+  ).toContainText('Chemistry');
+  expect(await scanWcag22AaViolations(page)).toEqual([]);
+  await remove.click();
+  await expect(remove).toHaveCount(0);
+  await expect(
+    page.getByRole('button', { name: 'Add Chemistry to Monday', exact: true }),
+  ).toBeVisible();
 });
 
 test('shared styles preserve card spacing and heading sizes', async ({

@@ -40,15 +40,7 @@ it('loads the server timetable ahead of stale browser data, retaining local AI s
   });
   const school = {
     subjects: [{ id: 'spanish', name: 'Spanish' }],
-    timetable: [
-      {
-        day: 'monday' as const,
-        slots: [
-          { id: 'free', subjectId: null },
-          { id: 'class', subjectId: 'spanish' },
-        ],
-      },
-    ],
+    timetable: [{ day: 'monday' as const, subjectIds: ['spanish'] }],
   };
   fetchMock.mockResolvedValue(Response.json({ revision: 'remote', school }));
   const result = await Effect.runPromise(loadSettings());

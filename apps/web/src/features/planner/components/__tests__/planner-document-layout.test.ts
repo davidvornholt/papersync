@@ -46,10 +46,9 @@ const layoutFor = (countsPerDay: ReadonlyArray<number>) =>
     pages,
     dayKeys.map((day, index) => ({
       day,
-      slots: subjects.slice(0, countsPerDay[index]).map((subject) => ({
-        id: `${day}-${subject.id}`,
-        subjectId: subject.id,
-      })),
+      subjectIds: subjects
+        .slice(0, countsPerDay[index])
+        .map((subject) => subject.id),
     })),
     subjects,
   );

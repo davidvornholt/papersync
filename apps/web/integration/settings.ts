@@ -9,19 +9,14 @@ import {
 } from '../src/shared/settings/repository';
 
 const school = {
-  subjects: [{ id: 'math', name: 'Mathematics' }],
-  timetable: [
-    {
-      day: 'monday',
-      slots: [
-        { id: 'one', subjectId: null },
-        { id: 'two', subjectId: 'math' },
-      ],
-    },
+  subjects: [
+    { id: 'math', name: 'Mathematics' },
+    { id: 'arts', name: 'Arts' },
   ],
+  timetable: [{ day: 'monday', subjectIds: ['arts', 'math'] }],
 };
 
-it('persists free periods and prevents stale browsers from replacing a saved timetable', async () => {
+it('persists the day order of subjects and prevents stale browsers from replacing a saved timetable', async () => {
   await databaseRuntime.runPromise(
     Effect.gen(function* () {
       const sql = yield* PgClient.PgClient;
@@ -41,7 +36,10 @@ it('persists free periods and prevents stale browsers from replacing a saved tim
           expect(staleFirstSave._tag).toBe('Left');
           const updated = yield* saveSchoolSettings({
             revision: initial.revision,
-            school: { ...school, subjects: [{ id: 'math', name: 'Math' }] },
+            school: {
+              ...school,
+              subjects: [{ id: 'math', name: 'Math' }, school.subjects[1]],
+            },
           });
           const stale = yield* saveSchoolSettings({
             revision: initial.revision,
@@ -56,7 +54,7 @@ it('persists free periods and prevents stale browsers from replacing a saved tim
   );
 });
 
-it('rejects unknown subjects, duplicate days, and browser credentials without writing', async () => {
+it('rejects unknown subjects, duplicate days or subjects, and browser credentials without writing', async () => {
   await databaseRuntime.runPromise(
     Effect.gen(function* () {
       const sql = yield* PgClient.PgClient;
@@ -68,6 +66,10 @@ it('rejects unknown subjects, duplicate days, and browser credentials without wr
             {
               ...school,
               timetable: [...school.timetable, ...school.timetable],
+            },
+            {
+              ...school,
+              timetable: [{ day: 'monday', subjectIds: ['math', 'math'] }],
             },
             { ...school, ai: { googleApiKey: 'must-not-be-stored' } },
           ];

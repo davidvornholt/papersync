@@ -17,14 +17,11 @@ const SubjectSchema = S.Struct({
   color: S.optional(S.String),
 });
 
-const TimetableSlotSchema = S.Struct({
-  id: S.String,
-  subjectId: S.NullOr(S.String),
-});
-
+// A weekday lists the distinct subjects taught that day, in sheet order.
+// Periods, double lessons, and free periods carry nothing homework needs.
 const TimetableDaySchema = S.Struct({
   day: DayOfWeekSchema,
-  slots: S.Array(TimetableSlotSchema),
+  subjectIds: S.Array(S.String),
 });
 
 export const SchoolSettingsSchema = S.Struct({
@@ -55,7 +52,6 @@ export type Settings = S.Schema.Type<typeof SettingsSchema>;
 export type AIProvider = S.Schema.Type<typeof AIProviderSchema>;
 export type Subject = S.Schema.Type<typeof SubjectSchema>;
 export type DayOfWeek = S.Schema.Type<typeof DayOfWeekSchema>;
-export type TimetableSlot = S.Schema.Type<typeof TimetableSlotSchema>;
 export type TimetableDay = S.Schema.Type<typeof TimetableDaySchema>;
 
 export const DAYS_OF_WEEK: Array<DayOfWeek> = [
@@ -69,7 +65,7 @@ export const DAYS_OF_WEEK: Array<DayOfWeek> = [
 ];
 
 export const createDefaultTimetable = (): Array<TimetableDay> =>
-  DAYS_OF_WEEK.map((day) => ({ day, slots: [] }));
+  DAYS_OF_WEEK.map((day) => ({ day, subjectIds: [] }));
 
 export const defaultSettings: Settings = {
   ai: {

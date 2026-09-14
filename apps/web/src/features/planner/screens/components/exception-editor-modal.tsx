@@ -3,10 +3,10 @@
 import { Button } from '@papersync/ui/button';
 import { useEffect, useId, useState } from 'react';
 import { Modal } from '@/shared/components/modal';
+import { SubjectPicker } from '@/shared/components/subject-picker';
 import { getIsoDate } from '@/shared/planner/week';
 import type { DayOfWeek, Subject } from '@/shared/types/schemas';
 import type { ScheduleException } from '../planner-screen-types';
-import { ExceptionSlotEditor } from './exception-slot-editor';
 
 type ExceptionEditorModalProps = {
   readonly isOpen: boolean;
@@ -14,7 +14,7 @@ type ExceptionEditorModalProps = {
   readonly date: Date;
   readonly dayOfWeek: DayOfWeek;
   readonly subjects: ReadonlyArray<Subject>;
-  readonly defaultSlots: Array<{ id: string; subjectId: string | null }>;
+  readonly defaultSubjectIds: ReadonlyArray<string>;
   readonly exception: ScheduleException | null;
   readonly onSave: (exception: Omit<ScheduleException, 'id'>) => void;
   readonly onRemove: () => void;
@@ -26,21 +26,23 @@ export const ExceptionEditorModal = ({
   date,
   dayOfWeek,
   subjects,
-  defaultSlots,
+  defaultSubjectIds,
   exception,
   onSave,
   onRemove,
 }: ExceptionEditorModalProps): React.ReactElement => {
   const instanceId = useId();
-  const [slots, setSlots] = useState(exception?.slots ?? defaultSlots);
+  const [subjectIds, setSubjectIds] = useState<ReadonlyArray<string>>(
+    exception?.subjectIds ?? defaultSubjectIds,
+  );
   const [reason, setReason] = useState(exception?.reason ?? '');
 
   useEffect(() => {
     if (isOpen) {
-      setSlots(exception?.slots ?? defaultSlots);
+      setSubjectIds(exception?.subjectIds ?? defaultSubjectIds);
       setReason(exception?.reason ?? '');
     }
-  }, [isOpen, exception, defaultSlots]);
+  }, [isOpen, exception, defaultSubjectIds]);
 
   const dateStr = date.toLocaleDateString('en-US', {
     weekday: 'long',
@@ -74,12 +76,11 @@ export const ExceptionEditorModal = ({
           </Button>
           <Button
             onClick={() => {
-              const isoDate = getIsoDate(date);
               onSave({
-                date: isoDate,
+                date: getIsoDate(date),
                 dayOfWeek,
                 reason: reason.trim() || undefined,
-                slots,
+                subjectIds: [...subjectIds],
               });
               onClose();
             }}
@@ -107,28 +108,19 @@ export const ExceptionEditorModal = ({
           />
         </div>
 
-        <ExceptionSlotEditor
-          slots={slots}
-          subjects={subjects}
-          onAddSlot={() => {
-            if (subjects.length > 0) {
-              setSlots((prev) => [
-                ...prev,
-                { id: `slot-${Date.now()}`, subjectId: subjects[0].id },
-              ]);
+        <div>
+          <span className="field-label mb-3 block">Classes for this day</span>
+          <SubjectPicker
+            scope={dateStr}
+            subjects={subjects}
+            selectedIds={subjectIds}
+            onAdd={(subjectId) => setSubjectIds((prev) => [...prev, subjectId])}
+            onRemove={(subjectId) =>
+              setSubjectIds((prev) => prev.filter((id) => id !== subjectId))
             }
-          }}
-          onChangeSlot={(slotId, subjectId) => {
-            setSlots((prev) =>
-              prev.map((slot) =>
-                slot.id === slotId ? { ...slot, subjectId } : slot,
-              ),
-            );
-          }}
-          onRemoveSlot={(slotId) => {
-            setSlots((prev) => prev.filter((slot) => slot.id !== slotId));
-          }}
-        />
+            emptyLabel="No classes (day off)"
+          />
+        </div>
       </div>
     </Modal>
   );

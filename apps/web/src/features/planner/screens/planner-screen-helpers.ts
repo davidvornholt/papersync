@@ -44,18 +44,14 @@ export const getSubjectsForWeek = (
   const subjectIds = new Set<string>();
 
   for (const day of timetable) {
-    for (const slot of day.slots) {
-      if (slot.subjectId !== null) {
-        subjectIds.add(slot.subjectId);
-      }
+    for (const subjectId of day.subjectIds) {
+      subjectIds.add(subjectId);
     }
   }
 
   for (const exception of exceptions) {
-    for (const slot of exception.slots) {
-      if (slot.subjectId !== null) {
-        subjectIds.add(slot.subjectId);
-      }
+    for (const subjectId of exception.subjectIds) {
+      subjectIds.add(subjectId);
     }
   }
 
@@ -84,19 +80,15 @@ export const applyExceptionsToTimetable = (
         return daySchedule;
       }
 
-      return {
-        ...daySchedule,
-        slots: exception.slots,
-      };
+      return { ...daySchedule, subjectIds: exception.subjectIds };
     });
 
-export const getDefaultSlotsForDay = (
+export const getDefaultSubjectIdsForDay = (
   timetable: ReadonlyArray<TimetableDay>,
   dayOfWeek: DayOfWeek,
-): Array<{ id: string; subjectId: string | null }> => {
-  const daySchedule = timetable.find((day) => day.day === dayOfWeek);
-  return daySchedule?.slots.map((slot) => ({ ...slot })) ?? [];
-};
+): Array<string> => [
+  ...(timetable.find((day) => day.day === dayOfWeek)?.subjectIds ?? []),
+];
 
 export const getExceptionForDate = (
   exceptions: ReadonlyArray<ScheduleException>,
