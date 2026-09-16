@@ -10,6 +10,7 @@ import {
   chooseImportDestination,
   type ImportDestination,
 } from './import-destination';
+import { normalizeSubject } from './subject-tags';
 export const serviceUrl = 'https://papersync.vornholt.online/api/homework';
 export const secretKey = 'papersync-connection';
 const lineBreakPattern = /\r?\n/u;
@@ -63,7 +64,11 @@ const importEntry = (
         notes,
         ...(payload.dueDate ? { dueDay: payload.dueDate } : {}),
         projectId: destination.projectId,
-        tagIds: [...destination.tagIds],
+        tagIds: [
+          ...(destination.subjectTagIds.get(
+            normalizeSubject(payload.subject),
+          ) ?? []),
+        ],
       }),
     );
     tasks.push({ id, notes });
@@ -98,7 +103,10 @@ export const importHomework = (api: PluginApi) =>
     if (items.length === 0) {
       return 0;
     }
-    const destination = yield* chooseImportDestination(api, items.length);
+    const destination = yield* chooseImportDestination(
+      api,
+      items.map((item) => item.payload.subject),
+    );
     if (!destination) {
       return null;
     }

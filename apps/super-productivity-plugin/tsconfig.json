@@ -1,4 +1,4 @@
 {
   "extends": "@davidvornholt/typescript-config/base",
-  "include": ["src/**/*.ts"]
+  "include": ["src/**/*.ts", "a11y/**/*.ts", "playwright.config.ts"]
 }
