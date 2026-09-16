@@ -79,7 +79,8 @@ export const SettingsSuperProductivityPanel = () => {
             Install the ZIP under Super Productivity Settings → Plugins, then
             paste a connection key into the plugin settings. It connects to
             papersync.vornholt.online when you click “Import homework”. Choose a
-            project and tags for that import; there are no background checks.
+            project and review the tags matched to your subjects; there are no
+            background checks.
           </p>
           <p>
             The plugin creates tasks with due dates. Connect one Super
@@ -156,8 +157,8 @@ export const SettingsSuperProductivityPanel = () => {
           </label>
         ) : null}
         <p className="text-graphite text-sm">
-          Choose a project and tags by name when you click “Import homework” in
-          Super Productivity.
+          Click “Import homework” in Super Productivity to choose a project and
+          review the tags matched to your subjects.
         </p>
       </fieldset>
     </div>

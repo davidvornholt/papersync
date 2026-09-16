@@ -14,8 +14,12 @@ const originalSelect = Object.getOwnPropertyDescriptor(
   globalThis,
   'HTMLSelectElement',
 );
+let selectedSubjects = ['0'];
 class FixtureSelect {
-  value = 'project-1';
+  readonly value: string;
+  constructor(value: string) {
+    this.value = value;
+  }
 }
 Object.defineProperty(globalThis, 'HTMLSelectElement', {
   configurable: true,
@@ -24,8 +28,12 @@ Object.defineProperty(globalThis, 'HTMLSelectElement', {
 Object.defineProperty(globalThis, 'document', {
   configurable: true,
   value: {
-    querySelector: () => new FixtureSelect(),
-    querySelectorAll: () => [{ value: 'tag-1' }],
+    querySelector: (selector: string) =>
+      new FixtureSelect(
+        selector.endsWith('-project')
+          ? 'project-1'
+          : (selectedSubjects[Number(selector.split('-').at(-1))] ?? ''),
+      ),
   },
 });
 afterAll(() => {
@@ -53,6 +61,7 @@ const item: QueuedHomework = {
   revision: 'revision-1',
 };
 const makeApi = () => {
+  selectedSubjects = ['0'];
   const tasks: Array<Task> = [];
   const api = {
     getAllProjects: mock(() =>
@@ -61,9 +70,7 @@ const makeApi = () => {
         { id: 'old', title: 'Archived', isArchived: true },
       ]),
     ),
-    getAllTags: mock(() =>
-      Promise.resolve([{ id: 'tag-1', title: 'Homework' }]),
-    ),
+    getAllTags: mock(() => Promise.resolve([{ id: 'tag-1', title: 'Math' }])),
     getTasks: mock(() => Promise.resolve(tasks)),
     getArchivedTasks: mock(() => Promise.resolve<ReadonlyArray<Task>>([])),
     addTask: mock((input) => {
@@ -185,9 +192,7 @@ it('selects projects and tags by name and escapes labels in the import dialog', 
   expect(api.openDialog.mock.calls[0]?.[0].htmlContent).not.toContain(
     'Archived',
   );
-  expect(api.openDialog.mock.calls[0]?.[0].htmlContent).not.toContain(
-    '<option value="">',
-  );
+
   expect(api.addTask).toHaveBeenCalledWith(
     expect.objectContaining({ projectId: 'project-1', tagIds: ['tag-1'] }),
   );
@@ -198,4 +203,62 @@ it('cancelling leaves the queue unacknowledged and creates no tasks', async () =
   expect(await Effect.runPromise(importHomework(api))).toBeNull();
   expect(api.addTask).not.toHaveBeenCalled();
   expect(api.request).toHaveBeenCalledTimes(1);
+});
+
+it('assigns each task its own subject tag and reuses the choice for repeated subjects', async () => {
+  const { api } = makeApi();
+  api.getAllTags.mockResolvedValue([
+    { id: 'math', title: 'Math' },
+    { id: 'english', title: 'English' },
+  ]);
+  selectedSubjects = ['0', '1'];
+  api.request.mockImplementation((_url, options) =>
+    Promise.resolve(
+      options.method === 'POST'
+        ? { ok: true }
+        : [
+            item,
+            {
+              ...item,
+              payload: {
+                ...item.payload,
+                id: 'homework-2',
+                subject: 'English',
+              },
+            },
+            {
+              ...item,
+              payload: { ...item.payload, id: 'homework-3', subject: ' MATH ' },
+            },
+          ],
+    ),
+  );
+  const expectedTaskCount = 3;
+  expect(await Effect.runPromise(importHomework(api))).toBe(expectedTaskCount);
+  expect(api.addTask.mock.calls.map(([input]) => input.tagIds)).toEqual([
+    ['math'],
+    ['english'],
+    ['math'],
+  ]);
+});
+
+it('leaves every task queued when a subject has no selected tag', async () => {
+  const { api } = makeApi();
+  selectedSubjects = [''];
+  expect(await Effect.runPromise(importHomework(api))).toBeNull();
+  expect(api.addTask).not.toHaveBeenCalled();
+  expect(api.request).toHaveBeenCalledTimes(1);
+  expect(api.showSnack).toHaveBeenCalledWith(
+    expect.objectContaining({ type: 'ERROR' }),
+  );
+});
+
+it('imports without tags only after an explicit no-tag choice', async () => {
+  const { api } = makeApi();
+  api.getAllTags.mockResolvedValue([]);
+  selectedSubjects = ['none'];
+  await Effect.runPromise(importHomework(api));
+  expect(api.addTask).toHaveBeenCalledWith(
+    expect.objectContaining({ tagIds: [] }),
+  );
 });
