@@ -15,7 +15,7 @@
     "test:container": "bash scripts/container-smoke.sh"
   },
   "dependencies": {
-    "@ai-sdk/google": "^4.0.69",
+    "@ai-sdk/google": "^4.0.72",
     "@ai-sdk/google-vertex": "^5.0.81",
     "@effect/sql": "^0.52.1",
     "@effect/sql-pg": "^0.53.0",
