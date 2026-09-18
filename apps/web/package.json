@@ -24,7 +24,7 @@
     "@papersync/ui": "workspace:*",
     "@react-pdf/renderer": "^4.9.0",
     "ai": "^7.0.99",
-    "better-auth": "^1.7.4",
+    "better-auth": "^1.7.5",
     "bonjour-service": "^1.4.4",
     "effect": "^3.22.2",
     "lucide-react": "^1.45.0",
