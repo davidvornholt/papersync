@@ -23,7 +23,7 @@
     "@papersync/homework": "workspace:*",
     "@papersync/ui": "workspace:*",
     "@react-pdf/renderer": "^4.9.0",
-    "ai": "^7.0.99",
+    "ai": "^7.0.109",
     "better-auth": "^1.7.4",
     "bonjour-service": "^1.4.4",
     "effect": "^3.22.2",
