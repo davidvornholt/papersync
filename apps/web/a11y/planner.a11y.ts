@@ -19,7 +19,7 @@ const plannerSettings = {
 };
 
 for (const timezoneId of ['Europe/Berlin', 'America/Los_Angeles']) {
-  test.describe(timezoneId, () => {
+  test.describe(`${timezoneId}`, () => {
     it.use({ timezoneId });
     for (const date of ['2026-09-08T12:00:00', '2025-12-30T12:00:00']) {
       it(`Tuesday exceptions stay on Tuesday on ${date}`, async ({
