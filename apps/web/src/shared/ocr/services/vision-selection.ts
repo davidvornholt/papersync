@@ -1,8 +1,5 @@
 import { Effect, Layer } from 'effect';
-import {
-  type ExtractionOptions,
-  ExtractionValidationError,
-} from '../actions/extract-types';
+import { VisionConfigurationError } from '../errors/vision-contract';
 import { VisionProvider } from './vision-contract';
 import {
   makeGoogleVisionLayer,
@@ -11,20 +8,27 @@ import {
 import { hasVertexConfiguration } from './vision-vertex-config';
 import { getVertexVisionProvider } from './vision-vertex-provider';
 
-export const getVisionLayer = (options: ExtractionOptions) =>
+/** Browser-local AI preferences; ignored when the server manages Vertex AI. */
+export type VisionSettings = {
+  readonly provider: 'google' | 'ollama';
+  readonly googleApiKey?: string;
+  readonly ollamaEndpoint?: string;
+};
+
+export const getVisionLayer = (settings: VisionSettings) =>
   Effect.gen(function* () {
     if (hasVertexConfiguration()) {
       const provider = yield* getVertexVisionProvider();
       return Layer.succeed(VisionProvider, provider);
     }
-    if (options.provider === 'google' && options.googleApiKey) {
-      return makeGoogleVisionLayer(options.googleApiKey);
+    if (settings.provider === 'google' && settings.googleApiKey) {
+      return makeGoogleVisionLayer(settings.googleApiKey);
     }
-    if (options.provider === 'ollama' && options.ollamaEndpoint) {
-      return makeOllamaVisionLayer(options.ollamaEndpoint);
+    if (settings.provider === 'ollama' && settings.ollamaEndpoint) {
+      return makeOllamaVisionLayer(settings.ollamaEndpoint);
     }
     return yield* Effect.fail(
-      new ExtractionValidationError({
+      new VisionConfigurationError({
         message:
           'AI is not configured. Configure Google Cloud on the server or add a provider in Settings.',
       }),

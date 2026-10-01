@@ -3,10 +3,10 @@
 import { useEffect } from 'react';
 
 export const useScanImagePaste = ({
-  onFileSelect,
+  onFilesSelect,
   isDisabled,
 }: {
-  readonly onFileSelect: (file: File) => void;
+  readonly onFilesSelect: (files: ReadonlyArray<File>) => void;
   readonly isDisabled: boolean;
 }) => {
   useEffect(() => {
@@ -25,18 +25,18 @@ export const useScanImagePaste = ({
         return;
       }
 
-      const file = Array.from(event.clipboardData?.files ?? []).find((item) =>
-        item.type.startsWith('image/'),
+      const files = Array.from(event.clipboardData?.files ?? []).filter(
+        (item) => item.type.startsWith('image/'),
       );
-      if (!file) {
+      if (files.length === 0) {
         return;
       }
 
       event.preventDefault();
-      onFileSelect(file);
+      onFilesSelect(files);
     };
 
     document.addEventListener('paste', handlePaste);
     return () => document.removeEventListener('paste', handlePaste);
-  }, [isDisabled, onFileSelect]);
+  }, [isDisabled, onFilesSelect]);
 };

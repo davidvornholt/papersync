@@ -2,6 +2,7 @@ import { createServer } from 'node:http';
 import { scanWcag22AaViolations } from '@davidvornholt/a11y-testing/axe';
 import { expect } from '@playwright/test';
 import { defaultSettings } from '../src/shared/settings/schema';
+import { mockAnalysis } from './analysis-fixture';
 import { createSessionCookies } from './auth-fixture';
 import { createPlannerImage } from './planner-image';
 import { test } from './settings-fixture';
@@ -19,6 +20,7 @@ let modelResponse = JSON.stringify({
 });
 let endpoint = '';
 let modelRequests = 0;
+const analyzeButton = /^Analyze photo/u;
 const server = createServer((_request, response) => {
   modelRequests += 1;
   response.setHeader('content-type', 'application/json');
@@ -55,13 +57,13 @@ test('an older sheet retains its week and supports review, empty scans, and extr
   const week = '2026-W01';
   const image = await createPlannerImage(page, week);
   await page.goto('/scan');
-  await expect(page.getByLabel('Select image from device')).toBeEnabled();
-  await page.getByLabel('Select image from device').setInputFiles({
+  await expect(page.getByLabel('Select images from device')).toBeEnabled();
+  await page.getByLabel('Select images from device').setInputFiles({
     name: 'older-sheet.png',
     mimeType: 'image/png',
     buffer: Buffer.from(image.split(',')[1], 'base64'),
   });
-  await page.getByRole('button', { name: 'Process scan' }).click();
+  await page.getByRole('button', { name: analyzeButton }).click();
   await expect(page.getByText(`Sheet week: ${week}`)).toBeVisible();
   await expect(page.getByLabel('Task')).toHaveValue(entry.content);
   await expect(page.getByLabel('Due date')).toHaveValue(entry.dueDate);
@@ -73,14 +75,14 @@ test('an older sheet retains its week and supports review, empty scans, and extr
     entries: [],
     confidence: 1,
   });
-  await page.getByRole('button', { name: 'Process scan' }).click();
+  await page.getByRole('button', { name: analyzeButton }).click();
   await expect(page.getByText('No new entries detected')).toBeVisible();
   await expect(
     page.getByRole('button', { name: 'Approve and save' }),
   ).toHaveCount(0);
   expect(await scanWcag22AaViolations(page)).toEqual([]);
   modelResponse = 'invalid model output';
-  await page.getByRole('button', { name: 'Process scan' }).click();
+  await page.getByRole('button', { name: analyzeButton }).click();
   await expect(
     page.getByText('Processing failed', { exact: true }),
   ).toBeVisible();
@@ -109,13 +111,13 @@ test('a sheet uses OCR for its week and only asks for unreadable weeks', async (
   const [, imageData] = (await createPlannerImage(page)).split(',');
   const imageBuffer = Buffer.from(imageData, 'base64');
 
-  await expect(page.getByLabel('Select image from device')).toBeEnabled();
-  await page.getByLabel('Select image from device').setInputFiles({
+  await expect(page.getByLabel('Select images from device')).toBeEnabled();
+  await page.getByLabel('Select images from device').setInputFiles({
     name: 'printed-week.png',
     mimeType: 'image/png',
     buffer: imageBuffer,
   });
-  const process = page.getByRole('button', { name: 'Process scan' });
+  const process = page.getByRole('button', { name: analyzeButton });
   await expect(process).toBeEnabled();
   await process.click();
   await expect(page.getByText('Sheet week: 2026-W01')).toBeVisible();
@@ -125,13 +127,13 @@ test('a sheet uses OCR for its week and only asks for unreadable weeks', async (
   await expect(page.getByLabel('Completed on paper')).toHaveCount(0);
   expect(await scanWcag22AaViolations(page)).toEqual([]);
 
-  await page.getByRole('button', { name: 'Change image' }).click();
+  await page.getByRole('button', { name: 'Start over' }).click();
   modelResponse = JSON.stringify({
     weekId: null,
     entries: [{ ...entry, dueDate: null }],
     confidence: 1,
   });
-  await page.getByLabel('Select image from device').setInputFiles({
+  await page.getByLabel('Select images from device').setInputFiles({
     name: 'unreadable-week.png',
     mimeType: 'image/png',
     buffer: imageBuffer,
@@ -195,8 +197,8 @@ test('rescans collapse saved homework and allow deliberate corrections without l
   await context.addCookies(await createSessionCookies());
   await page.goto('/scan');
   const [, imageData] = (await createPlannerImage(page)).split(',');
-  await expect(page.getByLabel('Select image from device')).toBeEnabled();
-  await page.getByLabel('Select image from device').setInputFiles({
+  await expect(page.getByLabel('Select images from device')).toBeEnabled();
+  await page.getByLabel('Select images from device').setInputFiles({
     name: 'rescan.png',
     mimeType: 'image/png',
     buffer: Buffer.from(imageData, 'base64'),
@@ -208,22 +210,11 @@ test('rescans collapse saved homework and allow deliberate corrections without l
     action: 'add',
   };
   let entries = [oldEntry, newEntry];
-  await page.route('**/scan', async (route) => {
-    if (!route.request().headers()['next-action']) {
-      await route.continue();
-      return;
-    }
-    const result = {
-      success: true,
-      data: { weekId: '2026-W01', entries, confidence: 1 },
-      modelUsed: 'browser fixture',
-    };
-    await route.fulfill({
-      contentType: 'text/x-component',
-      body: `0:{"a":"$@1","f":"","b":"test"}\n1:${JSON.stringify(result)}\n`,
-    });
-  });
-  const process = page.getByRole('button', { name: 'Process scan' });
+  await mockAnalysis(page, () => ({
+    data: { weekId: '2026-W01', entries, confidence: 1 },
+    modelUsed: 'browser fixture',
+  }));
+  const process = page.getByRole('button', { name: analyzeButton });
   const approve = page.getByRole('button', { name: 'Approve and save' });
   await process.click();
   await expect(page.getByLabel('Task')).toHaveCount(1);
@@ -257,8 +248,8 @@ test('review retains informational entries and only excludes entries explicitly 
   await context.addCookies(await createSessionCookies());
   await page.goto('/scan');
   const [, imageData] = (await createPlannerImage(page)).split(',');
-  await expect(page.getByLabel('Select image from device')).toBeEnabled();
-  await page.getByLabel('Select image from device').setInputFiles({
+  await expect(page.getByLabel('Select images from device')).toBeEnabled();
+  await page.getByLabel('Select images from device').setInputFiles({
     name: 'all-entries.png',
     mimeType: 'image/png',
     buffer: Buffer.from(imageData, 'base64'),
@@ -266,36 +257,31 @@ test('review retains informational entries and only excludes entries explicitly 
   const reference = 'Exam topics: chapters 3–5';
   const unwanted = 'Bring an umbrella';
   const recognizedContents = [entry.content, reference, unwanted];
-  let saving = false;
   let savedRequest = '';
+  await mockAnalysis(page, () => ({
+    data: {
+      weekId: '2026-W01',
+      confidence: 1,
+      entries: recognizedContents.map((content) => ({
+        ...entry,
+        content,
+        action: 'add',
+      })),
+    },
+    modelUsed: 'browser fixture',
+  }));
   await page.route('**/scan', async (route) => {
     if (!route.request().headers()['next-action']) {
       await route.continue();
       return;
     }
-    if (saving) {
-      savedRequest = route.request().postData() ?? '';
-    }
-    const result = saving
-      ? { success: true, count: 2 }
-      : {
-          success: true,
-          data: {
-            weekId: '2026-W01',
-            confidence: 1,
-            entries: recognizedContents.map((content) => ({
-              ...entry,
-              content,
-              action: 'add',
-            })),
-          },
-        };
+    savedRequest = route.request().postData() ?? '';
     await route.fulfill({
       contentType: 'text/x-component',
-      body: `0:{"a":"$@1","f":"","b":"test"}\n1:${JSON.stringify(result)}\n`,
+      body: `0:{"a":"$@1","f":"","b":"test"}\n1:${JSON.stringify({ success: true, count: 2 })}\n`,
     });
   });
-  await page.getByRole('button', { name: 'Process scan' }).click();
+  await page.getByRole('button', { name: analyzeButton }).click();
   await expect(page.getByLabel('Task')).toHaveCount(recognizedContents.length);
   await expect(page.getByLabel('Task').nth(1)).toHaveValue(reference);
   await page
@@ -306,7 +292,6 @@ test('review retains informational entries and only excludes entries explicitly 
     page.getByText('2 new or changed tasks will be queued', { exact: false }),
   ).toBeVisible();
   expect(await scanWcag22AaViolations(page)).toEqual([]);
-  saving = true;
   await page.getByRole('button', { name: 'Approve and save' }).click();
   await expect(
     page.getByText('2 tasks waiting for Super Productivity.', { exact: false }),

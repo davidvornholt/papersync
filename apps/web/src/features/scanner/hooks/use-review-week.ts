@@ -9,48 +9,59 @@ import {
 } from 'react';
 import { applyReviewWeek } from '@/shared/homework/actions';
 import type { ExtractedEntry } from '@/shared/homework/entry';
-import type { ReviewWeekResult } from '@/shared/homework/review-week';
 import { requestAction } from '@/shared/http/action';
 import type { WeekId } from '@/shared/types/schemas';
-import type { ScanState } from './use-scan-types';
+import type { ScanNotify, ScanState } from './use-scan-types';
 
 type ReviewWeekOptions = {
   readonly state: ScanState;
   readonly setState: Dispatch<SetStateAction<ScanState>>;
   readonly weekId: WeekId | null;
+  readonly entries: ReadonlyArray<ExtractedEntry>;
+  readonly setEntries: Dispatch<SetStateAction<ReadonlyArray<ExtractedEntry>>>;
   readonly revisionRef: RefObject<number>;
+  readonly notify: ScanNotify;
 };
 
 export const useReviewWeek = ({
   state,
   setState,
   weekId,
+  entries,
+  setEntries,
   revisionRef,
+  notify,
 }: ReviewWeekOptions) => {
   const [isUpdatingWeek, setIsUpdatingWeek] = useState(false);
-  const applyWeek = (
-    entries: ReadonlyArray<ExtractedEntry>,
-  ): Promise<ReviewWeekResult | null> => {
+  const applyWeek = () => {
     if (state.status !== 'complete' || !weekId || isUpdatingWeek) {
-      return Promise.resolve(null);
+      return;
     }
     revisionRef.current += 1;
     const currentRevision = revisionRef.current;
     setIsUpdatingWeek(true);
-    return Effect.runPromise(
+    Effect.runFork(
       requestAction(() => applyReviewWeek(entries, weekId)).pipe(
         Effect.catchAll((error) =>
           Effect.succeed({ success: false as const, error: error.message }),
         ),
-        Effect.map((result) => {
-          if (currentRevision !== revisionRef.current) {
-            return null;
-          }
-          if (result.success) {
-            setState({ ...state, weekId, entries: result.entries });
-          }
-          return result;
-        }),
+        Effect.tap((result) =>
+          Effect.sync(() => {
+            if (currentRevision !== revisionRef.current) {
+              return;
+            }
+            if (result.success) {
+              setState({ ...state, weekId });
+              setEntries(result.entries);
+              notify(
+                'Week applied. Your edits are preserved; check due dates against the paper before saving.',
+                'info',
+              );
+            } else {
+              notify(result.error, 'error');
+            }
+          }),
+        ),
         Effect.ensuring(
           Effect.sync(() => {
             if (currentRevision === revisionRef.current) {

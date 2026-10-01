@@ -2,7 +2,6 @@ import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
   cacheComponents: true,
-  experimental: { serverActions: { bodySizeLimit: '16mb' } },
   output: 'standalone',
   reactCompiler: true,
   // PaperSync has one user, so the app opens straight on the daily task.

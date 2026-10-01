@@ -1,47 +1,29 @@
 'use client';
 
-import { Button } from '@papersync/ui/button';
 import { motion } from 'motion/react';
-import { useCallback, useRef } from 'react';
+import { PagePickers } from './page-pickers';
 
 type DragDropZoneProps = {
-  readonly onFileSelect: (file: File) => void;
+  readonly onFilesSelect: (files: ReadonlyArray<File>) => void;
   readonly isDragging: boolean;
   readonly setIsDragging: (dragging: boolean) => void;
 };
 
 export const DragDropZone = ({
-  onFileSelect,
+  onFilesSelect,
   isDragging,
   setIsDragging,
 }: DragDropZoneProps): React.ReactElement => {
-  const cameraInputRef = useRef<HTMLInputElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const handleFileChange = useCallback(
-    (event: React.ChangeEvent<HTMLInputElement>) => {
-      const file = event.target.files?.[0];
-      if (!file) {
-        return;
-      }
-
-      onFileSelect(file);
-      event.target.value = '';
-    },
-    [onFileSelect],
-  );
-
-  const handleDrop = useCallback(
-    (event: React.DragEvent) => {
-      event.preventDefault();
-      setIsDragging(false);
-      const [file] = event.dataTransfer.files;
-      if (file?.type.startsWith('image/')) {
-        onFileSelect(file);
-      }
-    },
-    [onFileSelect, setIsDragging],
-  );
+  const handleDrop = (event: React.DragEvent) => {
+    event.preventDefault();
+    setIsDragging(false);
+    const files = Array.from(event.dataTransfer.files).filter((file) =>
+      file.type.startsWith('image/'),
+    );
+    if (files.length > 0) {
+      onFilesSelect(files);
+    }
+  };
 
   return (
     // biome-ignore lint/a11y/noNoninteractiveElementInteractions: Drag-and-drop augments the keyboard-accessible upload and camera buttons.
@@ -57,24 +39,6 @@ export const DragDropZone = ({
           : 'border-hairline-strong'
       }`}
     >
-      <input
-        ref={cameraInputRef}
-        type="file"
-        accept="image/jpeg, image/png, image/webp"
-        capture="environment"
-        onChange={handleFileChange}
-        className="hidden"
-        aria-label="Take photo with camera"
-      />
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/jpeg, image/png, image/webp"
-        onChange={handleFileChange}
-        className="hidden"
-        aria-label="Select image from device"
-      />
-
       <div className="text-center">
         <motion.div
           animate={
@@ -107,29 +71,21 @@ export const DragDropZone = ({
         </motion.div>
 
         <p className="serif mb-1 text-[18px] text-ink">
-          {isDragging ? 'Drop image here' : 'Capture your planner'}
+          {isDragging ? 'Drop images here' : 'Capture your planner'}
         </p>
         {isDragging ? null : (
           <p className="mb-5 text-[13px] text-graphite">
-            Take a photo, upload a scan, or paste an image with Ctrl+V or ⌘V
+            Photograph the front and back, upload scans, or paste an image with
+            Ctrl+V or ⌘V
           </p>
         )}
 
-        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-center sm:gap-3">
-          <Button
-            variant="secondary"
-            onClick={() => fileInputRef.current?.click()}
-            className="sm:min-w-[10rem]"
-          >
-            Upload image
-          </Button>
-          <Button
-            onClick={() => cameraInputRef.current?.click()}
-            className="sm:min-w-[10rem]"
-          >
-            Take photo
-          </Button>
-        </div>
+        <PagePickers
+          onFilesSelect={onFilesSelect}
+          cameraLabel="Take photo"
+          filesLabel="Upload images"
+          isCameraPrimary={true}
+        />
       </div>
     </section>
   );

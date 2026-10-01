@@ -1,5 +1,6 @@
 'use client';
 
+import { Button } from '@papersync/ui/button';
 import { StateView } from '@/shared/components/motion-layout';
 import { Spinner } from '@/shared/components/motion-loading';
 export const ResultsEmptyState = (): React.ReactElement => (
@@ -14,14 +15,29 @@ export const ResultsEmptyState = (): React.ReactElement => (
   </StateView>
 );
 
-export const ResultsProcessingState = (): React.ReactElement => (
+export const ResultsProcessingState = ({
+  isUploading,
+  onCancel,
+}: {
+  readonly isUploading: boolean;
+  readonly onCancel: () => void;
+}): React.ReactElement => (
   <StateView
     key="processing"
-    className="flex flex-1 flex-col items-center justify-center py-16"
+    className="flex flex-1 flex-col items-center justify-center py-16 text-center"
   >
     <Spinner size="lg" />
-    <p className="mt-4 font-medium text-foreground">Analyzing handwriting...</p>
-    <p className="mt-1 text-muted text-sm">This may take a moment</p>
+    <p role="status" className="mt-4 font-medium text-foreground">
+      {isUploading ? 'Uploading photos…' : 'Analyzing handwriting…'}
+    </p>
+    <p className="mt-1 max-w-xs text-muted text-sm">
+      {isUploading
+        ? 'Keep PaperSync open until the upload finishes.'
+        : 'You can switch apps or lock your phone. The result will be here when you come back.'}
+    </p>
+    <Button variant="ghost" className="mt-6" onClick={onCancel}>
+      Cancel analysis
+    </Button>
   </StateView>
 );
 
@@ -30,9 +46,9 @@ export const ResultsIdleState = (): React.ReactElement => (
     key="idle"
     className="flex flex-1 flex-col items-center justify-center py-16 text-center"
   >
-    <p className="text-muted">Upload a scan to see extracted content</p>
+    <p className="text-muted">Add photos of the sheet to see its homework</p>
     <p className="mt-1 text-muted-light text-sm">
-      AI will detect and extract handwritten entries
+      Photograph the front and back; PaperSync reads them together
     </p>
   </StateView>
 );

@@ -9,3 +9,8 @@ export class VisionValidationError extends Data.TaggedError(
   readonly message: string;
   readonly raw?: string;
 }> {}
+export class VisionConfigurationError extends Data.TaggedError(
+  'VisionConfigurationError',
+)<{
+  readonly message: string;
+}> {}

@@ -31,6 +31,7 @@
         "packages/typescript-config/config.test.ts",
         "apps/web/src/app/api/plugin/route.ts",
         "apps/web/a11y/scan.a11y.ts",
+        "apps/web/a11y/scan-background.a11y.ts",
         "apps/web/src/features/scanner/services/escl-client.ts",
         "apps/web/src/features/scanner/services/__tests__/escl-client.test.ts"
       ],

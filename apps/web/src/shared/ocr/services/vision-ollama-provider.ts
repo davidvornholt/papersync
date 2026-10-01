@@ -11,21 +11,22 @@ import {
 } from './vision-prompt';
 import { OCRResponseJsonSchema, OCRResponseSchema } from './vision-schema';
 
-const imageDataPattern = /^data:image\/\w+;base64,/u;
 const codeFencePattern = /```(?:json)?\n?/gu;
 const responseSchema = Schema.Struct({ response: Schema.String });
 export const createOllamaVisionProvider = (
   endpoint: string,
 ): VisionProvider => ({
-  extractHandwriting: (imageBase64, weekId) =>
+  extractHandwriting: (images, weekId) =>
     Effect.gen(function* () {
       const body = yield* fetchJson(`${endpoint}/api/generate`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
           model: 'qwen3-vl-4b',
-          prompt: createExtractionSystemPrompt(weekId),
-          images: [imageBase64.replace(imageDataPattern, '')],
+          prompt: createExtractionSystemPrompt(weekId, images.length),
+          images: images.map((image) =>
+            Buffer.from(image.data).toString('base64'),
+          ),
           format: OCRResponseJsonSchema,
           stream: false,
         }),

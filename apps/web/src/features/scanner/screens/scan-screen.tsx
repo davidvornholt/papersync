@@ -6,7 +6,7 @@ import { SettingsLoadError } from '@/shared/components/settings-load-error';
 import type { UseScanReturn } from '../hooks/use-scan-types';
 import { NetworkScannersPanel } from './components/network-scanners-panel';
 import { ResultsPanel } from './components/results-panel';
-import { UploadScanCard } from './components/upload-scan-card';
+import { ScanPagesCard } from './components/scan-pages-card';
 import { useScanScreen } from './hooks/use-scan-screen';
 
 const getWeekHelp = (scan: UseScanReturn) => {
@@ -16,13 +16,7 @@ const getWeekHelp = (scan: UseScanReturn) => {
   return 'Read from the full printed week or day dates. You can correct the week here.';
 };
 
-const WeekEditor = ({
-  scan,
-  onApplyWeek,
-}: {
-  readonly scan: UseScanReturn;
-  readonly onApplyWeek: () => void;
-}) => {
+const WeekEditor = ({ scan }: { readonly scan: UseScanReturn }) => {
   const [isOpen, setIsOpen] = useState(false);
   return (
     <details
@@ -57,7 +51,7 @@ const WeekEditor = ({
           {scan.canSave ? null : (
             <Button
               className="mt-3"
-              onClick={onApplyWeek}
+              onClick={scan.applyWeek}
               disabled={!scan.weekId || scan.isUpdatingWeek}
             >
               {scan.isUpdatingWeek ? 'Applying week…' : 'Use this week'}
@@ -75,7 +69,7 @@ export const ScanScreen = (): React.ReactElement => {
     return <SettingsLoadError message={controller.loadError} />;
   }
 
-  const { scan, isBusy } = controller;
+  const { scan } = controller;
   return (
     <div className="shell page-shell">
       <p className="mono-tag">After school</p>
@@ -83,27 +77,19 @@ export const ScanScreen = (): React.ReactElement => {
         Turn today’s page into a plan.
       </h1>
       <p className="mt-4 max-w-2xl text-ink-soft">
-        Scan your homework sheet, check it against the photo, then approve what
-        you want to save.
+        Photograph your homework sheet, check the reading against the photos,
+        then approve what you want to save.
       </p>
-      <div className="mt-10 grid gap-8 lg:grid-cols-2">
+      <div className="mt-8 grid gap-8 sm:mt-10 lg:grid-cols-2">
         <section aria-label="Your paper" className="space-y-6">
           <h2 className="text-2xl">1. Scan the sheet</h2>
-          <fieldset disabled={isBusy}>
-            {scan.imagePreview ? (
-              <WeekEditor
-                scan={scan}
-                onApplyWeek={controller.handleApplyWeek}
-              />
-            ) : null}
-            <UploadScanCard
-              preview={scan.imagePreview}
+          <fieldset disabled={controller.isCaptureLocked}>
+            {scan.pages.length > 0 ? <WeekEditor scan={scan} /> : null}
+            <ScanPagesCard
+              scan={scan}
               isDragging={controller.isDragging}
               setIsDragging={controller.setIsDragging}
-              isProcessing={isBusy}
-              onFileSelect={controller.handleFileSelect}
-              onClear={controller.handleClear}
-              onProcess={controller.handleProcess}
+              isLocked={controller.isCaptureLocked}
             />
           </fieldset>
           <details className="border-hairline border-t pt-4">
@@ -114,16 +100,16 @@ export const ScanScreen = (): React.ReactElement => {
             </p>
             <NetworkScannersPanel
               onScanComplete={controller.handleScanFromDevice}
-              isDisabled={isBusy}
+              isDisabled={controller.isCaptureLocked}
             />
           </details>
         </section>
         <section aria-label="Review homework">
           <h2 className="mb-6 text-2xl">2. Check and save</h2>
-          <fieldset disabled={isBusy}>
+          <fieldset disabled={controller.isReviewLocked}>
             <ResultsPanel
-              state={controller.panelState}
-              entries={controller.editedEntries}
+              state={scan.state.status}
+              entries={scan.entries}
               confidence={
                 scan.state.status === 'complete' ? scan.state.confidence : 0
               }
@@ -138,8 +124,12 @@ export const ScanScreen = (): React.ReactElement => {
               errorMessage={
                 scan.state.status === 'error' ? scan.state.error : undefined
               }
-              onUpdateEntry={controller.handleUpdateEntry}
-              onDeleteEntry={controller.handleDeleteEntry}
+              isUploading={
+                scan.state.status === 'processing' && scan.state.jobId === null
+              }
+              onCancel={scan.cancel}
+              onUpdateEntry={scan.updateEntry}
+              onDeleteEntry={scan.deleteEntry}
               onSync={controller.handleSync}
               isSyncing={controller.isSyncing}
               canSave={scan.canSave}
