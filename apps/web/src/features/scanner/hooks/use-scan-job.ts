@@ -18,6 +18,7 @@ import {
 import type { AISettings, ScanNotify, ScanState } from './use-scan-types';
 
 type ScanJobOptions = {
+  readonly state: ScanState;
   readonly setState: Dispatch<SetStateAction<ScanState>>;
   readonly setWeek: Dispatch<SetStateAction<WeekId | null>>;
   readonly setEntries: Dispatch<SetStateAction<ReadonlyArray<ExtractedEntry>>>;
@@ -36,32 +37,21 @@ const toReviewEntries = (finished: FinishedScanJob & { status: 'complete' }) =>
     }),
   );
 
-const toFinished = Effect.match({
-  onFailure: (error: { readonly message: string }): FinishedScanJob => ({
-    status: 'failed',
-    error: error.message,
-  }),
-  onSuccess: (finished: FinishedScanJob) => finished,
-});
-
-/** Starts and follows server-side analysis; following stops on unmount. */
+/**
+ * Uploads photos and follows the resulting server job. Following is tied to
+ * the visible page: hiding or leaving Scan pauses it, showing Scan resumes it.
+ * The analysis itself continues on the server either way.
+ */
 export const useScanJob = ({
+  state,
   setState,
   setWeek,
   setEntries,
   notify,
 }: ScanJobOptions) => {
-  const jobFiberRef = useRef<Fiber.RuntimeFiber<void> | null>(null);
+  const uploadFiberRef = useRef<Fiber.RuntimeFiber<void> | null>(null);
 
-  const stop = () => {
-    if (jobFiberRef.current) {
-      Effect.runFork(Fiber.interrupt(jobFiberRef.current));
-      jobFiberRef.current = null;
-    }
-  };
-
-  const show = (finished: FinishedScanJob) => {
-    jobFiberRef.current = null;
+  const showFinished = useEffectEvent((finished: FinishedScanJob) => {
     if (finished.status === 'failed') {
       setState({ status: 'error', error: finished.error });
       notify(finished.error, 'error');
@@ -87,39 +77,62 @@ export const useScanJob = ({
         : 'No homework found in these photos',
       'info',
     );
-  };
+  });
 
-  const run = <E extends { readonly message: string }>(
-    job: Effect.Effect<FinishedScanJob, E>,
-  ) => {
-    stop();
-    jobFiberRef.current = Effect.runFork(
-      job.pipe(
-        toFinished,
-        Effect.flatMap((finished) => Effect.sync(() => show(finished))),
+  const followedJobId = state.status === 'processing' ? state.jobId : null;
+  useEffect(() => {
+    if (!followedJobId) {
+      return;
+    }
+    const fiber = Effect.runFork(
+      awaitScanJob(followedJobId).pipe(
+        Effect.match({
+          onFailure: (error): FinishedScanJob => ({
+            status: 'failed',
+            error: error.message,
+          }),
+          onSuccess: (finished) => finished,
+        }),
+        Effect.flatMap((finished) => Effect.sync(() => showFinished(finished))),
       ),
     );
+    return () => {
+      Effect.runFork(Fiber.interrupt(fiber));
+    };
+  }, [followedJobId]);
+
+  const stop = () => {
+    if (uploadFiberRef.current) {
+      Effect.runFork(Fiber.interrupt(uploadFiberRef.current));
+      uploadFiberRef.current = null;
+    }
   };
 
-  const follow = (jobId: string) => run(awaitScanJob(jobId));
-
+  // The upload is not tied to the page: it finishes while Scan is hidden, and
+  // the job id it returns is followed once Scan shows again.
   const start = (
     images: ReadonlyArray<Blob>,
     weekId: WeekId | null,
     aiSettings: AISettings,
-  ) =>
-    run(
+  ) => {
+    stop();
+    uploadFiberRef.current = Effect.runFork(
       startScanJob(images, weekId, aiSettings).pipe(
-        Effect.tap((jobId) =>
-          Effect.sync(() => setState({ status: 'processing', jobId })),
+        Effect.match({
+          onFailure: (error) => {
+            setState({ status: 'error', error: error.message });
+            notify(error.message, 'error');
+          },
+          onSuccess: (jobId) => setState({ status: 'processing', jobId }),
+        }),
+        Effect.ensuring(
+          Effect.sync(() => {
+            uploadFiberRef.current = null;
+          }),
         ),
-        Effect.flatMap(awaitScanJob),
       ),
     );
+  };
 
-  // Leaving the page stops waiting, not the analysis; it resumes on return.
-  const stopOnUnmount = useEffectEvent(stop);
-  useEffect(() => () => stopOnUnmount(), []);
-
-  return { start, follow, stop };
+  return { start, stop };
 };

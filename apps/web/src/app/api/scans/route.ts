@@ -1,7 +1,10 @@
 import { databaseRuntime } from '@papersync/db/runtime';
 import { Effect } from 'effect';
 import { analyzeScan } from '@/features/scanner/services/scan-analysis';
-import { startScanJob } from '@/features/scanner/services/scan-jobs';
+import {
+  ensureScanCapacity,
+  startScanJob,
+} from '@/features/scanner/services/scan-jobs';
 import { parseScanRequest } from '@/features/scanner/services/scan-request';
 import { rejectUnauthorizedApiRequest } from '@/shared/auth/session';
 
@@ -13,7 +16,8 @@ export const POST = async (request: Request): Promise<Response> => {
     return rejection;
   }
   return databaseRuntime.runPromise(
-    parseScanRequest(request).pipe(
+    ensureScanCapacity.pipe(
+      Effect.zipRight(parseScanRequest(request)),
       Effect.flatMap((input) => startScanJob(analyzeScan(input))),
       Effect.match({
         onFailure: (error) =>

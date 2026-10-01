@@ -1,4 +1,4 @@
-import { Effect, Schema } from 'effect';
+import { Effect, Fiber, Schema } from 'effect';
 import { TaskAction, WeekId } from '@/shared/types/schemas';
 import { ScanDraftStoreError } from '../errors/scan-client';
 import type { ScanPage } from './use-scan-types';
@@ -37,7 +37,7 @@ const StoredReview = Schema.Struct({
 });
 export type StoredReview = typeof StoredReview.Type;
 
-export const emptyReview: StoredReview = {
+const emptyReview: StoredReview = {
   weekId: null,
   jobId: null,
   result: null,
@@ -60,8 +60,10 @@ const openDatabase = Effect.async<IDBDatabase, ScanDraftStoreError>(
     request.onerror = () => resume(Effect.fail(storeError(request.error)));
   },
 );
-// One shared connection keeps writes in the order they were requested.
-const database = Effect.runSync(Effect.cached(openDatabase));
+// One shared connection keeps writes in the order they were requested. It
+// opens in its own fiber, so a caller that stops waiting cannot cancel it.
+const openOnce = Effect.runSync(Effect.cached(Effect.forkDaemon(openDatabase)));
+const database = Effect.flatMap(openOnce, Fiber.join);
 
 const transact = <A>(
   mode: IDBTransactionMode,

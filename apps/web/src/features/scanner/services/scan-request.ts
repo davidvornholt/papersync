@@ -6,7 +6,11 @@ import type {
 import { WeekId } from '@/shared/types/schemas';
 import { ScanRequestError } from '../errors/scan-jobs';
 import type { ScanAnalysisInput } from './scan-analysis';
-import { scanPageByteLimit, scanPageLimit } from './scan-limits';
+import {
+  scanPageByteLimit,
+  scanPageLimit,
+  scanUploadByteLimit,
+} from './scan-limits';
 
 const badRequestStatus = 400;
 const payloadTooLargeStatus = 413;
@@ -61,7 +65,7 @@ const readPages = (form: FormData) =>
       Effect.gen(function* () {
         if (file.size > scanPageByteLimit) {
           return yield* new ScanRequestError({
-            message: 'Each photo must be 10 MB or smaller.',
+            message: 'Each photo must be 4 MB or smaller.',
             status: payloadTooLargeStatus,
           });
         }
@@ -86,17 +90,70 @@ const readPages = (form: FormData) =>
     );
   });
 
+const uploadTooLarge = () =>
+  new ScanRequestError({
+    message: 'These photos are too large to analyze together. Remove some.',
+    status: payloadTooLargeStatus,
+  });
+
+type Chunk = Uint8Array<ArrayBuffer>;
+type BodyReader = ReadableStreamDefaultReader<Chunk>;
+const readUpTo = async (
+  reader: BodyReader,
+  limit: number,
+  chunks: Array<Chunk>,
+  size: number,
+): Promise<Array<Chunk> | null> => {
+  const { done, value } = await reader.read();
+  if (done) {
+    return chunks;
+  }
+  if (size + value.byteLength > limit) {
+    await reader.cancel();
+    return null;
+  }
+  chunks.push(value);
+  return readUpTo(reader, limit, chunks, size + value.byteLength);
+};
+
+// Route handlers have no body limit, so the upload is capped before it is
+// buffered: by its declared length first, then while it streams in.
+const readLimitedForm = (request: Request) =>
+  Effect.gen(function* () {
+    const declared = Number(request.headers.get('content-length') ?? 0);
+    if (declared > scanUploadByteLimit) {
+      return yield* uploadTooLarge();
+    }
+    const invalidUpload = new ScanRequestError({
+      message: 'Send the photos as a form upload.',
+      status: badRequestStatus,
+    });
+    const { body } = request;
+    if (!body) {
+      return yield* invalidUpload;
+    }
+    const chunks = yield* Effect.tryPromise({
+      try: () => readUpTo(body.getReader(), scanUploadByteLimit, [], 0),
+      catch: () => invalidUpload,
+    });
+    if (!chunks) {
+      return yield* uploadTooLarge();
+    }
+    return yield* Effect.tryPromise({
+      try: () =>
+        new Response(new Blob(chunks), {
+          headers: {
+            'content-type': request.headers.get('content-type') ?? '',
+          },
+        }).formData(),
+      catch: () => invalidUpload,
+    });
+  });
+
 /** Reads a multipart scan upload: `page` files plus the browser's AI settings. */
 export const parseScanRequest = (request: Request) =>
   Effect.gen(function* () {
-    const form = yield* Effect.tryPromise({
-      try: () => request.formData(),
-      catch: () =>
-        new ScanRequestError({
-          message: 'Send the photos as a form upload.',
-          status: badRequestStatus,
-        }),
-    });
+    const form = yield* readLimitedForm(request);
     const pages = yield* readPages(form);
     const week = readText(form, 'weekId');
     const weekId =

@@ -40,7 +40,7 @@ export const useScan = ({
   const [entries, setEntries] = useState<ReadonlyArray<ExtractedEntry>>([]);
   const revisionRef = useRef(0);
   const pageList = useScanPages({ notify, setState });
-  const job = useScanJob({ setState, setWeek, setEntries, notify });
+  const job = useScanJob({ state, setState, setWeek, setEntries, notify });
   const review = useReviewWeek({
     state,
     setState,
@@ -63,7 +63,6 @@ export const useScan = ({
         setState({ status: 'complete', ...stored.result });
       } else if (stored.jobId) {
         setState({ status: 'processing', jobId: stored.jobId });
-        job.follow(stored.jobId);
       }
     },
   });

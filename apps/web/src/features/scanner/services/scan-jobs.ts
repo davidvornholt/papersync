@@ -19,7 +19,7 @@ type ScanJob = {
 const jobRetentionHours = 6;
 const jobRetention = Duration.hours(jobRetentionHours);
 const jobCapacity = 20;
-const runningJobLimit = 3;
+const runningJobLimit = 2;
 const tooManyRequestsStatus = 429;
 const unexpectedFailure =
   'Analysis stopped unexpectedly. Analyze the photos again.';
@@ -71,20 +71,25 @@ const makeRoomForJob = Effect.suspend(() => {
 const isRunning = (job: ScanJob) =>
   Deferred.isDone(job.outcome).pipe(Effect.map((done) => !done));
 
+/** Fails while the server is busy, before an upload is read into memory. */
+export const ensureScanCapacity = Effect.gen(function* () {
+  yield* removeExpiredJobs;
+  const running = yield* Effect.filter([...getJobs().values()], isRunning);
+  if (running.length >= runningJobLimit) {
+    return yield* new ScanRequestError({
+      message:
+        'Other photos are still being analyzed. Wait for them, then try again.',
+      status: tooManyRequestsStatus,
+    });
+  }
+});
+
 /** Starts analysis in a fiber that outlives the request and returns its id. */
 export const startScanJob = <E extends { readonly message: string }, R>(
   analysis: Effect.Effect<ScanAnalysis, E, R>,
 ) =>
   Effect.gen(function* () {
-    yield* removeExpiredJobs;
-    const running = yield* Effect.filter([...getJobs().values()], isRunning);
-    if (running.length >= runningJobLimit) {
-      return yield* new ScanRequestError({
-        message:
-          'Other photos are still being analyzed. Wait for them, then try again.',
-        status: tooManyRequestsStatus,
-      });
-    }
+    yield* ensureScanCapacity;
     yield* makeRoomForJob;
     const outcome = yield* Deferred.make<FinishedScanJob>();
     const fiber = yield* analysis.pipe(

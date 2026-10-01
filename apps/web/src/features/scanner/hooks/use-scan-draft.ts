@@ -1,11 +1,10 @@
 'use client';
 
-import { Duration, Effect, Fiber } from 'effect';
-import { useEffect, useEffectEvent, useState } from 'react';
+import { Effect, Fiber } from 'effect';
+import { useEffect, useEffectEvent, useRef, useState } from 'react';
 import type { ExtractedEntry } from '@/shared/homework/entry';
 import type { WeekId } from '@/shared/types/schemas';
 import {
-  emptyReview,
   readScanDraft,
   type StoredReview,
   writeScanPages,
@@ -28,8 +27,8 @@ type ScanDraftOptions = {
 
 const logStoreFailure = (error: { readonly message: string }) =>
   Effect.logWarning(error.message);
-// Some private browsing modes never answer; scanning must not wait on them.
-const restoreTimeout = Duration.seconds(2);
+// Some private browsing modes answer slowly or never; scanning must not wait.
+const unlockAfterMilliseconds = 2000;
 
 const toStoredReview = ({
   state,
@@ -50,7 +49,11 @@ const toStoredReview = ({
   entries,
 });
 
-/** Restores the scan in progress once, then keeps the stored copy current. */
+/**
+ * Restores the stored scan once per visit, then keeps the stored copy
+ * current. Next.js keeps a hidden page's state, so showing Scan again must not
+ * restore over it; a slow read never overwrites work started meanwhile.
+ */
 export const useScanDraft = ({
   pages,
   state,
@@ -59,50 +62,60 @@ export const useScanDraft = ({
   restore,
 }: ScanDraftOptions): boolean => {
   const [isRestoring, setIsRestoring] = useState(true);
-  const onRestored = useEffectEvent((draft: ScanDraft) => {
-    restore(draft);
+  const [hasLoaded, setHasLoaded] = useState(false);
+  const hasLoadedRef = useRef(false);
+  const onLoaded = useEffectEvent((draft: ScanDraft | null) => {
+    hasLoadedRef.current = true;
+    const isUntouched =
+      pages.length === 0 &&
+      state.status === 'idle' &&
+      weekId === null &&
+      entries.length === 0;
+    if (draft && isUntouched) {
+      restore(draft);
+    }
+    setHasLoaded(true);
     setIsRestoring(false);
   });
+  const onSlowLoad = useEffectEvent(() => setIsRestoring(false));
 
   useEffect(() => {
+    if (hasLoadedRef.current) {
+      return;
+    }
+    const timer = setTimeout(onSlowLoad, unlockAfterMilliseconds);
     const fiber = Effect.runFork(
       readScanDraft.pipe(
-        Effect.timeoutFail({
-          duration: restoreTimeout,
-          onTimeout: () => ({
-            message: 'The saved scan did not load in time.',
-          }),
-        }),
+        Effect.map((draft): ScanDraft | null => draft),
         Effect.catchAll((error) =>
-          logStoreFailure(error).pipe(
-            Effect.as({ pages: [], review: emptyReview }),
-          ),
+          logStoreFailure(error).pipe(Effect.as(null)),
         ),
-        Effect.flatMap((draft) => Effect.sync(() => onRestored(draft))),
+        Effect.flatMap((draft) => Effect.sync(() => onLoaded(draft))),
       ),
     );
     return () => {
+      clearTimeout(timer);
       Effect.runFork(Fiber.interrupt(fiber));
     };
   }, []);
 
   useEffect(() => {
-    if (!isRestoring) {
+    if (hasLoaded) {
       Effect.runFork(
         writeScanPages(pages).pipe(Effect.catchAll(logStoreFailure)),
       );
     }
-  }, [isRestoring, pages]);
+  }, [hasLoaded, pages]);
 
   useEffect(() => {
-    if (!isRestoring) {
+    if (hasLoaded) {
       Effect.runFork(
         writeScanReview(toStoredReview({ state, weekId, entries })).pipe(
           Effect.catchAll(logStoreFailure),
         ),
       );
     }
-  }, [isRestoring, state, weekId, entries]);
+  }, [hasLoaded, state, weekId, entries]);
 
   return isRestoring;
 };

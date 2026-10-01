@@ -20,6 +20,8 @@ export type FinishedScanJob = Exclude<ScanJobState, { status: 'processing' }>;
 const notFoundStatus = 404;
 const connectionMessage =
   'PaperSync could not reach the server. Check your connection; the analysis continues on the server.';
+const uploadMessage =
+  'The photos were not uploaded. Check your connection, then analyze again.';
 
 const send = (url: string, init?: RequestInit) =>
   Effect.tryPromise({
@@ -65,14 +67,22 @@ export const startScanJob = (
     if (ai.ollamaEndpoint) {
       form.set('ollamaEndpoint', ai.ollamaEndpoint);
     }
-    const response = yield* send('/api/scans', { method: 'POST', body: form });
+    const response = yield* send('/api/scans', {
+      method: 'POST',
+      body: form,
+    }).pipe(
+      Effect.mapError(
+        (error) =>
+          new ScanJobRequestError({ message: uploadMessage, cause: error }),
+      ),
+    );
     if (!response.ok) {
       return yield* readError(response);
     }
     const body = yield* Effect.tryPromise({
       try: () => response.json() as Promise<unknown>,
       catch: (cause) =>
-        new ScanJobRequestError({ message: connectionMessage, cause }),
+        new ScanJobRequestError({ message: uploadMessage, cause }),
     });
     const { id } = yield* Schema.decodeUnknown(
       Schema.Struct({ id: Schema.String }),

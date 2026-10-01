@@ -13,7 +13,7 @@ const analysis: ScanAnalysis = {
   modelUsed: 'fixture',
 };
 const noWait = Duration.zero;
-const runningJobLimit = 3;
+const runningJobLimit = 2;
 const tooManyRequests = 429;
 const started: Array<string> = [];
 const start = (

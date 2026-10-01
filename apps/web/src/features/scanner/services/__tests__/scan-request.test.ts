@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'bun:test';
 import { Effect, Either } from 'effect';
-import { scanPageByteLimit, scanPageLimit } from '../scan-limits';
+import {
+  scanPageByteLimit,
+  scanPageLimit,
+  scanUploadByteLimit,
+} from '../scan-limits';
 import { parseScanRequest } from '../scan-request';
 
 const badRequest = 400;
@@ -83,5 +87,50 @@ describe('scan uploads', () => {
       payloadTooLarge,
     );
     expect(await rejection([page()], { weekId: '2026-37' })).toBe(badRequest);
+  });
+
+  it('rejects oversized uploads before buffering them', async () => {
+    const unread = new ReadableStream({
+      pull: () => {
+        throw new Error('The body must not be read.');
+      },
+    });
+    const declared = await Effect.runPromise(
+      parseScanRequest(
+        new Request('http://localhost/api/scans', {
+          method: 'POST',
+          body: unread,
+          headers: { 'content-length': String(scanUploadByteLimit + 1) },
+        }),
+      ).pipe(Effect.either),
+    );
+    expect(Either.isLeft(declared) && declared.left.status).toBe(
+      payloadTooLarge,
+    );
+
+    const chunk = new Uint8Array(scanPageByteLimit);
+    const pieces = scanUploadByteLimit / scanPageByteLimit + 1;
+    let sent = 0;
+    const streamed = await Effect.runPromise(
+      parseScanRequest(
+        new Request('http://localhost/api/scans', {
+          method: 'POST',
+          body: new ReadableStream({
+            pull: (controller) => {
+              sent += 1;
+              if (sent > pieces) {
+                controller.close();
+                return;
+              }
+              controller.enqueue(chunk);
+            },
+          }),
+        }),
+      ).pipe(Effect.either),
+    );
+    expect(Either.isLeft(streamed) && streamed.left.status).toBe(
+      payloadTooLarge,
+    );
+    expect(sent).toBeLessThanOrEqual(pieces);
   });
 });
