@@ -51,3 +51,15 @@ for route in /scan /planner /settings /api/plugin; do
 done
 login="$(curl --fail --silent "$origin/login")"
 [[ "$login" == *"Sign in with GitHub"* ]]
+[[ "$login" == *'rel="manifest" href="/manifest.webmanifest"'* ]]
+root="$(curl --silent -i "$origin/" | tr -d '\r')"
+[[ "$root" == *$'\nlocation: /scan'* ]]
+# Installing the app needs these files without a session.
+manifest="$(curl --fail --silent "$origin/manifest.webmanifest")"
+[[ "$manifest" == *'"start_url":"/scan"'* ]]
+curl --fail --silent "$origin/icons/icon-512.png" -o /dev/null
+curl --fail --silent "$origin/icons/maskable-512.png" -o /dev/null
+offline="$(curl --fail --silent "$origin/offline.html")"
+[[ "$offline" == *'You’re offline'* ]]
+worker="$(curl --fail --silent "$origin/sw.js")"
+[[ "$worker" == *'papersync-offline'* ]]

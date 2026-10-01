@@ -4,6 +4,8 @@ import './globals.css';
 import { MotionProvider } from '@/shared/components/motion-provider';
 import { MainLayout } from '@/shared/components/navigation';
 import { ToastProvider } from '@/shared/components/toast';
+import { appDescription, appThemeColor } from '@/shared/pwa/app-identity';
+import { ServiceWorkerRegistration } from '@/shared/pwa/service-worker-registration';
 
 const fraunces = Fraunces({
   subsets: ['latin'],
@@ -29,13 +31,14 @@ const jetbrainsMono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: 'PaperSync | Homework from paper to plan',
-  description:
-    'Scan your paper homework planner at home, review the reading, and send approved tasks to Super Productivity.',
+  applicationName: 'PaperSync',
+  description: appDescription,
 };
 
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
+  themeColor: appThemeColor,
 };
 
 type RootLayoutProps = {
@@ -54,6 +57,7 @@ const RootLayout = ({ children }: RootLayoutProps): React.ReactElement => (
           <MainLayout>{children}</MainLayout>
         </ToastProvider>
       </MotionProvider>
+      <ServiceWorkerRegistration />
     </body>
   </html>
 );

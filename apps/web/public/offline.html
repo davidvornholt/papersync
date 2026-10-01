@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#faf7f2" />
+    <title>Offline | PaperSync</title>
+    <style>
+      /* This page renders without the network, so it repeats the shared
+         theme's paper, ink, graphite, and accent tokens inline. */
+      @layer offline {
+        body {
+          margin: 0;
+          min-height: 100vh;
+          display: grid;
+          place-items: center;
+          background: oklch(0.977 0.008 80);
+          color: oklch(0.19 0.012 60);
+          font-family: Georgia, "Times New Roman", serif;
+        }
+        main {
+          max-width: 28rem;
+          padding: 1.5rem;
+        }
+        h1 {
+          font-size: 2rem;
+          font-weight: 500;
+          margin: 0 0 1rem;
+        }
+        p {
+          color: oklch(0.43 0.012 60);
+          font-family: system-ui, sans-serif;
+          line-height: 1.5;
+        }
+        a {
+          display: inline-block;
+          margin-top: 1rem;
+          padding: 0.75rem 1.25rem;
+          background: oklch(0.19 0.012 60);
+          color: oklch(0.977 0.008 80);
+          font-family: system-ui, sans-serif;
+          text-decoration: none;
+        }
+        a:focus-visible {
+          outline: 2px solid oklch(0.45 0.142 30);
+          outline-offset: 3px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>You’re offline</h1>
+      <p>
+        PaperSync needs a connection to analyze and save homework. Connect to
+        Wi-Fi or mobile data, then try again.
+      </p>
+      <a href="/scan">Try again</a>
+    </main>
+  </body>
+</html>
