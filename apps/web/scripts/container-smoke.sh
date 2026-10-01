@@ -63,3 +63,7 @@ offline="$(curl --fail --silent "$origin/offline.html")"
 [[ "$offline" == *'You’re offline'* ]]
 worker="$(curl --fail --silent "$origin/sw.js")"
 [[ "$worker" == *'papersync-offline'* ]]
+test "$(curl --silent -o /dev/null -w '%{http_code}' -X POST "$origin/api/scans")" = 401
+# The container sees its own listen address; a share must not redirect there.
+share="$(curl --silent -i -X POST "$origin/share-target" | tr -d '\r')"
+[[ "$share" == *$'\nlocation: /scan?shared=failed\n'* ]]

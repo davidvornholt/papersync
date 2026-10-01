@@ -2,8 +2,10 @@
 // running yet, so Scan can ask for the photos to be shared again.
 const seeOtherStatus = 303;
 
-export const POST = (request: Request): Response =>
-  Response.redirect(
-    new URL('/scan?shared=failed', request.url),
-    seeOtherStatus,
-  );
+// A relative location: behind the reverse proxy, `request.url` names the
+// container's own listen address, not the address the browser used.
+export const POST = (): Response =>
+  new Response(null, {
+    status: seeOtherStatus,
+    headers: { location: '/scan?shared=failed' },
+  });
