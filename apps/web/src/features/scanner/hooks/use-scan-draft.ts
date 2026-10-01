@@ -7,6 +7,7 @@ import type { WeekId } from '@/shared/types/schemas';
 import {
   readScanDraft,
   type StoredReview,
+  takeSharedPhotos,
   writeScanPages,
   writeScanReview,
 } from './scan-draft-store';
@@ -23,6 +24,7 @@ type ScanDraftOptions = {
   readonly weekId: WeekId | null;
   readonly entries: ReadonlyArray<ExtractedEntry>;
   readonly restore: (draft: ScanDraft) => void;
+  readonly receiveShared: (photos: ReadonlyArray<Blob>) => void;
 };
 
 const logStoreFailure = (error: { readonly message: string }) =>
@@ -34,7 +36,7 @@ const toStoredReview = ({
   state,
   weekId,
   entries,
-}: Omit<ScanDraftOptions, 'pages' | 'restore'>): StoredReview => ({
+}: Pick<ScanDraftOptions, 'state' | 'weekId' | 'entries'>): StoredReview => ({
   weekId,
   jobId: state.status === 'processing' ? state.jobId : null,
   result:
@@ -60,10 +62,15 @@ export const useScanDraft = ({
   weekId,
   entries,
   restore,
+  receiveShared,
 }: ScanDraftOptions): boolean => {
   const [isRestoring, setIsRestoring] = useState(true);
   const [hasLoaded, setHasLoaded] = useState(false);
   const hasLoadedRef = useRef(false);
+  const hasTakenSharedRef = useRef(false);
+  const onShared = useEffectEvent((photos: ReadonlyArray<Blob>) =>
+    receiveShared(photos),
+  );
   const onLoaded = useEffectEvent((draft: ScanDraft | null) => {
     hasLoadedRef.current = true;
     const isUntouched =
@@ -98,6 +105,28 @@ export const useScanDraft = ({
       Effect.runFork(Fiber.interrupt(fiber));
     };
   }, []);
+
+  // Photos shared to PaperSync join the restored scan as new pages.
+  useEffect(() => {
+    if (!hasLoaded || hasTakenSharedRef.current) {
+      return;
+    }
+    hasTakenSharedRef.current = true;
+    Effect.runFork(
+      takeSharedPhotos.pipe(
+        Effect.catchAll((error) =>
+          logStoreFailure(error).pipe(Effect.as<ReadonlyArray<Blob>>([])),
+        ),
+        Effect.flatMap((photos) =>
+          Effect.sync(() => {
+            if (photos.length > 0) {
+              onShared(photos);
+            }
+          }),
+        ),
+      ),
+    );
+  }, [hasLoaded]);
 
   useEffect(() => {
     if (hasLoaded) {

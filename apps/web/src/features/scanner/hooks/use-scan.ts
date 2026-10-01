@@ -65,6 +65,15 @@ export const useScan = ({
         setState({ status: 'processing', jobId: stored.jobId });
       }
     },
+    receiveShared: (photos) => {
+      pageList.addPages(photos);
+      notify(
+        photos.length === 1
+          ? 'Added the shared photo.'
+          : `Added ${photos.length} shared photos.`,
+        'success',
+      );
+    },
   });
 
   const analyze = () => {

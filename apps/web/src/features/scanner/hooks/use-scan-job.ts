@@ -9,6 +9,7 @@ import {
   useRef,
 } from 'react';
 import type { ExtractedEntry } from '@/shared/homework/entry';
+import { notifyInBackground } from '@/shared/pwa/background-notification';
 import type { WeekId } from '@/shared/types/schemas';
 import {
   awaitScanJob,
@@ -55,6 +56,7 @@ export const useScanJob = ({
     if (finished.status === 'failed') {
       setState({ status: 'error', error: finished.error });
       notify(finished.error, 'error');
+      notifyInBackground('Analysis failed', finished.error);
       return;
     }
     const { data, modelUsed } = finished.analysis;
@@ -71,12 +73,12 @@ export const useScanJob = ({
     const reviewCount = entries.filter(
       (entry) => entry.action !== 'skip',
     ).length;
-    notify(
+    const summary =
       entries.length > 0
         ? `Review ${reviewCount} new or changed entries`
-        : 'No homework found in these photos',
-      'info',
-    );
+        : 'No homework found in these photos';
+    notify(summary, 'info');
+    notifyInBackground('Homework ready to review', summary);
   });
 
   const followedJobId = state.status === 'processing' ? state.jobId : null;
