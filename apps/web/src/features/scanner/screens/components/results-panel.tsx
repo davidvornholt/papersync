@@ -19,6 +19,8 @@ type ResultsPanelProps = {
   readonly modelUsed?: string;
   readonly notes?: string;
   readonly errorMessage?: string;
+  readonly isUploading: boolean;
+  readonly onCancel: () => void;
   readonly onUpdateEntry: (
     id: string,
     updates: Partial<ExtractedEntry>,
@@ -36,6 +38,8 @@ export const ResultsPanel = ({
   modelUsed,
   notes,
   errorMessage,
+  isUploading,
+  onCancel,
   onUpdateEntry,
   onDeleteEntry,
   onSync,
@@ -62,10 +66,13 @@ export const ResultsPanel = ({
         {state === 'complete' && entries.length === 0 ? (
           <ResultsEmptyState />
         ) : null}
-        {state === 'processing' ? <ResultsProcessingState /> : null}
-        {state === 'idle' || state === 'uploading' ? (
-          <ResultsIdleState />
+        {state === 'processing' ? (
+          <ResultsProcessingState
+            isUploading={isUploading}
+            onCancel={onCancel}
+          />
         ) : null}
+        {state === 'idle' ? <ResultsIdleState /> : null}
         {state === 'error' ? (
           <ResultsErrorState
             message={errorMessage ?? 'An unexpected error occurred'}

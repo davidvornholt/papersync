@@ -13,7 +13,7 @@ import { OCRResponseJsonSchema, OCRResponseSchema } from './vision-schema';
 export const createGeminiVisionProvider = (
   model: LanguageModel,
 ): VisionProvider => ({
-  extractHandwriting: (imageBase64, weekId) =>
+  extractHandwriting: (images, weekId) =>
     Effect.tryPromise({
       try: (abortSignal) =>
         generateText({
@@ -24,13 +24,15 @@ export const createGeminiVisionProvider = (
               OCRResponseJsonSchema as Parameters<typeof jsonSchema>[0],
             ),
           }),
-          system: createExtractionSystemPrompt(weekId),
+          system: createExtractionSystemPrompt(weekId, images.length),
           messages: [
             {
               role: 'user',
-              content: [
-                { type: 'file', data: imageBase64, mediaType: 'image/*' },
-              ],
+              content: images.map((image) => ({
+                type: 'file' as const,
+                data: image.data,
+                mediaType: image.mediaType,
+              })),
             },
           ],
           providerOptions: {
@@ -42,7 +44,7 @@ export const createGeminiVisionProvider = (
         }),
       catch: (cause) =>
         new VisionError({
-          message: `Gemini ${GEMINI_MODEL} could not process the image.`,
+          message: `Gemini ${GEMINI_MODEL} could not process the scan.`,
           cause,
         }),
     }).pipe(
@@ -67,7 +69,7 @@ export const createGeminiVisionProvider = (
         (cause) =>
           new VisionError({
             message:
-              'Gemini could not extract valid homework. Check the image and server AI configuration, then retry.',
+              'Gemini could not extract valid homework. Check the photos and server AI configuration, then retry.',
             cause,
           }),
       ),

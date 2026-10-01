@@ -23,9 +23,10 @@ const weekId = Schema.decodeUnknownSync(WeekId)('2026-W37');
 const options = {
   provider: 'ollama' as const,
   ollamaEndpoint: 'http://untrusted.invalid',
-  imageBase64: 'data:image/png;base64,aW1hZ2U=',
-  weekId,
 };
+const pages = [
+  { data: new TextEncoder().encode('image'), mediaType: 'image/png' as const },
+];
 beforeEach(() => {
   process.env.GOOGLE_VERTEX_PROJECT = 'fixture-project';
   process.env.GOOGLE_VERTEX_LOCATION = 'global';
@@ -55,7 +56,7 @@ const extract = () =>
   Effect.gen(function* () {
     const layer = yield* getVisionLayer(options);
     const provider = yield* Effect.provide(VisionProvider, layer);
-    return yield* provider.extractHandwriting(options.imageBase64, weekId);
+    return yield* provider.extractHandwriting(pages, weekId);
   });
 
 it('uses service-account OAuth and the exact high-reasoning Vertex model despite client provider settings', async () => {

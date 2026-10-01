@@ -9,7 +9,11 @@ const fetchSpy = spyOn(globalThis, 'fetch');
 afterEach(() => fetchSpy.mockReset());
 afterAll(() => fetchSpy.mockRestore());
 const week = Schema.decodeUnknownSync(WeekId)('2026-W37');
-const image = 'data:image/png;base64,aW1hZ2U=';
+const image = {
+  data: new TextEncoder().encode('image'),
+  mediaType: 'image/png' as const,
+};
+const pages = [image];
 const entry = {
   day: 'Montag',
   subject: 'Mathematik',
@@ -30,7 +34,7 @@ it('validates Google output, defaults completion, and normalizes the written day
     googleResponse({ weekId: '2026-W37', entries: [entry], confidence: 1 }),
   );
   const result = await Effect.runPromise(
-    createGoogleVisionProvider('fixture-key').extractHandwriting(image, week),
+    createGoogleVisionProvider('fixture-key').extractHandwriting(pages, week),
   );
   const [request] = fetchSpy.mock.calls;
   expect(String(request?.[0])).toContain('/gemini-3.8-flash:generateContent');
@@ -57,7 +61,7 @@ it.each([
   );
   const result = await Effect.runPromise(
     createGoogleVisionProvider('fixture-key')
-      .extractHandwriting(image, week)
+      .extractHandwriting(pages, week)
       .pipe(Effect.either),
   );
   expect(result._tag).toBe(tag);
@@ -74,7 +78,7 @@ it('rejects invalid Gemini output', async () => {
   );
   const result = await Effect.runPromise(
     createGoogleVisionProvider('fixture-key')
-      .extractHandwriting(image, week)
+      .extractHandwriting(pages, week)
       .pipe(Effect.either),
   );
   expect(result._tag).toBe('Left');
@@ -91,7 +95,7 @@ it('sends Ollama the OCR schema and rejects malformed model output', async () =>
     }),
   );
   expect(
-    (await Effect.runPromise(provider.extractHandwriting(image, week))).data
+    (await Effect.runPromise(provider.extractHandwriting(pages, week))).data
       .entries,
   ).toEqual([
     {
@@ -118,7 +122,7 @@ it('sends Ollama the OCR schema and rejects malformed model output', async () =>
   expect(
     (
       await Effect.runPromise(
-        provider.extractHandwriting(image, week).pipe(Effect.either),
+        provider.extractHandwriting(pages, week).pipe(Effect.either),
       )
     )._tag,
   ).toBe('Left');
@@ -148,7 +152,7 @@ it.each(
         : Response.json({ response: JSON.stringify(value) }),
     );
     const result = await Effect.runPromise(
-      provider.extractHandwriting(image, null),
+      provider.extractHandwriting(pages, null),
     );
     expect(result.data.weekId).toBe(detectedWeek);
     expect(result.data.entries[0]?.content).toBe(entry.content);
@@ -164,10 +168,36 @@ it('keeps the manually corrected week when the model disagrees', async () => {
     (
       await Effect.runPromise(
         createGoogleVisionProvider('fixture-key').extractHandwriting(
-          image,
+          pages,
           week,
         ),
       )
     ).data.weekId,
   ).toBe(week);
 });
+
+it.each(['google', 'ollama'])(
+  'sends every page of the sheet in one request: %s',
+  async (name) => {
+    const back = {
+      data: new TextEncoder().encode('back'),
+      mediaType: 'image/jpeg' as const,
+    };
+    const value = { weekId: '2026-W37', entries: [entry], confidence: 1 };
+    fetchSpy.mockResolvedValue(
+      name === 'google'
+        ? googleResponse(value)
+        : Response.json({ response: JSON.stringify(value) }),
+    );
+    const provider =
+      name === 'google'
+        ? createGoogleVisionProvider('fixture-key')
+        : createOllamaVisionProvider('http://localhost:11434');
+    await Effect.runPromise(provider.extractHandwriting([image, back], null));
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+    const body = String(fetchSpy.mock.calls[0]?.[1]?.body);
+    expect(body).toContain(Buffer.from(image.data).toString('base64'));
+    expect(body).toContain(Buffer.from(back.data).toString('base64'));
+    expect(body).toContain('The 2 images are pages of the same sheet');
+  },
+);

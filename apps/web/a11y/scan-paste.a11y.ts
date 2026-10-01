@@ -6,7 +6,7 @@ import { createSessionCookies } from './auth-fixture';
 import { createPlannerImage } from './planner-image';
 import { test } from './settings-fixture';
 
-const pngDataUrlPattern = /^data:image\/png;base64,/u;
+const blobUrlPattern = /^blob:/u;
 
 const pasteImage = (page: Page, image: string, selector = 'body') =>
   page.evaluate(
@@ -27,7 +27,7 @@ const pasteImage = (page: Page, image: string, selector = 'body') =>
     { data: image, targetSelector: selector },
   );
 
-test('Ctrl+V previews a clipboard image for analysis', async ({
+test('Ctrl+V adds a clipboard image as a page to analyze', async ({
   page,
   context,
 }) => {
@@ -35,7 +35,7 @@ test('Ctrl+V previews a clipboard image for analysis', async ({
   await context.grantPermissions(['clipboard-read', 'clipboard-write']);
   await page.goto('/scan');
   await expect(
-    page.getByRole('button', { name: 'Upload image' }),
+    page.getByRole('button', { name: 'Upload images' }),
   ).toBeEnabled();
   const week = '2026-W01';
   const image = await createPlannerImage(page, week);
@@ -44,41 +44,40 @@ test('Ctrl+V previews a clipboard image for analysis', async ({
     await navigator.clipboard.write([new ClipboardItem({ [blob.type]: blob })]);
   }, image);
   await page.keyboard.press('Control+V');
-  await expect(page.getByAltText('Scanned planner preview')).toHaveAttribute(
+  await expect(page.getByAltText('Page 1 of the sheet')).toHaveAttribute(
     'src',
-    pngDataUrlPattern,
+    blobUrlPattern,
   );
   await expect(
     page.getByText('Week detected automatically when analyzing'),
   ).toBeVisible();
   await expect(
-    page.getByRole('button', { name: 'Process scan' }),
+    page.getByRole('button', { name: 'Analyze photo', exact: true }),
   ).toBeEnabled();
   expect(await scanWcag22AaViolations(page)).toEqual([]);
 });
 
-test('image paste preserves editing, respects processing, and validates uploads', async ({
+test('image paste preserves editing, respects processing, and validates images', async ({
   page,
   context,
 }) => {
   await context.addCookies(await createSessionCookies());
   await page.goto('/scan');
   await expect(
-    page.getByRole('button', { name: 'Upload image' }),
+    page.getByRole('button', { name: 'Upload images' }),
   ).toBeEnabled();
   const week = '2026-W01';
-  const nextWeek = '2026-W02';
   const image = await createPlannerImage(page, week);
-  const nextImage = await createPlannerImage(page, nextWeek);
+  const nextImage = await createPlannerImage(page, '2026-W02');
   expect(await pasteImage(page, image)).toBe(true);
-  const preview = page.getByAltText('Scanned planner preview');
-  await expect(preview).toHaveAttribute('src', image);
+  const pages = page.getByRole('list', { name: 'Photos of the sheet' });
+  await expect(pages.getByRole('listitem')).toHaveCount(1);
   await page.getByText('Week detected automatically when analyzing').click();
   const weekInput = page.getByLabel('Week printed on the sheet');
   await weekInput.fill(week);
   await expect(weekInput).toHaveValue(week);
   expect(await pasteImage(page, nextImage, 'input[type=week]')).toBe(false);
-  await expect(preview).toHaveAttribute('src', image);
+  await expect(pages.getByRole('listitem')).toHaveCount(1);
   await expect(weekInput).toHaveValue(week);
 
   const textPastePrevented = await page.evaluate(() => {
@@ -93,34 +92,33 @@ test('image paste preserves editing, respects processing, and validates uploads'
     return event.defaultPrevented;
   });
   expect(textPastePrevented).toBe(false);
-  await expect(preview).toHaveAttribute('src', image);
+  await expect(pages.getByRole('listitem')).toHaveCount(1);
 
-  const { promise: responseReady, resolve: releaseResponse } =
+  const { promise: uploadHeld, resolve: releaseUpload } =
     Promise.withResolvers<void>();
-  await page.route('**/scan', async (route) => {
-    if (!route.request().headers()['next-action']) {
-      await route.continue();
-      return;
-    }
-    await responseReady;
-    await route.fulfill({
-      contentType: 'text/x-component',
-      body: '0:{"a":"$@1","f":"","b":"test"}\n1:{"success":false,"error":"Test extraction stopped."}\n',
-    });
+  await page.route('**/api/scans', async (route) => {
+    await uploadHeld;
+    await route.fulfill({ status: 202, json: { id: 'stopped' } });
   });
-  await page.getByRole('button', { name: 'Process scan' }).click();
-  await expect(
-    page.getByRole('button', { name: 'Analyzing...' }),
-  ).toBeDisabled();
+  await page.route('**/api/scans/stopped?wait', (route) =>
+    route.fulfill({
+      json: { status: 'failed', error: 'Test extraction stopped.' },
+    }),
+  );
+  await page
+    .getByRole('button', { name: 'Analyze photo', exact: true })
+    .click();
+  await expect(page.getByRole('button', { name: 'Analyzing…' })).toBeDisabled();
+  await expect(page.getByText('Uploading photos…')).toBeVisible();
   expect(await pasteImage(page, nextImage)).toBe(false);
-  await expect(preview).toHaveAttribute('src', image);
-  releaseResponse();
+  await expect(pages.getByRole('listitem')).toHaveCount(1);
+  releaseUpload();
   await expect(
     page.getByText('Processing failed', { exact: true }),
   ).toBeVisible();
   expect(await pasteImage(page, nextImage)).toBe(true);
-  await expect(preview).toHaveAttribute('src', nextImage);
-  await expect(weekInput).toHaveValue('');
+  await expect(pages.getByRole('listitem')).toHaveCount(2);
+  await expect(weekInput).toHaveValue(week);
 
   expect(
     await pasteImage(
@@ -129,10 +127,10 @@ test('image paste preserves editing, respects processing, and validates uploads'
     ),
   ).toBe(true);
   await expect(
-    page.getByText('Choose a JPEG, PNG, or WebP image no larger than 10 MB.', {
+    page.getByText('Choose a JPEG, PNG, or WebP image no larger than 40 MB.', {
       exact: true,
     }),
   ).toBeVisible();
-  await expect(preview).toHaveCount(0);
+  await expect(pages.getByRole('listitem')).toHaveCount(2);
   expect(await scanWcag22AaViolations(page)).toEqual([]);
 });

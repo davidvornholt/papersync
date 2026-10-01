@@ -9,9 +9,22 @@ export type OCRResultWithModel = {
   readonly modelUsed: string;
 };
 
+export const scanImageTypes = [
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+] as const;
+export type ScanImageType = (typeof scanImageTypes)[number];
+
+/** One photographed or scanned page of the same planner sheet. */
+export type ScanImage = {
+  readonly data: Uint8Array;
+  readonly mediaType: ScanImageType;
+};
+
 export type VisionProvider = {
   readonly extractHandwriting: (
-    imageBase64: string,
+    images: ReadonlyArray<ScanImage>,
     weekId: WeekId | null,
   ) => Effect.Effect<OCRResultWithModel, VisionError | VisionValidationError>;
 };
