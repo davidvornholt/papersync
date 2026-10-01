@@ -13,10 +13,11 @@ const noContentStatus = 204;
 const longPollSeconds = 25;
 const longPollTimeout = Duration.seconds(longPollSeconds);
 const noStore = { 'Cache-Control': 'no-store' };
+type ScanRouteContext = { readonly params: Promise<{ readonly id: string }> };
 
 export const GET = async (
   request: Request,
-  context: RouteContext<'/api/scans/[id]'>,
+  context: ScanRouteContext,
 ): Promise<Response> => {
   const rejection = await rejectUnauthorizedApiRequest(request);
   if (rejection) {
@@ -47,7 +48,7 @@ export const GET = async (
 
 export const DELETE = async (
   request: Request,
-  context: RouteContext<'/api/scans/[id]'>,
+  context: ScanRouteContext,
 ): Promise<Response> => {
   const rejection = await rejectUnauthorizedApiRequest(request);
   if (rejection) {
