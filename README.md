@@ -2,7 +2,7 @@
 
 Scan handwritten homework, review the recognized tasks, and approve them for Super Productivity. Connect one installation; SuperSync distributes imported tasks to your other devices.
 
-PaperSync opens on Scan. In Chrome on Android, choose **Install app** from the menu to add it to the home screen; the installed app shows an offline page instead of a browser error when there is no connection.
+PaperSync opens on Scan. In Chrome on Android, choose **Install app** from the menu to add it to the home screen; the installed app shows an offline page instead of a browser error when there is no connection. Once installed, PaperSync appears in Android's share sheet, so photos can be shared to it from the camera or gallery. While an analysis runs, Scan offers to notify you when it finishes if you have switched to another app.
 
 ## Development
 

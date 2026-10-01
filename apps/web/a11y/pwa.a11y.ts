@@ -21,6 +21,12 @@ test('the app can be installed and opens on Scan', async ({
     // biome-ignore lint/style/useNamingConvention: Web app manifest member name.
     start_url: '/scan',
     display: 'standalone',
+    // biome-ignore lint/style/useNamingConvention: Web app manifest member name.
+    share_target: {
+      action: '/share-target',
+      method: 'POST',
+      enctype: 'multipart/form-data',
+    },
   });
   const icons: ReadonlyArray<ManifestIcon> = manifest.icons;
   expect(icons.some((icon) => icon.purpose === 'maskable')).toBe(true);

@@ -1,6 +1,7 @@
 'use client';
 import { Effect } from 'effect';
-import { useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import { useToast } from '@/shared/components/use-toast';
 import { useSettings } from '@/shared/hooks/use-settings';
 import { requestAction } from '@/shared/http/action';
@@ -13,6 +14,17 @@ export const useScanScreen = () => {
   const { addToast } = useToast();
   const scan = useScan({ aiSettings: settings.ai, notify: addToast });
   const [isDragging, setIsDragging] = useState(false);
+  const router = useRouter();
+  const shareFailed = useSearchParams().get('shared') === 'failed';
+  useEffect(() => {
+    if (shareFailed) {
+      addToast(
+        'PaperSync could not receive the shared photos. Share them again.',
+        'error',
+      );
+      router.replace('/scan');
+    }
+  }, [shareFailed, addToast, router]);
   const saving = useScanSave({ scan });
   const isSettingUp = isLoading || loadError !== null || scan.isRestoring;
   // Photos and the week stay editable during review; analysis locks them.

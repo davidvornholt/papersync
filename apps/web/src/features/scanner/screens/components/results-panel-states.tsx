@@ -3,6 +3,7 @@
 import { Button } from '@papersync/ui/button';
 import { StateView } from '@/shared/components/motion-layout';
 import { Spinner } from '@/shared/components/motion-loading';
+import { NotifyWhenDone } from './notify-when-done';
 export const ResultsEmptyState = (): React.ReactElement => (
   <StateView
     key="empty"
@@ -35,6 +36,7 @@ export const ResultsProcessingState = ({
         ? 'Keep PaperSync open until the upload finishes.'
         : 'You can switch apps or lock your phone. The result will be here when you come back.'}
     </p>
+    {isUploading ? null : <NotifyWhenDone />}
     <Button variant="ghost" className="mt-6" onClick={onCancel}>
       Cancel analysis
     </Button>

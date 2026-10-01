@@ -5,11 +5,13 @@ import type { ScanPage } from './use-scan-types';
 
 // The scan in progress lives in this browser until it is saved or cleared, so
 // switching apps, a discarded tab, or a reload never loses photos or edits.
+// public/sw.js writes shared photos to the same store; keep both in sync.
 const databaseName = 'papersync';
 const databaseVersion = 1;
 const storeName = 'scan-draft';
 const pagesKey = 'pages';
 const reviewKey = 'review';
+const sharedKey = 'shared';
 
 const StoredPages = Schema.Array(
   Schema.Struct({ id: Schema.String, image: Schema.instanceOf(Blob) }),
@@ -108,3 +110,20 @@ export const writeScanPages = (pages: ReadonlyArray<ScanPage>) =>
 
 export const writeScanReview = (review: StoredReview) =>
   transact('readwrite', (store) => store.put(review, reviewKey));
+
+const SharedPhotos = Schema.Array(Schema.instanceOf(Blob));
+
+/** Removes and returns photos shared to PaperSync since Scan last looked. */
+export const takeSharedPhotos = transact('readwrite', (store) => {
+  const waiting = store.get(sharedKey);
+  store.delete(sharedKey);
+  return waiting;
+}).pipe(
+  Effect.flatMap((value) =>
+    value === undefined
+      ? Effect.succeed([])
+      : Schema.decodeUnknown(SharedPhotos)(value).pipe(
+          Effect.orElseSucceed((): ReadonlyArray<Blob> => []),
+        ),
+  ),
+);

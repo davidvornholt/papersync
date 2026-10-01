@@ -26,6 +26,17 @@ const manifest = (): MetadataRoute.Manifest => ({
       purpose: 'maskable',
     },
   ],
+  // biome-ignore lint/style/useNamingConvention: Web app manifest member name.
+  share_target: {
+    action: '/share-target',
+    method: 'POST',
+    enctype: 'multipart/form-data',
+    params: {
+      files: [
+        { name: 'page', accept: ['image/jpeg', 'image/png', 'image/webp'] },
+      ],
+    },
+  },
   shortcuts: [
     { name: 'Scan homework', url: '/scan' },
     { name: 'Print planner', url: '/planner' },
