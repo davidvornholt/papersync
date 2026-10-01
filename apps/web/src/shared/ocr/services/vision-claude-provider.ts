@@ -71,20 +71,25 @@ export const createClaudeVisionProvider = (
         }),
     }).pipe(
       Effect.flatMap((response) =>
-        response.stopReason === 'end_turn'
-          ? Schema.decodeUnknown(Schema.parseJson(OCRResponseSchema))(
-              response.output?.message?.content
-                ?.flatMap((block) =>
-                  block.text === undefined ? [] : [block.text],
-                )
-                .join('') ?? '',
-            )
-          : Effect.fail(
+        Effect.gen(function* () {
+          if (response.stopReason !== 'end_turn') {
+            return yield* Effect.fail(
               new VisionError({
                 message:
                   'Claude did not finish the homework extraction. Retry the scan.',
               }),
-            ),
+            );
+          }
+          return yield* Schema.decodeUnknown(
+            Schema.parseJson(OCRResponseSchema),
+          )(
+            response.output?.message?.content
+              ?.flatMap((block) =>
+                block.text === undefined ? [] : [block.text],
+              )
+              .join('') ?? '',
+          );
+        }),
       ),
       Effect.map((validated) => ({
         data: {
