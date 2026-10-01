@@ -89,38 +89,34 @@ it('uses dedicated SigV4 keys and Sonnet 5.5 medium despite client and ambient A
   ]);
   expect(fetchSpy).toHaveBeenCalledTimes(1);
   const [request] = fetchSpy.mock.calls;
-  expect(String(request?.[0])).toBe(
+  const signedRequest = request?.[0];
+  expect(signedRequest).toBeInstanceOf(Request);
+  if (!(signedRequest instanceof Request)) {
+    throw new Error('Expected a signed HTTP request');
+  }
+  expect(signedRequest.url).toBe(
     'https://bedrock-runtime.eu-central-1.amazonaws.com/model/global.anthropic.claude-sonnet-5-5/converse',
   );
-  const headers = new Headers(request?.[1]?.headers);
+  const { headers } = signedRequest;
   expect(headers.get('Authorization')).toContain(
     'AWS4-HMAC-SHA256 Credential=fixture-access-key/',
   );
   expect(headers.has('x-amz-security-token')).toBe(false);
-  const payload = JSON.parse(String(request?.[1]?.body)) as {
-    additionalModelRequestFields: {
-      thinking: { type: string };
-      // biome-ignore lint/style/useNamingConvention: Anthropic's model request field.
-      output_config: {
-        effort: string;
-        format: { type: string; schema: unknown };
-      };
-    };
+  const payload = (await signedRequest.json()) as {
+    additionalModelRequestFields: { thinking: { type: string } };
+    outputConfig: { effort: string; textFormat?: unknown };
+    system: Array<{ text: string }>;
     messages: Array<{
       content: Array<{ image: { format: string; source: { bytes: string } } }>;
     }>;
     toolConfig?: unknown;
   };
   expect(payload.additionalModelRequestFields.thinking.type).toBe('adaptive');
-  expect(payload.additionalModelRequestFields.output_config.effort).toBe(
-    'medium',
+  expect(payload.outputConfig.effort).toBe('medium');
+  expect(payload.outputConfig.textFormat).toBeUndefined();
+  expect(payload.system[0]?.text).toContain(
+    'Return JSON matching this schema:',
   );
-  expect(payload.additionalModelRequestFields.output_config.format.type).toBe(
-    'json_schema',
-  );
-  expect(
-    payload.additionalModelRequestFields.output_config.format.schema,
-  ).toHaveProperty('properties.entries');
   expect(payload.toolConfig).toBeUndefined();
   expect(payload.messages[0]?.content[0]?.image).toEqual({
     format: 'png',
@@ -197,4 +193,50 @@ it.each([
   const result = await Effect.runPromise(extract().pipe(Effect.either));
   expect(result._tag).toBe('Left');
   expect(fetchSpy).toHaveBeenCalledTimes(1);
+});
+
+it.each(['max_tokens', 'refusal'])(
+  'rejects unfinished Claude responses even when the partial JSON validates: %s',
+  async (stopReason) => {
+    fetchSpy.mockResolvedValue(
+      Response.json({
+        output: {
+          message: {
+            role: 'assistant',
+            content: [
+              {
+                text: JSON.stringify({
+                  weekId: '2026-W37',
+                  entries: [],
+                  confidence: 1,
+                }),
+              },
+            ],
+          },
+        },
+        stopReason,
+        usage: { inputTokens: 10, outputTokens: 10, totalTokens: 20 },
+        metrics: { latencyMs: 1 },
+      }),
+    );
+    expect((await Effect.runPromise(extract().pipe(Effect.either)))._tag).toBe(
+      'Left',
+    );
+  },
+);
+
+it('rejects malformed JSON rather than attempting to repair or save it', async () => {
+  fetchSpy.mockResolvedValue(
+    Response.json({
+      output: {
+        message: { role: 'assistant', content: [{ text: 'not valid JSON' }] },
+      },
+      stopReason: 'end_turn',
+      usage: { inputTokens: 10, outputTokens: 10, totalTokens: 20 },
+      metrics: { latencyMs: 1 },
+    }),
+  );
+  expect((await Effect.runPromise(extract().pipe(Effect.either)))._tag).toBe(
+    'Left',
+  );
 });
