@@ -1,14 +1,14 @@
 import { Effect, Layer } from 'effect';
 import { VisionConfigurationError } from '../errors/vision-contract';
+import { hasBedrockConfiguration } from './vision-bedrock-config';
+import { getBedrockVisionProvider } from './vision-bedrock-provider';
 import { VisionProvider } from './vision-contract';
 import {
   makeGoogleVisionLayer,
   makeOllamaVisionLayer,
 } from './vision-provider';
-import { hasVertexConfiguration } from './vision-vertex-config';
-import { getVertexVisionProvider } from './vision-vertex-provider';
 
-/** Browser-local AI preferences; ignored when the server manages Vertex AI. */
+/** Browser-local AI preferences; ignored when the server manages AWS Bedrock. */
 export type VisionSettings = {
   readonly provider: 'google' | 'ollama';
   readonly googleApiKey?: string;
@@ -17,8 +17,8 @@ export type VisionSettings = {
 
 export const getVisionLayer = (settings: VisionSettings) =>
   Effect.gen(function* () {
-    if (hasVertexConfiguration()) {
-      const provider = yield* getVertexVisionProvider();
+    if (hasBedrockConfiguration()) {
+      const provider = yield* getBedrockVisionProvider();
       return Layer.succeed(VisionProvider, provider);
     }
     if (settings.provider === 'google' && settings.googleApiKey) {
@@ -30,7 +30,7 @@ export const getVisionLayer = (settings: VisionSettings) =>
     return yield* Effect.fail(
       new VisionConfigurationError({
         message:
-          'AI is not configured. Configure Google Cloud on the server or add a provider in Settings.',
+          'AI is not configured. Configure AWS Bedrock on the server or add a provider in Settings.',
       }),
     );
   });

@@ -1,9 +1,8 @@
 apps:
   web:
-    # Optional server-managed OCR. Set all three GOOGLE_VERTEX values to enable; empty values are omitted and nonblank partial configuration fails closed.
-    # Gemini 3.8 Flash runs with high reasoning. Supported locations: global, eu, us. No fallback.
-    # GOOGLE_VERTEX_PROJECT: your-gcp-project
-    # GOOGLE_VERTEX_LOCATION: global
+    # Optional server-managed OCR. Set BEDROCK_REGION and both BEDROCK keys together; nonblank partial configuration fails closed.
+    # Claude Sonnet 5.5 runs at medium effort through AWS Bedrock. No fallback. No default region.
+    # BEDROCK_REGION: eu-central-1
     # Required origin for GitHub OAuth redirects and cookies. Production is owned by personal-infra.
     BETTER_AUTH_URL: http://localhost:3000
     # Required public ID for a development GitHub OAuth app with localhost callback.

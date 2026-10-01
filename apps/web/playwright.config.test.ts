@@ -5,19 +5,19 @@ import { Effect } from 'effect';
 import defaultConfig from './playwright.config';
 import managedConfig from './playwright-managed.config';
 import {
-  getVertexConfiguration,
-  hasVertexConfiguration,
-} from './src/shared/ocr/services/vision-vertex-config';
+  getBedrockConfiguration,
+  hasBedrockConfiguration,
+} from './src/shared/ocr/services/vision-bedrock-config';
 
-const vertexKeys = [
-  'GOOGLE_VERTEX_PROJECT',
-  'GOOGLE_VERTEX_LOCATION',
-  'GOOGLE_VERTEX_CREDENTIALS_JSON',
+const bedrockKeys = [
+  'BEDROCK_REGION',
+  'BEDROCK_ACCESS_KEY_ID',
+  'BEDROCK_SECRET_ACCESS_KEY',
 ] as const;
-const originalEnvironment = vertexKeys.map((key) => process.env[key]);
+const originalEnvironment = bedrockKeys.map((key) => process.env[key]);
 
 afterEach(() => {
-  vertexKeys.forEach((key, index) => {
+  bedrockKeys.forEach((key, index) => {
     const value = originalEnvironment[index];
     if (value === undefined) {
       delete process.env[key];
@@ -27,29 +27,25 @@ afterEach(() => {
   });
 });
 
-it('keeps browser OCR fixtures isolated from host and dotenv Vertex values', () => {
-  expect(vertexKeys.map((key) => defaultConfig.webServer?.env?.[key])).toEqual([
-    '',
-    '',
-    '',
-  ]);
-  expect(vertexKeys.map((key) => managedConfig.webServer?.env?.[key])).toEqual([
-    'browser-fixture-project',
-    '',
-    '',
-  ]);
+it('keeps browser OCR fixtures isolated from host and dotenv Bedrock values', () => {
+  expect(bedrockKeys.map((key) => defaultConfig.webServer?.env?.[key])).toEqual(
+    ['', '', ''],
+  );
+  expect(bedrockKeys.map((key) => managedConfig.webServer?.env?.[key])).toEqual(
+    ['eu-central-1', '', ''],
+  );
 
-  process.env.GOOGLE_VERTEX_PROJECT = '';
-  process.env.GOOGLE_VERTEX_LOCATION = '';
-  process.env.GOOGLE_VERTEX_CREDENTIALS_JSON = '';
-  expect(hasVertexConfiguration()).toBe(false);
+  process.env.BEDROCK_REGION = '';
+  process.env.BEDROCK_ACCESS_KEY_ID = '';
+  process.env.BEDROCK_SECRET_ACCESS_KEY = '';
+  expect(hasBedrockConfiguration()).toBe(false);
 
-  process.env.GOOGLE_VERTEX_PROJECT = ' \t';
-  expect(hasVertexConfiguration()).toBe(false);
+  process.env.BEDROCK_REGION = ' \t';
+  expect(hasBedrockConfiguration()).toBe(false);
 
-  process.env.GOOGLE_VERTEX_PROJECT = 'host-project';
-  expect(hasVertexConfiguration()).toBe(true);
-  expect(Effect.runSync(Effect.either(getVertexConfiguration()))._tag).toBe(
+  process.env.BEDROCK_REGION = 'eu-central-1';
+  expect(hasBedrockConfiguration()).toBe(true);
+  expect(Effect.runSync(Effect.either(getBedrockConfiguration()))._tag).toBe(
     'Left',
   );
 });

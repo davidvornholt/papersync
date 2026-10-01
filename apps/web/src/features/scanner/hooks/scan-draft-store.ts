@@ -111,6 +111,12 @@ export const writeScanPages = (pages: ReadonlyArray<ScanPage>) =>
 export const writeScanReview = (review: StoredReview) =>
   transact('readwrite', (store) => store.put(review, reviewKey));
 
+/** Commit the reset before the page reports a cleared scan. */
+export const clearScanDraft = transact('readwrite', (store) => {
+  store.delete(pagesKey);
+  return store.delete(reviewKey);
+});
+
 const SharedPhotos = Schema.Array(Schema.instanceOf(Blob));
 
 /** Removes and returns photos shared to PaperSync since Scan last looked. */
