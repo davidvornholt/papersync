@@ -38,6 +38,7 @@ export type UseScanOptions = {
 export type UseScanReturn = {
   readonly state: ScanState;
   readonly isRestoring: boolean;
+  readonly isClearing: boolean;
   readonly isPreparing: boolean;
   readonly pages: ReadonlyArray<ScanPage>;
   readonly pageLimit: number;

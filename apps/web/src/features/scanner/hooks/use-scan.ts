@@ -1,12 +1,11 @@
 'use client';
 
-import { Effect, Schema } from 'effect';
+import { Schema } from 'effect';
 import { useRef, useState } from 'react';
 import type { ExtractedEntry } from '@/shared/homework/entry';
 import { WeekId } from '@/shared/types/schemas';
 import { scanPageLimit } from '../services/scan-limits';
-import { cancelScanJob } from './scan-job-client';
-import { useClearScan } from './use-clear-scan';
+import { stopScanAnalysis, useClearScan } from './use-clear-scan';
 import { useReviewWeek } from './use-review-week';
 import { type ScanDraft, useScanDraft } from './use-scan-draft';
 import { useScanJob } from './use-scan-job';
@@ -31,6 +30,16 @@ const markReviewed = (
         }
       : entry,
   );
+
+const canSaveReview = (
+  state: ScanState,
+  weekId: WeekId | null,
+  isUpdatingWeek: boolean,
+): boolean =>
+  state.status === 'complete' &&
+  weekId !== null &&
+  state.weekId === weekId &&
+  !isUpdatingWeek;
 
 export const useScan = ({
   aiSettings,
@@ -77,9 +86,26 @@ export const useScan = ({
     },
   });
 
+  const clearing = useClearScan({
+    state,
+    stop: job.stop,
+    notify,
+    reset: () => {
+      revisionRef.current += 1;
+      pageList.setPages([]);
+      setState({ status: 'idle' });
+      review.setIsUpdatingWeek(false);
+      setWeek(null);
+      setEntries([]);
+    },
+  });
+
   const analyze = () => {
     const isBusy =
-      state.status === 'processing' || pageList.isPreparing || isRestoring;
+      state.status === 'processing' ||
+      pageList.isPreparing ||
+      isRestoring ||
+      clearing.isClearing;
     if (pageList.pages.length === 0 || isBusy) {
       return;
     }
@@ -94,11 +120,8 @@ export const useScan = ({
   };
 
   const cancel = () => {
-    job.stop();
+    stopScanAnalysis(state, job.stop);
     if (state.status === 'processing') {
-      if (state.jobId) {
-        Effect.runFork(cancelScanJob(state.jobId));
-      }
       setState({ status: 'idle' });
     }
   };
@@ -106,6 +129,7 @@ export const useScan = ({
   return {
     state,
     isRestoring,
+    isClearing: clearing.isClearing,
     isPreparing: pageList.isPreparing,
     pages: pageList.pages,
     pageLimit: scanPageLimit,
@@ -127,26 +151,10 @@ export const useScan = ({
     deleteEntry: (id) =>
       setEntries((current) => current.filter((entry) => entry.id !== id)),
     isUpdatingWeek: review.isUpdatingWeek,
-    canSave:
-      state.status === 'complete' &&
-      weekId !== null &&
-      state.weekId === weekId &&
-      !review.isUpdatingWeek,
+    canSave: canSaveReview(state, weekId, review.isUpdatingWeek),
     applyWeek: review.applyWeek,
     analyze,
     cancel,
-    clear: useClearScan({
-      state,
-      stop: job.stop,
-      notify,
-      reset: () => {
-        revisionRef.current += 1;
-        pageList.setPages([]);
-        setState({ status: 'idle' });
-        review.setIsUpdatingWeek(false);
-        setWeek(null);
-        setEntries([]);
-      },
-    }),
+    clear: clearing.clear,
   };
 };

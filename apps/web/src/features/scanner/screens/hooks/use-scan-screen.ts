@@ -26,7 +26,8 @@ export const useScanScreen = () => {
     }
   }, [shareFailed, addToast, router]);
   const saving = useScanSave({ scan });
-  const isSettingUp = isLoading || loadError !== null || scan.isRestoring;
+  const isSettingUp =
+    isLoading || loadError !== null || scan.isRestoring || scan.isClearing;
   // Photos and the week stay editable during review; analysis locks them.
   const isCaptureLocked =
     isSettingUp ||

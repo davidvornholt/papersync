@@ -128,6 +128,10 @@ test('a sheet uses OCR for its week and only asks for unreadable weeks', async (
   expect(await scanWcag22AaViolations(page)).toEqual([]);
 
   await page.getByRole('button', { name: 'Start over' }).click();
+  await expect(
+    page.getByRole('button', { name: 'Take photo', exact: true }),
+  ).toBeVisible();
+  await expect(page.getByLabel('Task')).toHaveCount(0);
   modelResponse = JSON.stringify({
     weekId: null,
     entries: [{ ...entry, dueDate: null }],
