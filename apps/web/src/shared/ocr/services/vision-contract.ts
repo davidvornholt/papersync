@@ -33,3 +33,4 @@ export const VisionProvider =
   Context.GenericTag<VisionProvider>('VisionProvider');
 
 export const GEMINI_MODEL = 'gemini-3.8-flash';
+export const CLAUDE_MODEL = 'global.anthropic.claude-sonnet-5-5';

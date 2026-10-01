@@ -15,8 +15,8 @@
     "test:container": "bash scripts/container-smoke.sh"
   },
   "dependencies": {
+    "@ai-sdk/amazon-bedrock": "^5.0.104",
     "@ai-sdk/google": "^4.0.80",
-    "@ai-sdk/google-vertex": "^5.0.93",
     "@effect/sql": "^0.52.1",
     "@effect/sql-pg": "^0.53.0",
     "@papersync/db": "workspace:*",

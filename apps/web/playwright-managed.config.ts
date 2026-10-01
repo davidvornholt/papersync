@@ -10,12 +10,12 @@ export default {
     env: {
       ...config.webServer.env,
       // biome-ignore lint/style/useNamingConvention: Runtime environment variable name.
-      GOOGLE_VERTEX_PROJECT: 'browser-fixture-project',
-      // Keep the managed browser fixture unable to authenticate to Google Cloud.
+      BEDROCK_REGION: 'eu-central-1',
+      // Keep the managed browser fixture unable to authenticate to AWS Bedrock.
       // biome-ignore lint/style/useNamingConvention: Runtime environment variable name.
-      GOOGLE_VERTEX_LOCATION: '',
+      BEDROCK_ACCESS_KEY_ID: '',
       // biome-ignore lint/style/useNamingConvention: Runtime environment variable name.
-      GOOGLE_VERTEX_CREDENTIALS_JSON: '',
+      BEDROCK_SECRET_ACCESS_KEY: '',
     },
   },
 };

@@ -27,11 +27,11 @@ export default {
       // Empty values prevent host credentials and Next.js dotenv files from
       // selecting a paid provider in the local fixture suite.
       // biome-ignore lint/style/useNamingConvention: Runtime environment variable name.
-      GOOGLE_VERTEX_PROJECT: '',
+      BEDROCK_REGION: '',
       // biome-ignore lint/style/useNamingConvention: Runtime environment variable name.
-      GOOGLE_VERTEX_LOCATION: '',
+      BEDROCK_ACCESS_KEY_ID: '',
       // biome-ignore lint/style/useNamingConvention: Runtime environment variable name.
-      GOOGLE_VERTEX_CREDENTIALS_JSON: '',
+      BEDROCK_SECRET_ACCESS_KEY: '',
     },
   },
 };

@@ -33,13 +33,13 @@ export const SettingsAICard = ({
     return (
       <Card>
         <CardHeader>
-          <h3 className="serif text-[20px] text-ink">Gemini 3.8 Flash</h3>
+          <h3 className="serif text-[20px] text-ink">Claude Sonnet 5.5</h3>
         </CardHeader>
         <CardContent className="space-y-3">
-          <p>High reasoning through Google Cloud Enterprise AI.</p>
+          <p>Medium effort through AWS Bedrock.</p>
           <p className="text-graphite">
-            This server manages the AI connection. Your scan is sent to Google
-            Cloud when you process it. Review the recognized homework before
+            This server manages the AI connection. Your scan is sent to AWS
+            Bedrock when you process it. Review the recognized homework before
             approving it.
           </p>
         </CardContent>

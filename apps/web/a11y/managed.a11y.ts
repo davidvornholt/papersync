@@ -19,7 +19,10 @@ test('managed AI hides browser credentials even with an old provider selection',
   );
   await page.goto('/settings');
   await expect(
-    page.getByRole('heading', { name: 'Gemini 3.8 Flash' }),
+    page.getByRole('heading', { name: 'Claude Sonnet 5.5' }),
+  ).toBeVisible();
+  await expect(
+    page.getByText('Medium effort through AWS Bedrock.'),
   ).toBeVisible();
   await expect(page.getByLabel('API key', { exact: true })).toHaveCount(0);
   await expect(page.getByLabel('Ollama endpoint')).toHaveCount(0);
