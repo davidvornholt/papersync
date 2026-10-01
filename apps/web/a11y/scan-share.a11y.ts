@@ -75,7 +75,7 @@ test('a share that reaches the server asks for the photos again', async ({
     maxRedirects: 0,
   });
   expect(response.status()).toBe(seeOther);
-  expect(new URL(response.headers().location ?? '').pathname).toBe('/scan');
+  expect(response.headers().location).toBe('/scan?shared=failed');
   await page.goto('/scan?shared=failed');
   await expect(
     page.getByText(
