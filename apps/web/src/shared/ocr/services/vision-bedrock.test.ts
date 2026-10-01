@@ -19,7 +19,16 @@ const weekId = Schema.decodeUnknownSync(WeekId)('2026-W37');
 const options = {
   provider: 'ollama' as const,
   ollamaEndpoint: 'http://untrusted.invalid',
-  imageBase64: 'data:image/png;base64,aW1hZ2U=',
+  images: [
+    {
+      mediaType: 'image/png' as const,
+      data: new TextEncoder().encode('image'),
+    },
+    {
+      mediaType: 'image/jpeg' as const,
+      data: new TextEncoder().encode('second'),
+    },
+  ],
   weekId,
 };
 beforeEach(() => {
@@ -45,7 +54,7 @@ const extract = () =>
   Effect.gen(function* () {
     const layer = yield* getVisionLayer(options);
     const provider = yield* Effect.provide(VisionProvider, layer);
-    return yield* provider.extractHandwriting(options.imageBase64, weekId);
+    return yield* provider.extractHandwriting(options.images, weekId);
   });
 const mockClaudeOutput = (output: unknown) =>
   fetchSpy.mockResolvedValue(
@@ -117,11 +126,14 @@ it('uses dedicated SigV4 keys and Sonnet 5.5 medium despite client and ambient A
   expect(payload.system[0]?.text).toContain(
     'Return JSON matching this schema:',
   );
+  expect(payload.system[0]?.text).toContain(
+    'The 2 images are pages of the same sheet',
+  );
   expect(payload.toolConfig).toBeUndefined();
-  expect(payload.messages[0]?.content[0]?.image).toEqual({
-    format: 'png',
-    source: { bytes: 'aW1hZ2U=' },
-  });
+  expect(payload.messages[0]?.content.map((block) => block.image)).toEqual([
+    { format: 'png', source: { bytes: 'aW1hZ2U=' } },
+    { format: 'jpeg', source: { bytes: 'c2Vjb25k' } },
+  ]);
 });
 
 it.each([

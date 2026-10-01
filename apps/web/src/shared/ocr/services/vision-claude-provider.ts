@@ -11,49 +11,35 @@ import {
 } from './vision-prompt';
 import { OCRResponseJsonSchema, OCRResponseSchema } from './vision-schema';
 
-const imageDataUrl =
-  /^data:image\/(?<format>png|jpeg|webp|gif);base64,(?<base64>.+)$/su;
-
 export const createClaudeVisionProvider = (
   client: BedrockRuntimeClient,
 ): VisionProvider => ({
-  extractHandwriting: (imageBase64, weekId) =>
+  extractHandwriting: (images, weekId) =>
     Effect.tryPromise({
-      try: (abortSignal) => {
-        const image = imageDataUrl.exec(imageBase64);
-        if (!(image?.groups?.format && image.groups.base64)) {
-          return Promise.reject(
-            new Error('Expected a supported base64 image data URL.'),
-          );
-        }
-        return client.send(
+      try: (abortSignal) =>
+        client.send(
           new ConverseCommand({
             modelId: CLAUDE_MODEL,
             system: [
               {
-                text: `${createExtractionSystemPrompt(weekId)}\nReturn JSON matching this schema: ${JSON.stringify(OCRResponseJsonSchema)}`,
+                text: `${createExtractionSystemPrompt(weekId, images.length)}\nReturn JSON matching this schema: ${JSON.stringify(OCRResponseJsonSchema)}`,
               },
             ],
             messages: [
               {
                 role: 'user',
-                content: [
-                  {
-                    image: {
-                      format: image.groups.format as
-                        | 'png'
-                        | 'jpeg'
-                        | 'webp'
-                        | 'gif',
-                      source: {
-                        bytes: Uint8Array.from(
-                          atob(image.groups.base64),
-                          (character) => character.charCodeAt(0),
-                        ),
-                      },
-                    },
+                content: images.map((image) => ({
+                  image: {
+                    format: (
+                      {
+                        'image/jpeg': 'jpeg',
+                        'image/png': 'png',
+                        'image/webp': 'webp',
+                      } as const
+                    )[image.mediaType],
+                    source: { bytes: image.data },
                   },
-                ],
+                })),
               },
             ],
             additionalModelRequestFields: { thinking: { type: 'adaptive' } },
@@ -62,11 +48,10 @@ export const createClaudeVisionProvider = (
             },
           }),
           { abortSignal },
-        );
-      },
+        ),
       catch: (cause) =>
         new VisionError({
-          message: `Claude ${CLAUDE_MODEL} could not process the image.`,
+          message: `Claude ${CLAUDE_MODEL} could not process the scan.`,
           cause,
         }),
     }).pipe(
@@ -109,7 +94,7 @@ export const createClaudeVisionProvider = (
         (cause) =>
           new VisionError({
             message:
-              'Claude could not extract valid homework. Check the image and server AI configuration, then retry.',
+              'Claude could not extract valid homework. Check the photos and server AI configuration, then retry.',
             cause,
           }),
       ),
