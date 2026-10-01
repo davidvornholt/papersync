@@ -117,6 +117,9 @@ test('front and back are analyzed together and survive leaving the page', async 
   await page.getByRole('button', { name: 'Remove page 1' }).click();
   await expect(pages.getByRole('listitem')).toHaveCount(1);
   await page.getByRole('button', { name: 'Start over' }).click();
+  // Observe the reset render before navigation can discard its state update.
+  await expect(pages.getByRole('listitem')).toHaveCount(0);
+  await expect(page.getByLabel('Task')).toHaveCount(0);
   await page.reload();
   await expect(page.getByRole('button', { name: 'Take photo' })).toBeVisible();
   await expect(page.getByLabel('Task')).toHaveCount(0);

@@ -6,6 +6,7 @@ import type { ExtractedEntry } from '@/shared/homework/entry';
 import { WeekId } from '@/shared/types/schemas';
 import { scanPageLimit } from '../services/scan-limits';
 import { cancelScanJob } from './scan-job-client';
+import { useClearScan } from './use-clear-scan';
 import { useReviewWeek } from './use-review-week';
 import { type ScanDraft, useScanDraft } from './use-scan-draft';
 import { useScanJob } from './use-scan-job';
@@ -134,14 +135,18 @@ export const useScan = ({
     applyWeek: review.applyWeek,
     analyze,
     cancel,
-    clear: () => {
-      cancel();
-      revisionRef.current += 1;
-      pageList.setPages([]);
-      setState({ status: 'idle' });
-      review.setIsUpdatingWeek(false);
-      setWeek(null);
-      setEntries([]);
-    },
+    clear: useClearScan({
+      state,
+      stop: job.stop,
+      notify,
+      reset: () => {
+        revisionRef.current += 1;
+        pageList.setPages([]);
+        setState({ status: 'idle' });
+        review.setIsUpdatingWeek(false);
+        setWeek(null);
+        setEntries([]);
+      },
+    }),
   };
 };
