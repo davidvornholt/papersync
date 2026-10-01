@@ -2,6 +2,8 @@
 
 Scan handwritten homework, review the recognized tasks, and approve them for Super Productivity. Connect one installation; SuperSync distributes imported tasks to your other devices.
 
+PaperSync opens on Scan. In Chrome on Android, choose **Install app** from the menu to add it to the home screen; the installed app shows an offline page instead of a browser error when there is no connection.
+
 ## Development
 
 Use the Bun version in `package.json`. From the repository root:

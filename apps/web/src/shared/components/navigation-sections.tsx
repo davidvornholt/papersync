@@ -6,11 +6,8 @@ import { usePathname } from 'next/navigation';
 import { indicator } from '@/shared/motion/presets';
 import { NAV_ITEMS } from './navigation-config';
 
-const isItemActive = (
-  pathname: string,
-  href: string,
-  exact: boolean | undefined,
-): boolean => (exact ? pathname === href : pathname.startsWith(href));
+const isItemActive = (pathname: string, href: string): boolean =>
+  pathname.startsWith(href);
 
 export const DesktopTopNav = (): React.ReactElement => {
   const pathname = usePathname();
@@ -19,7 +16,7 @@ export const DesktopTopNav = (): React.ReactElement => {
     <header className="fixed inset-x-0 top-0 z-30 hidden border-hairline border-b bg-paper/80 backdrop-blur-xl md:block">
       <div className="shell flex h-16 items-center justify-between">
         <Link
-          href="/"
+          href="/scan"
           className="serif text-[22px] text-ink tracking-[-0.035em]"
           aria-label="PaperSync home"
         >
@@ -29,11 +26,12 @@ export const DesktopTopNav = (): React.ReactElement => {
         <nav aria-label="Primary">
           <ul className="flex items-center gap-10">
             {NAV_ITEMS.map((item) => {
-              const active = isItemActive(pathname, item.href, item.exact);
+              const active = isItemActive(pathname, item.href);
               return (
                 <li key={item.href}>
                   <Link
                     href={item.href}
+                    aria-current={active ? 'page' : undefined}
                     className="group relative inline-flex flex-col items-center"
                   >
                     <span
@@ -79,11 +77,12 @@ export const MobileBottomNav = (): React.ReactElement => {
     >
       <ul className="flex h-14 items-stretch justify-around px-3">
         {NAV_ITEMS.map((item) => {
-          const active = isItemActive(pathname, item.href, item.exact);
+          const active = isItemActive(pathname, item.href);
           return (
             <li key={item.href} className="flex-1">
               <Link
                 href={item.href}
+                aria-current={active ? 'page' : undefined}
                 className="relative flex h-full touch-manipulation items-center justify-center"
               >
                 <span

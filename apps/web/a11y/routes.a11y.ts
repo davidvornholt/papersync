@@ -3,7 +3,7 @@ import { expect } from '@playwright/test';
 import { createSessionCookies } from './auth-fixture';
 import { test } from './settings-fixture';
 
-for (const route of ['/', '/scan', '/planner', '/settings']) {
+for (const route of ['/scan', '/planner', '/settings']) {
   test(`${route} is accessible after sign-in`, async ({ page, context }) => {
     await context.addCookies(await createSessionCookies());
     await page.goto(route);
@@ -16,6 +16,18 @@ for (const route of ['/', '/scan', '/planner', '/settings']) {
     expect(await scanWcag22AaViolations(page)).toEqual([]);
   });
 }
+
+test('the app opens on Scan', async ({ page, context }) => {
+  await context.addCookies(await createSessionCookies());
+  await page.goto('/');
+  await expect(page).toHaveURL('/scan');
+  await expect(
+    page.getByRole('link', { name: 'Scan', exact: true }),
+  ).toHaveAttribute('aria-current', 'page');
+  await expect(
+    page.getByRole('link', { name: 'Home', exact: true }),
+  ).toHaveCount(0);
+});
 
 test('private routes require sign-in and login is accessible', async ({
   page,
@@ -151,13 +163,9 @@ test('shared styles preserve card spacing and heading sizes', async ({
   expect((await page.locator('div.page-shell').boundingBox())?.width).toBe(
     settingsWidth,
   );
-  await page.goto('/');
   await expect(
-    page.getByRole('heading', { name: 'Self-hosted and open source.' }),
+    page.getByRole('heading', { name: '1. Scan the sheet', exact: true }),
   ).toHaveCSS('font-size', '24px');
-  await expect(
-    page.getByRole('heading', { name: 'Set up your first school week.' }),
-  ).toHaveCSS('font-size', '30px');
 });
 
 test('pointer tooltips respect touch devices and dismiss without moving focus', async ({
