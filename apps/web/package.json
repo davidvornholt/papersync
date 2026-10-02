@@ -15,7 +15,7 @@
     "test:container": "bash scripts/container-smoke.sh"
   },
   "dependencies": {
-    "@ai-sdk/google": "^4.0.80",
+    "@ai-sdk/google": "^4.0.85",
     "@aws-sdk/client-bedrock-runtime": "^3.1145.0",
     "@effect/sql": "^0.52.1",
     "@effect/sql-pg": "^0.53.0",
