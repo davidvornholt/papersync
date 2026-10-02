@@ -19,6 +19,7 @@ const modelResponse = JSON.stringify({
   entries: [entry],
   confidence: 1,
 });
+const acceptedStatus = 202;
 let endpoint = '';
 let modelHeld = Promise.withResolvers<void>();
 const modelRequests: Array<{ readonly images: ReadonlyArray<string> }> = [];
@@ -241,12 +242,19 @@ test('leaving Scan during the upload resumes the analysis on return', async ({
     await upload.promise;
     await route.continue();
   });
+  const submitted = page.waitForResponse(
+    (response) =>
+      response.url().endsWith('/api/scans') &&
+      response.request().method() === 'POST',
+  );
   await page
     .getByRole('button', { name: 'Analyze photo', exact: true })
     .click();
   await expect(page.getByText('Uploading photos…')).toBeVisible();
   await goTo(page, 'Settings', '/settings');
   upload.resolve();
+  const submission = await submitted;
+  expect(submission.status(), await submission.text()).toBe(acceptedStatus);
   await expect.poll(() => modelRequests.length).toBe(1);
   modelHeld.resolve();
   await goTo(page, 'Scan', '/scan');
