@@ -13,7 +13,7 @@
   },
   "dependencies": {
     "@papersync/homework": "workspace:*",
-    "effect": "^3.22.2"
+    "effect": "^4.0.0"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.13.0",
