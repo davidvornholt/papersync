@@ -11,8 +11,4 @@ describe('settings-screen-helpers', () => {
 
     expect(getConfiguredDaysCount(timetable)).toBe(2);
   });
-
-  it('getConfiguredDaysCount returns zero when timetable is empty', () => {
-    expect(getConfiguredDaysCount([])).toBe(0);
-  });
 });

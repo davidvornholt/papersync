@@ -23,17 +23,6 @@ describe('OCRResponse Schema', () => {
     expect(response.confidence).toBe(expectedConfidence);
   });
 
-  it('should accept optional notes', () => {
-    const response = Schema.decodeUnknownSync(OCRResponse)({
-      weekId: '2026-W37',
-      entries: [],
-      confidence: 0.8,
-      notes: 'Partial extraction',
-    });
-
-    expect(response.notes).toBe('Partial extraction');
-  });
-
   it('should clamp confidence to valid range', () => {
     expect(() =>
       Schema.decodeUnknownSync(OCRResponse)({

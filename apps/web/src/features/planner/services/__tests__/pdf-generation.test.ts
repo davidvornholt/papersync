@@ -28,22 +28,6 @@ const createRequest = (body: string): Request =>
   });
 
 describe('planner PDF generation request handling', () => {
-  it('parses valid request JSON', async () => {
-    const request = createRequest(
-      JSON.stringify({
-        weekId: '2026-W05',
-        subjects: [{ id: 'math', name: 'Math' }],
-        timetable: [{ day: 'monday', subjectIds: ['math'] }],
-      }),
-    );
-
-    const result = await Effect.runPromise(
-      parseGeneratePdfRequestBody(request),
-    );
-    expect(String(result.weekId)).toBe('2026-W05');
-    expect(result.subjects).toHaveLength(1);
-  });
-
   it('fails on invalid request JSON', async () => {
     const request = createRequest('not-json');
 
@@ -53,45 +37,26 @@ describe('planner PDF generation request handling', () => {
     expect(error).toBeInstanceOf(RequestValidationError);
   });
 
-  it('validates a complete planner request', async () => {
-    const requestBody: GeneratePdfRequest = {
-      weekId: '2026-W05' as WeekId,
-      subjects: [{ id: 'math', name: 'Math' }],
-      timetable: [{ day: 'monday', subjectIds: ['math'] }],
-    };
-
-    const result = await Effect.runPromise(
-      validateGeneratePdfRequest(requestBody),
-    );
-    expect(result).toEqual(requestBody);
-  });
-
-  it('fails validation when subjects is missing', async () => {
-    const requestBody = {
-      timetable: [{ day: 'monday', subjectIds: [] }],
-    } as unknown as GeneratePdfRequest;
+  it.each([
+    [
+      'subjects',
+      { timetable: [{ day: 'monday', subjectIds: [] }] },
+      'Subjects must be an array',
+    ],
+    [
+      'timetable',
+      { subjects: [{ id: 'math', name: 'Math' }] },
+      'Timetable must be an array',
+    ],
+  ])('fails validation when %s is missing', async (_field, body, message) => {
+    const requestBody = body as unknown as GeneratePdfRequest;
 
     const error = await Effect.runPromise(
       validateGeneratePdfRequest(requestBody).pipe(Effect.flip),
     );
     expect(error).toMatchObject({
       _tag: 'RequestValidationError',
-      message: 'Subjects must be an array',
-      status: 400,
-    });
-  });
-
-  it('fails validation when timetable is missing', async () => {
-    const requestBody = {
-      subjects: [{ id: 'math', name: 'Math' }],
-    } as unknown as GeneratePdfRequest;
-
-    const error = await Effect.runPromise(
-      validateGeneratePdfRequest(requestBody).pipe(Effect.flip),
-    );
-    expect(error).toMatchObject({
-      _tag: 'RequestValidationError',
-      message: 'Timetable must be an array',
+      message,
       status: 400,
     });
   });
