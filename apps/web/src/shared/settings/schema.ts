@@ -1,15 +1,15 @@
 import { Schema as S } from 'effect';
 
-const AIProviderSchema = S.Union(S.Literal('google'), S.Literal('ollama'));
-const DayOfWeekSchema = S.Union(
-  S.Literal('monday'),
-  S.Literal('tuesday'),
-  S.Literal('wednesday'),
-  S.Literal('thursday'),
-  S.Literal('friday'),
-  S.Literal('saturday'),
-  S.Literal('sunday'),
-);
+const AIProviderSchema = S.Literals(['google', 'ollama']);
+const DayOfWeekSchema = S.Literals([
+  'monday',
+  'tuesday',
+  'wednesday',
+  'thursday',
+  'friday',
+  'saturday',
+  'sunday',
+]);
 
 const SubjectSchema = S.Struct({
   id: S.String,

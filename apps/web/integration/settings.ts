@@ -32,8 +32,8 @@ it('persists the day order of subjects and prevents stale browsers from replacin
           const staleFirstSave = yield* saveSchoolSettings({
             revision: null,
             school,
-          }).pipe(Effect.either);
-          expect(staleFirstSave._tag).toBe('Left');
+          }).pipe(Effect.result);
+          expect(staleFirstSave._tag).toBe('Failure');
           const updated = yield* saveSchoolSettings({
             revision: initial.revision,
             school: {
@@ -44,9 +44,12 @@ it('persists the day order of subjects and prevents stale browsers from replacin
           const stale = yield* saveSchoolSettings({
             revision: initial.revision,
             school,
-          }).pipe(Effect.either);
-          expect(stale._tag).toBe('Left');
-          expect(stale).toMatchObject({ _tag: 'Left', left: { status: 409 } });
+          }).pipe(Effect.result);
+          expect(stale._tag).toBe('Failure');
+          expect(stale).toMatchObject({
+            _tag: 'Failure',
+            failure: { status: 409 },
+          });
           expect(yield* loadSchoolSettings).toEqual(updated);
         }),
       );
@@ -77,11 +80,11 @@ it('rejects unknown subjects, duplicate days or subjects, and browser credential
             const result = yield* saveSchoolSettings({
               revision: null,
               school: invalid,
-            }).pipe(Effect.either);
-            expect(result._tag).toBe('Left');
+            }).pipe(Effect.result);
+            expect(result._tag).toBe('Failure');
             expect(result).toMatchObject({
-              _tag: 'Left',
-              left: { status: 400 },
+              _tag: 'Failure',
+              failure: { status: 400 },
             });
           }
           expect(yield* loadSchoolSettings).toEqual({

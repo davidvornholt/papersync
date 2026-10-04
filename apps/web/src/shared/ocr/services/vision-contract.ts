@@ -29,8 +29,7 @@ export type VisionProvider = {
   ) => Effect.Effect<OCRResultWithModel, VisionError | VisionValidationError>;
 };
 
-export const VisionProvider =
-  Context.GenericTag<VisionProvider>('VisionProvider');
+export const VisionProvider = Context.Service<VisionProvider>('VisionProvider');
 
 export const GEMINI_MODEL = 'gemini-3.8-flash';
 export const CLAUDE_MODEL = 'global.anthropic.claude-sonnet-5-5';

@@ -36,7 +36,7 @@ export const rejectUnauthorizedApiRequest = async (
   if (request.method === 'GET') {
     return null;
   }
-  const publicUrl = await Effect.runPromise(Config.url('BETTER_AUTH_URL'));
+  const publicUrl = await Effect.runPromise(Config.URL('BETTER_AUTH_URL'));
   return request.headers.get('origin') === publicUrl.origin
     ? null
     : Response.json(

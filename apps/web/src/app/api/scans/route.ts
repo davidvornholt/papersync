@@ -17,7 +17,7 @@ export const POST = async (request: Request): Promise<Response> => {
   }
   return databaseRuntime.runPromise(
     ensureScanCapacity.pipe(
-      Effect.zipRight(parseScanRequest(request)),
+      Effect.andThen(parseScanRequest(request)),
       Effect.flatMap((input) => startScanJob(analyzeScan(input))),
       Effect.match({
         onFailure: (error) =>

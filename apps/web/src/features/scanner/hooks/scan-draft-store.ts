@@ -52,7 +52,7 @@ const storeError = (cause: unknown) =>
     cause,
   });
 
-const openDatabase = Effect.async<IDBDatabase, ScanDraftStoreError>(
+const openDatabase = Effect.callback<IDBDatabase, ScanDraftStoreError>(
   (resume) => {
     const request = indexedDB.open(databaseName, databaseVersion);
     request.onupgradeneeded = () => {
@@ -64,7 +64,7 @@ const openDatabase = Effect.async<IDBDatabase, ScanDraftStoreError>(
 );
 // One shared connection keeps writes in the order they were requested. It
 // opens in its own fiber, so a caller that stops waiting cannot cancel it.
-const openOnce = Effect.runSync(Effect.cached(Effect.forkDaemon(openDatabase)));
+const openOnce = Effect.runSync(Effect.cached(Effect.forkDetach(openDatabase)));
 const database = Effect.flatMap(openOnce, Fiber.join);
 
 const transact = <A>(
@@ -72,7 +72,7 @@ const transact = <A>(
   run: (store: IDBObjectStore) => IDBRequest<A>,
 ) =>
   Effect.flatMap(database, (connection) =>
-    Effect.async<A, ScanDraftStoreError>((resume) => {
+    Effect.callback<A, ScanDraftStoreError>((resume) => {
       const transaction = connection.transaction(storeName, mode);
       const request = run(transaction.objectStore(storeName));
       transaction.oncomplete = () => resume(Effect.succeed(request.result));
@@ -81,14 +81,14 @@ const transact = <A>(
       transaction.onabort = () =>
         resume(Effect.fail(storeError(transaction.error)));
     }),
-  ).pipe(Effect.catchAllDefect((cause) => Effect.fail(storeError(cause))));
+  ).pipe(Effect.catchDefect((cause) => Effect.fail(storeError(cause))));
 
-const read = <A, I>(key: string, schema: Schema.Schema<A, I>, fallback: A) =>
+const read = <A, I>(key: string, schema: Schema.Codec<A, I>, fallback: A) =>
   transact('readonly', (store) => store.get(key)).pipe(
     Effect.flatMap((value) =>
       value === undefined
         ? Effect.succeed(fallback)
-        : Schema.decodeUnknown(schema)(value).pipe(
+        : Schema.decodeUnknownEffect(schema)(value).pipe(
             // A draft from an older PaperSync version is discarded.
             Effect.orElseSucceed(() => fallback),
           ),
@@ -128,7 +128,7 @@ export const takeSharedPhotos = transact('readwrite', (store) => {
   Effect.flatMap((value) =>
     value === undefined
       ? Effect.succeed([])
-      : Schema.decodeUnknown(SharedPhotos)(value).pipe(
+      : Schema.decodeUnknownEffect(SharedPhotos)(value).pipe(
           Effect.orElseSucceed((): ReadonlyArray<Blob> => []),
         ),
   ),

@@ -21,11 +21,11 @@ export const scanFromDevice = async (
 ): Promise<ScanFromDeviceResult> => {
   await requireSession();
   const program = Effect.gen(function* () {
-    const decodedScanner = yield* Schema.decodeUnknown(DiscoveredScannerSchema)(
-      scanner,
-    );
+    const decodedScanner = yield* Schema.decodeUnknownEffect(
+      DiscoveredScannerSchema,
+    )(scanner);
     const decodedSettings =
-      yield* Schema.decodeUnknown(ScanSettingsSchema)(settings);
+      yield* Schema.decodeUnknownEffect(ScanSettingsSchema)(settings);
     const client = yield* ESCLClient;
 
     // Start the scan job
@@ -38,7 +38,7 @@ export const scanFromDevice = async (
   }).pipe(
     Effect.provide(ESCLClientLayer),
     Effect.map((imageData) => ({ success: true as const, imageData })),
-    Effect.catchAll((error) =>
+    Effect.catch((error) =>
       Effect.succeed({
         success: false as const,
         error: getErrorMessage(error),

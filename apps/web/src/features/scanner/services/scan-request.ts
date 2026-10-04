@@ -157,7 +157,7 @@ export const parseScanRequest = (request: Request) =>
     const weekId =
       week === undefined
         ? null
-        : yield* Schema.decodeUnknown(WeekId)(week).pipe(
+        : yield* Schema.decodeUnknownEffect(WeekId)(week).pipe(
             Effect.mapError(
               () =>
                 new ScanRequestError({

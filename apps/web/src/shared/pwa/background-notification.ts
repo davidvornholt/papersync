@@ -25,7 +25,7 @@ export const notifyInBackground = (title: string, body: string) => {
         icon: notificationIcon,
       });
     }).pipe(
-      Effect.catchAll((error) =>
+      Effect.catch((error) =>
         Effect.logWarning('Background notification failed', error),
       ),
     ),

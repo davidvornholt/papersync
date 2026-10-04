@@ -49,7 +49,7 @@ export const createGeminiVisionProvider = (
         }),
     }).pipe(
       Effect.flatMap((response) =>
-        Schema.decodeUnknown(OCRResponseSchema)(response.output),
+        Schema.decodeUnknownEffect(OCRResponseSchema)(response.output),
       ),
       Effect.map((validated) => ({
         data: {

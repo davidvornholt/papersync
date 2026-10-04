@@ -1,10 +1,9 @@
-import { Data } from 'effect';
-export class ScanRequestError extends Data.TaggedError('ScanRequestError')<{
-  readonly message: string;
-  readonly status: number;
-}> {}
-export class ScanJobNotFoundError extends Data.TaggedError(
+import { Schema } from 'effect';
+export class ScanRequestError extends Schema.TaggedError<ScanRequestError>()(
+  'ScanRequestError',
+  { message: Schema.String, status: Schema.Number },
+) {}
+export class ScanJobNotFoundError extends Schema.TaggedError<ScanJobNotFoundError>()(
   'ScanJobNotFoundError',
-)<{
-  readonly message: string;
-}> {}
+  { message: Schema.String },
+) {}

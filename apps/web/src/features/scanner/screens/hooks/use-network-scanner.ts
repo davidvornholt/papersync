@@ -30,9 +30,7 @@ export const useNetworkScanner = (
   const [resolution, setResolution] = useState(defaultResolution);
   const [colorMode, setColorMode] = useState<ColorMode>('color');
   const [inputSource, setInputSource] = useState<InputSource>('Platen');
-  const capabilitiesRef = useRef<Fiber.RuntimeFiber<unknown, never> | null>(
-    null,
-  );
+  const capabilitiesRef = useRef<Fiber.Fiber<unknown, never> | null>(null);
   const { addToast } = useToast();
   const onFailure = (error: { readonly message: string }) =>
     Effect.sync(() => addToast(error.message, 'error'));
@@ -79,7 +77,7 @@ export const useNetworkScanner = (
             setSource(source ?? 'Platen', result.capabilities);
           }),
         ),
-        Effect.catchAll(onFailure),
+        Effect.catch(onFailure),
         Effect.ensuring(Effect.sync(() => setIsLoadingCapabilities(false))),
       ),
     );
@@ -108,7 +106,7 @@ export const useNetworkScanner = (
             }
           }),
         ),
-        Effect.catchAll(onFailure),
+        Effect.catch(onFailure),
         Effect.ensuring(Effect.sync(() => setIsScanning(false))),
       ),
     );

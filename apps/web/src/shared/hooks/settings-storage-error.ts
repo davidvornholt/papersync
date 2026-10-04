@@ -1,4 +1,5 @@
-import { Data } from 'effect';
-export class SettingsStorageError extends Data.TaggedError(
+import { Schema } from 'effect';
+export class SettingsStorageError extends Schema.TaggedError<SettingsStorageError>()(
   'SettingsStorageError',
-)<{ readonly message: string }> {}
+  { message: Schema.String },
+) {}

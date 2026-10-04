@@ -35,7 +35,7 @@ export const useScannerDiscovery = () => {
             }
           }),
         ),
-        Effect.catchAll(onFailure),
+        Effect.catch(onFailure),
       ),
     );
   };

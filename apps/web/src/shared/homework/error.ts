@@ -1,5 +1,5 @@
-import { Data } from 'effect';
-export class HomeworkError extends Data.TaggedError('HomeworkError')<{
-  readonly message: string;
-  readonly cause?: unknown;
-}> {}
+import { Schema } from 'effect';
+export class HomeworkError extends Schema.TaggedError<HomeworkError>()(
+  'HomeworkError',
+  { message: Schema.String, cause: Schema.optional(Schema.Defect()) },
+) {}

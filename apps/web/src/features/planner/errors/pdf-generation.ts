@@ -1,11 +1,9 @@
-import { Data } from 'effect';
-export class RequestValidationError extends Data.TaggedError(
+import { Schema } from 'effect';
+export class RequestValidationError extends Schema.TaggedError<RequestValidationError>()(
   'RequestValidationError',
-)<{
-  readonly message: string;
-  readonly status: number;
-}> {}
-export class PdfGenerationError extends Data.TaggedError('PdfGenerationError')<{
-  readonly message: string;
-  readonly cause?: unknown;
-}> {}
+  { message: Schema.String, status: Schema.Number },
+) {}
+export class PdfGenerationError extends Schema.TaggedError<PdfGenerationError>()(
+  'PdfGenerationError',
+  { message: Schema.String, cause: Schema.optional(Schema.Defect()) },
+) {}

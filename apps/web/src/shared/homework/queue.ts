@@ -19,7 +19,7 @@ const toHomework = (
       entry.subject,
       entry.content,
     );
-    return yield* Schema.decodeUnknown(Homework)({
+    return yield* Schema.decodeUnknownEffect(Homework)({
       id,
       week: options.weekId,
       day: entry.day,
@@ -40,7 +40,7 @@ export const enqueueHomework = (
   options: QueueOptions,
 ) =>
   Effect.gen(function* () {
-    const decoded = yield* Schema.decodeUnknown(
+    const decoded = yield* Schema.decodeUnknownEffect(
       Schema.Array(
         Schema.Struct({
           id: Schema.String,
@@ -81,7 +81,7 @@ export const getPendingHomework = Effect.gen(function* () {
   const sql = yield* PgClient.PgClient;
   const rows =
     yield* sql`SELECT payload, revision FROM homework WHERE imported_revision IS DISTINCT FROM revision ORDER BY created_at, id`;
-  return yield* Schema.decodeUnknown(PendingHomework)(rows);
+  return yield* Schema.decodeUnknownEffect(PendingHomework)(rows);
 });
 export const acknowledgeHomework = (
   id: string,

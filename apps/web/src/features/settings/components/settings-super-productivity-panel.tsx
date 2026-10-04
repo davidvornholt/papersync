@@ -30,7 +30,7 @@ export const SettingsSuperProductivityPanel = () => {
             cause,
           }),
       }).pipe(
-        Effect.catchAll((cause) => Effect.sync(() => setError(cause.message))),
+        Effect.catch((cause) => Effect.sync(() => setError(cause.message))),
         Effect.ensuring(Effect.sync(() => setIsBusy(false))),
       ),
     );
@@ -46,7 +46,7 @@ export const SettingsSuperProductivityPanel = () => {
           }),
       }).pipe(
         Effect.tap((value) => Effect.sync(() => setStatus(value))),
-        Effect.catchAll((cause) => Effect.sync(() => setError(cause.message))),
+        Effect.catch((cause) => Effect.sync(() => setError(cause.message))),
       ),
     );
     return () => {

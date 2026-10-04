@@ -4,7 +4,7 @@ import { requireSession } from '@/shared/auth/session';
 export const GET = async () => {
   await requireSession();
   const path = await Effect.runPromise(
-    Config.string('PLUGIN_ARCHIVE_PATH').pipe(
+    Config.String('PLUGIN_ARCHIVE_PATH').pipe(
       Config.withDefault(
         '../super-productivity-plugin/dist/papersync-plugin.zip',
       ),

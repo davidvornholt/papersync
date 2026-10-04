@@ -1,11 +1,9 @@
-import { Data, Effect } from 'effect';
+import { Effect, Schema } from 'effect';
 import type { WeekId } from '@/shared/types/schemas';
-export class PlannerGenerationError extends Data.TaggedError(
+export class PlannerGenerationError extends Schema.TaggedError<PlannerGenerationError>()(
   'PlannerGenerationError',
-)<{
-  readonly message: string;
-  readonly cause?: unknown;
-}> {}
+  { message: Schema.String, cause: Schema.optional(Schema.Defect()) },
+) {}
 
 export const downloadPlannerPdf = (
   blob: Blob,

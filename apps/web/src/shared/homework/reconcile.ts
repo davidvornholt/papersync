@@ -14,7 +14,7 @@ export const reconcileHomework = (data: OCRResponse) =>
     // Include both queued and imported homework: either has already been reviewed.
     const rows =
       yield* sql`SELECT payload FROM homework WHERE payload->>'week' = ${data.weekId}`;
-    const decoded = yield* Schema.decodeUnknown(
+    const decoded = yield* Schema.decodeUnknownEffect(
       Schema.Array(Schema.Struct({ payload: Homework })),
     )(rows);
     const saved = new Map(decoded.map(({ payload }) => [payload.id, payload]));

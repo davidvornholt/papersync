@@ -1,11 +1,11 @@
 import { build, file, write } from 'bun';
-import { Data, Effect } from 'effect';
+import { Effect, Schema } from 'effect';
 import { strToU8, zipSync } from 'fflate';
 
-class BuildError extends Data.TaggedError('BuildError')<{
-  readonly message: string;
-  readonly cause?: unknown;
-}> {}
+class BuildError extends Schema.TaggedError<BuildError>()('BuildError', {
+  message: Schema.String,
+  cause: Schema.optional(Schema.Defect()),
+}) {}
 const buildPlugin = Effect.gen(function* () {
   const result = yield* Effect.tryPromise({
     try: () =>

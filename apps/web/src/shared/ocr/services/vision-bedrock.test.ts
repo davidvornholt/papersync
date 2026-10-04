@@ -170,8 +170,8 @@ it('reports Bedrock denial without falling back to a client provider', async () 
   fetchSpy.mockResolvedValue(
     new Response('', { status: 403, statusText: 'Forbidden' }),
   );
-  const result = await Effect.runPromise(extract().pipe(Effect.either));
-  expect(result._tag).toBe('Left');
+  const result = await Effect.runPromise(extract().pipe(Effect.result));
+  expect(result._tag).toBe('Failure');
   expect(fetchSpy).toHaveBeenCalledTimes(1);
 });
 it.each([
@@ -202,8 +202,8 @@ it.each([
   ],
 ])('rejects Claude output with %s without falling back', async (_, output) => {
   mockClaudeOutput(output);
-  const result = await Effect.runPromise(extract().pipe(Effect.either));
-  expect(result._tag).toBe('Left');
+  const result = await Effect.runPromise(extract().pipe(Effect.result));
+  expect(result._tag).toBe('Failure');
   expect(fetchSpy).toHaveBeenCalledTimes(1);
 });
 
@@ -231,8 +231,8 @@ it.each(['max_tokens', 'refusal'])(
         metrics: { latencyMs: 1 },
       }),
     );
-    expect((await Effect.runPromise(extract().pipe(Effect.either)))._tag).toBe(
-      'Left',
+    expect((await Effect.runPromise(extract().pipe(Effect.result)))._tag).toBe(
+      'Failure',
     );
   },
 );
@@ -248,7 +248,7 @@ it('rejects malformed JSON rather than attempting to repair or save it', async (
       metrics: { latencyMs: 1 },
     }),
   );
-  expect((await Effect.runPromise(extract().pipe(Effect.either)))._tag).toBe(
-    'Left',
+  expect((await Effect.runPromise(extract().pipe(Effect.result)))._tag).toBe(
+    'Failure',
   );
 });

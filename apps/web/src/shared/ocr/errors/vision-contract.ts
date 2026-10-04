@@ -1,16 +1,13 @@
-import { Data } from 'effect';
-export class VisionError extends Data.TaggedError('VisionError')<{
-  readonly message: string;
-  readonly cause?: unknown;
-}> {}
-export class VisionValidationError extends Data.TaggedError(
+import { Schema } from 'effect';
+export class VisionError extends Schema.TaggedError<VisionError>()(
+  'VisionError',
+  { message: Schema.String, cause: Schema.optional(Schema.Defect()) },
+) {}
+export class VisionValidationError extends Schema.TaggedError<VisionValidationError>()(
   'VisionValidationError',
-)<{
-  readonly message: string;
-  readonly raw?: string;
-}> {}
-export class VisionConfigurationError extends Data.TaggedError(
+  { message: Schema.String, raw: Schema.optional(Schema.String) },
+) {}
+export class VisionConfigurationError extends Schema.TaggedError<VisionConfigurationError>()(
   'VisionConfigurationError',
-)<{
-  readonly message: string;
-}> {}
+  { message: Schema.String },
+) {}

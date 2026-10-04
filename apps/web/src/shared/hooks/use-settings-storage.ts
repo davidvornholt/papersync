@@ -9,8 +9,8 @@ import {
 import { SettingsStorageError } from './settings-storage-error';
 
 const storageKey = 'papersync-settings';
-const storedSettingsSchema = Schema.parseJson(
-  Schema.Record({ key: Schema.String, value: Schema.Unknown }),
+const storedSettingsSchema = Schema.fromJsonString(
+  Schema.Record(Schema.String, Schema.Unknown),
 );
 
 const loadBrowserSettings = () =>
@@ -23,9 +23,9 @@ const loadBrowserSettings = () =>
   }).pipe(
     Effect.flatMap((stored) =>
       stored
-        ? Schema.decodeUnknown(storedSettingsSchema)(stored).pipe(
+        ? Schema.decodeUnknownEffect(storedSettingsSchema)(stored).pipe(
             Effect.flatMap((parsed) =>
-              Schema.decodeUnknown(SettingsSchema)({
+              Schema.decodeUnknownEffect(SettingsSchema)({
                 ...defaultSettings,
                 ...parsed,
                 timetable: parsed.timetable ?? createDefaultTimetable(),

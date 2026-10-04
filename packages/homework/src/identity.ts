@@ -1,12 +1,12 @@
-import { Data, Effect } from 'effect';
+import { Effect, Schema } from 'effect';
 
 const hexRadix = 16;
 const byteWidth = 2;
 const whitespacePattern = /\s+/gu;
-export class IdentityError extends Data.TaggedError('IdentityError')<{
-  readonly message: string;
-  readonly cause: unknown;
-}> {}
+export class IdentityError extends Schema.TaggedError<IdentityError>()(
+  'IdentityError',
+  { message: Schema.String, cause: Schema.Defect() },
+) {}
 export const hashContent = (value: string) =>
   Effect.tryPromise({
     try: () => crypto.subtle.digest('SHA-256', new TextEncoder().encode(value)),

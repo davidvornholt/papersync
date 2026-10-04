@@ -39,7 +39,9 @@ export const createOllamaVisionProvider = (
             }),
         ),
       );
-      const response = yield* Schema.decodeUnknown(responseSchema)(body).pipe(
+      const response = yield* Schema.decodeUnknownEffect(responseSchema)(
+        body,
+      ).pipe(
         Effect.mapError(
           (cause) =>
             new VisionValidationError({
@@ -59,7 +61,7 @@ export const createOllamaVisionProvider = (
             raw: response.response,
           }),
       });
-      const validated = yield* Schema.decodeUnknown(OCRResponseSchema)(
+      const validated = yield* Schema.decodeUnknownEffect(OCRResponseSchema)(
         parsed,
       ).pipe(
         Effect.mapError(

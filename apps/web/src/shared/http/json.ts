@@ -1,10 +1,10 @@
-import { Data, Effect } from 'effect';
+import { Effect, Schema } from 'effect';
 
-export class HttpError extends Data.TaggedError('HttpError')<{
-  readonly message: string;
-  readonly status?: number;
-  readonly cause?: unknown;
-}> {}
+export class HttpError extends Schema.TaggedError<HttpError>()('HttpError', {
+  message: Schema.String,
+  status: Schema.optional(Schema.Number),
+  cause: Schema.optional(Schema.Defect()),
+}) {}
 export const fetchJson = (
   url: string,
   options?: RequestInit,

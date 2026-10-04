@@ -5,6 +5,6 @@ export default defineConfig({
   schema: './src/schema.ts',
   out: './migrations',
   dbCredentials: {
-    url: Redacted.value(Effect.runSync(Config.redacted('DATABASE_URL'))),
+    url: Redacted.value(Effect.runSync(Config.Redacted('DATABASE_URL'))),
   },
 });

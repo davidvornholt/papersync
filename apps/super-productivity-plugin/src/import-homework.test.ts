@@ -1,7 +1,7 @@
 import { afterAll, expect, it, mock } from 'bun:test';
 import type { QueuedHomework } from '@papersync/homework/contract';
 import { getTaskMarker } from '@papersync/homework/identity';
-import { Effect } from 'effect';
+import { Effect, Fiber } from 'effect';
 import type { PluginApi, Task } from './api';
 import { importHomework } from './import-homework';
 import { createImportController } from './import-lifecycle';
@@ -102,9 +102,9 @@ it('an interrupted acknowledgement retries without duplicating a task or reopeni
     .mockImplementationOnce(() => Promise.resolve([item]))
     .mockImplementationOnce(() => Promise.reject(new Error('offline')));
   const failed = await Effect.runPromise(
-    importHomework(api).pipe(Effect.either),
+    importHomework(api).pipe(Effect.result),
   );
-  expect(failed._tag).toBe('Left');
+  expect(failed._tag).toBe('Failure');
   tasks[0] = { id: 'task-1', notes: getTaskMarker(item.payload.id) };
   await Effect.runPromise(importHomework(api));
   expect(api.addTask).toHaveBeenCalledTimes(1);
@@ -159,9 +159,9 @@ it('invalid queue data cannot create tasks', async () => {
     },
   ]);
   const result = await Effect.runPromise(
-    importHomework(api).pipe(Effect.either),
+    importHomework(api).pipe(Effect.result),
   );
-  expect(result._tag).toBe('Left');
+  expect(result._tag).toBe('Failure');
   expect(api.addTask).not.toHaveBeenCalled();
 });
 
@@ -178,7 +178,7 @@ it('unload interrupts overlapping manual imports', async () => {
 
   controller.start(runningImport);
   controller.start(runningImport);
-  await Effect.runPromise(controller.stop());
+  await Effect.runPromise(Fiber.join(controller.stop()));
 
   expect(interrupted).toBe(2);
 });
