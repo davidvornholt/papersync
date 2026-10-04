@@ -24,7 +24,7 @@
     "@papersync/ui": "workspace:*",
     "@react-pdf/renderer": "^4.9.0",
     "@smithy/fetch-http-handler": "^5.8.0",
-    "ai": "^7.0.122",
+    "ai": "^7.0.126",
     "better-auth": "^1.7.6",
     "bonjour-service": "^1.4.4",
     "effect": "^3.22.2",
