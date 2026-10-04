@@ -23,11 +23,9 @@ const startsWith = (bytes: Uint8Array, signature: string, offset = 0) =>
   );
 const webpOffset = 8;
 const detectImageType = (bytes: Uint8Array): ScanImageType | null => {
-  // biome-ignore lint/security/noSecrets: The JPEG file signature, not a credential.
   if (startsWith(bytes, '\xFF\xD8\xFF')) {
     return 'image/jpeg';
   }
-  // biome-ignore lint/security/noSecrets: The PNG file signature, not a credential.
   if (startsWith(bytes, '\x89PNG\r\n\x1A\n')) {
     return 'image/png';
   }

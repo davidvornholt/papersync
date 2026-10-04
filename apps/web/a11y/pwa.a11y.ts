@@ -10,7 +10,6 @@ test('the app can be installed and opens on Scan', async ({
   request,
 }) => {
   await page.goto('/login');
-  // biome-ignore lint/security/noSecrets: A CSS attribute selector, not a credential.
   await expect(page.locator('link[rel=manifest]')).toHaveAttribute(
     'href',
     '/manifest.webmanifest',

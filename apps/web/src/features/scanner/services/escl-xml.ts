@@ -67,7 +67,6 @@ const parseColorModes = (section: string): Array<ColorMode> => {
   if (section.includes('Grayscale8') || section.includes('Grayscale')) {
     colorModes.push('grayscale');
   }
-  // biome-ignore lint/security/noSecrets: eSCL protocol value required by scanners.
   if (section.includes('BlackAndWhite1') || section.includes('Binary')) {
     colorModes.push('blackwhite');
   }
@@ -150,7 +149,6 @@ export const createScanRequestXml = (settings: ScanSettings): string => {
   const colorModeMap: Record<ColorMode, string> = {
     color: 'RGB24',
     grayscale: 'Grayscale8',
-    // biome-ignore lint/security/noSecrets: eSCL protocol value required by scanners.
     blackwhite: 'BlackAndWhite1',
   };
   const formatMap: Record<ScanSettings['format'], string> = {
