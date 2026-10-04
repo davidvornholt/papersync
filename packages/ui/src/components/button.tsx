@@ -77,7 +77,6 @@ export const Button = (props: ButtonProps): ReactElement => {
     );
     if (!isValidElement<{ readonly className?: string }>(child)) {
       throw new Error(
-        // biome-ignore lint/security/noSecrets: Stable Effect discriminator or diagnostic text, not a credential.
         'Button(asChild) requires exactly one valid React element child.',
       );
     }

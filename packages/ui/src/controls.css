@@ -9,13 +9,13 @@
 
 .paper-flat {
   background: var(--color-surface);
-  border-top: 1px solid var(--color-hairline);
-  border-bottom: 1px solid var(--color-hairline);
+  border-block-start: 1px solid var(--color-hairline);
+  border-block-end: 1px solid var(--color-hairline);
 }
 
 .paper-section {
-  padding-top: clamp(2rem, 4vw, 3rem);
-  padding-bottom: clamp(2rem, 4vw, 3rem);
+  padding-block-start: clamp(2rem, 4vw, 3rem);
+  padding-block-end: clamp(2rem, 4vw, 3rem);
 }
 
 /* =============================================================================
@@ -133,10 +133,10 @@
 .btn-ghost::after {
   content: "";
   position: absolute;
-  left: 0.4rem;
-  right: 0.4rem;
-  bottom: 0.35rem;
-  height: 1px;
+  inset-inline-start: 0.4rem;
+  inset-inline-end: 0.4rem;
+  inset-block-end: 0.35rem;
+  block-size: 1px;
   background: var(--color-accent);
   transform: scaleX(0);
   transform-origin: left center;
@@ -207,10 +207,10 @@
 }
 .paper-checkbox:checked::after {
   content: "";
-  width: 0.65rem;
-  height: 0.35rem;
-  border-left: 2px solid currentColor;
-  border-bottom: 2px solid currentColor;
+  inline-size: 0.65rem;
+  block-size: 0.35rem;
+  border-inline-start: 2px solid currentColor;
+  border-block-end: 2px solid currentColor;
   transform: translateY(-0.1rem) rotate(-45deg);
 }
 @media (forced-colors: active) {
