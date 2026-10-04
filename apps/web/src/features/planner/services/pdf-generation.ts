@@ -36,27 +36,19 @@ export const validateGeneratePdfRequest = (
   body: GeneratePdfRequest,
 ): Effect.Effect<GeneratePdfRequest, RequestValidationError> =>
   Effect.gen(function* () {
-    yield* Effect.if(Array.isArray(body.subjects), {
-      onTrue: () => Effect.void,
-      onFalse: () =>
-        Effect.fail(
-          new RequestValidationError({
-            message: 'Subjects must be an array',
-            status: 400,
-          }),
-        ),
-    });
+    if (!Array.isArray(body.subjects)) {
+      return yield* new RequestValidationError({
+        message: 'Subjects must be an array',
+        status: 400,
+      });
+    }
 
-    yield* Effect.if(Array.isArray(body.timetable), {
-      onTrue: () => Effect.void,
-      onFalse: () =>
-        Effect.fail(
-          new RequestValidationError({
-            message: 'Timetable must be an array',
-            status: 400,
-          }),
-        ),
-    });
+    if (!Array.isArray(body.timetable)) {
+      return yield* new RequestValidationError({
+        message: 'Timetable must be an array',
+        status: 400,
+      });
+    }
 
     return body;
   });

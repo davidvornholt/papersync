@@ -1,5 +1,5 @@
 import { afterAll, afterEach, expect, it, spyOn } from 'bun:test';
-import { Effect, Either, Schema } from 'effect';
+import { Effect, Result, Schema } from 'effect';
 import { ISODate, WeekId } from '@/shared/types/schemas';
 import { createGoogleVisionProvider } from './vision-google-provider';
 import { createOllamaVisionProvider } from './vision-ollama-provider';
@@ -47,9 +47,9 @@ it('validates Google output, defaults completion, and normalizes the written day
   ]);
 });
 it.each([
-  ['accepts null and maps it to the optional domain field', null, 'Right'],
-  ['rejects a missing dueDate', undefined, 'Left'],
-  ['rejects an impossible date', '2026-02-30', 'Left'],
+  ['accepts null and maps it to the optional domain field', null, 'Success'],
+  ['rejects a missing dueDate', undefined, 'Failure'],
+  ['rejects an impossible date', '2026-02-30', 'Failure'],
 ] as const)('enforces dueDate as date-or-null: %s', async (_, dueDate, tag) => {
   const modelEntry = { ...entry, dueDate };
   fetchSpy.mockResolvedValue(
@@ -62,14 +62,14 @@ it.each([
   const result = await Effect.runPromise(
     createGoogleVisionProvider('fixture-key')
       .extractHandwriting(pages, week)
-      .pipe(Effect.either),
+      .pipe(Effect.result),
   );
   expect(result._tag).toBe(tag);
   expect(
-    Either.getOrNull(
-      Either.map(result, (value) => value.data.entries[0]?.dueDate),
+    Result.getOrNull(
+      Result.map(result, (value) => value.data.entries[0]?.dueDate),
     ),
-  ).toBe(tag === 'Right' ? undefined : null);
+  ).toBe(tag === 'Success' ? undefined : null);
   expect(fetchSpy).toHaveBeenCalledTimes(1);
 });
 it('rejects invalid Gemini output', async () => {
@@ -79,9 +79,9 @@ it('rejects invalid Gemini output', async () => {
   const result = await Effect.runPromise(
     createGoogleVisionProvider('fixture-key')
       .extractHandwriting(pages, week)
-      .pipe(Effect.either),
+      .pipe(Effect.result),
   );
-  expect(result._tag).toBe('Left');
+  expect(result._tag).toBe('Failure');
 });
 it('sends Ollama the OCR schema and rejects malformed model output', async () => {
   const provider = createOllamaVisionProvider('http://localhost:11434');
@@ -122,10 +122,10 @@ it('sends Ollama the OCR schema and rejects malformed model output', async () =>
   expect(
     (
       await Effect.runPromise(
-        provider.extractHandwriting(pages, week).pipe(Effect.either),
+        provider.extractHandwriting(pages, week).pipe(Effect.result),
       )
     )._tag,
-  ).toBe('Left');
+  ).toBe('Failure');
 });
 
 it.each(

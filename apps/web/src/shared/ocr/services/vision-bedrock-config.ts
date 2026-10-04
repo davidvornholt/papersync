@@ -1,13 +1,26 @@
-import { Config, Effect, Option, Redacted, Schema } from 'effect';
+import {
+  Config,
+  ConfigProvider,
+  Effect,
+  Option,
+  Redacted,
+  Schema,
+} from 'effect';
 import { VisionError } from '@/shared/ocr/errors/vision-contract';
+import { NonEmptyTrimmedString } from '@/shared/types/schemas';
 
 const bedrockEnvironment = Config.all({
-  region: Config.option(Config.string('BEDROCK_REGION')),
-  accessKeyId: Config.option(Config.redacted('BEDROCK_ACCESS_KEY_ID')),
-  secretAccessKey: Config.option(Config.redacted('BEDROCK_SECRET_ACCESS_KEY')),
+  region: Config.option(Config.String('BEDROCK_REGION')),
+  accessKeyId: Config.option(Config.Redacted('BEDROCK_ACCESS_KEY_ID')),
+  secretAccessKey: Config.option(Config.Redacted('BEDROCK_SECRET_ACCESS_KEY')),
 });
-const regionSchema = Schema.String.pipe(
-  Schema.pattern(/^[a-z]{2}(?:-[a-z]+)+-\d$/u),
+// Effect's default config provider keeps the environment it saw first. Read
+// the current environment on every call, so the AI choice follows it.
+const readBedrockEnvironment = Effect.suspend(() =>
+  bedrockEnvironment.parse(ConfigProvider.fromEnv()),
+);
+const regionSchema = Schema.String.check(
+  Schema.isPattern(/^[a-z]{2}(?:-[a-z]+)+-\d$/u),
 );
 const hasNonBlankValue = (
   value: Option.Option<string | Redacted.Redacted<string>>,
@@ -24,23 +37,23 @@ const hasNonBlankValue = (
 
 export const hasBedrockConfiguration = (): boolean =>
   Effect.runSync(
-    bedrockEnvironment.pipe(
+    readBedrockEnvironment.pipe(
       Effect.map((values) => Object.values(values).some(hasNonBlankValue)),
     ),
   );
 
 export const getBedrockConfiguration = () =>
   Effect.gen(function* () {
-    const values = yield* bedrockEnvironment;
-    const region = yield* Schema.decodeUnknown(regionSchema)(
+    const values = yield* readBedrockEnvironment;
+    const region = yield* Schema.decodeUnknownEffect(regionSchema)(
       Option.getOrUndefined(values.region),
     );
-    const accessKeyId = yield* values.accessKeyId;
-    const secretAccessKey = yield* values.secretAccessKey;
-    yield* Schema.decodeUnknown(Schema.NonEmptyTrimmedString)(
+    const accessKeyId = yield* Effect.fromOption(values.accessKeyId);
+    const secretAccessKey = yield* Effect.fromOption(values.secretAccessKey);
+    yield* Schema.decodeUnknownEffect(NonEmptyTrimmedString)(
       Redacted.value(accessKeyId),
     );
-    yield* Schema.decodeUnknown(Schema.NonEmptyTrimmedString)(
+    yield* Schema.decodeUnknownEffect(NonEmptyTrimmedString)(
       Redacted.value(secretAccessKey),
     );
     return { region, accessKeyId, secretAccessKey };

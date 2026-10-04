@@ -17,7 +17,7 @@ export const useNotificationPermission = () => {
   const request = () => {
     Effect.runFork(
       Effect.tryPromise(() => Notification.requestPermission()).pipe(
-        Effect.catchAll(() => Effect.succeed(readAccess())),
+        Effect.catch(() => Effect.succeed(readAccess())),
         Effect.flatMap((next) => Effect.sync(() => setAccess(next))),
       ),
     );

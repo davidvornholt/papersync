@@ -1,4 +1,4 @@
-import { Context, Data, type Effect, Schema } from 'effect';
+import { Context, type Effect, Schema } from 'effect';
 export type ScannerProtocol = 'http' | 'https';
 
 export const DiscoveredScannerSchema = Schema.Struct({
@@ -6,7 +6,7 @@ export const DiscoveredScannerSchema = Schema.Struct({
   name: Schema.String,
   host: Schema.String,
   port: Schema.Number,
-  protocol: Schema.Literal('http', 'https'),
+  protocol: Schema.Literals(['http', 'https']),
   resourcePath: Schema.String,
   model: Schema.optional(Schema.String),
   manufacturer: Schema.optional(Schema.String),
@@ -35,12 +35,10 @@ export type DiscoveredScanner = {
   };
 };
 
-export class ScannerDiscoveryError extends Data.TaggedError(
+export class ScannerDiscoveryError extends Schema.TaggedError<ScannerDiscoveryError>()(
   'ScannerDiscoveryError',
-)<{
-  readonly message: string;
-  readonly cause?: unknown;
-}> {}
+  { message: Schema.String, cause: Schema.optional(Schema.Defect()) },
+) {}
 
 export type ScannerDiscoveryService = {
   readonly discover: (
@@ -48,5 +46,6 @@ export type ScannerDiscoveryService = {
   ) => Effect.Effect<ReadonlyArray<DiscoveredScanner>, ScannerDiscoveryError>;
 };
 
-export const ScannerDiscoveryService =
-  Context.GenericTag<ScannerDiscoveryService>('ScannerDiscoveryService');
+export const ScannerDiscoveryService = Context.Service<ScannerDiscoveryService>(
+  'ScannerDiscoveryService',
+);

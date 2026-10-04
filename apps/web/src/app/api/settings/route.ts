@@ -23,7 +23,7 @@ export const GET = async (): Promise<Response> => {
 
 export const PUT = async (request: Request): Promise<Response> => {
   await requireSession();
-  const publicUrl = await Effect.runPromise(Config.url('BETTER_AUTH_URL'));
+  const publicUrl = await Effect.runPromise(Config.URL('BETTER_AUTH_URL'));
   if (request.headers.get('origin') !== publicUrl.origin) {
     return Response.json(
       { error: 'Save your timetable from PaperSync.' },

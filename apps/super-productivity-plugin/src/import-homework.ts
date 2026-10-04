@@ -90,7 +90,9 @@ export const importHomework = (api: PluginApi) =>
       'content-type': 'application/json',
     };
     const response = yield* call(() => api.request(serviceUrl, { headers }));
-    const items = yield* Schema.decodeUnknown(PendingHomework)(response).pipe(
+    const items = yield* Schema.decodeUnknownEffect(PendingHomework)(
+      response,
+    ).pipe(
       Effect.mapError(
         (cause) =>
           new ImportError({

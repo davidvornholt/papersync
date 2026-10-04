@@ -38,7 +38,7 @@ export const useScanSave = ({ scan }: SaveOptions) => {
             }
           }),
         ),
-        Effect.catchAll((error) =>
+        Effect.catch((error) =>
           Effect.sync(() => addToast(error.message, 'error')),
         ),
         Effect.ensuring(Effect.sync(() => setIsSyncing(false))),

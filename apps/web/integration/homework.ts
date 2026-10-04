@@ -179,7 +179,7 @@ it('changing a reviewed week rechecks duplicates and preserves edits without que
         options.weekId,
       );
       const invalid = yield* reconcileReviewWeek([edited], 'invalid').pipe(
-        Effect.either,
+        Effect.result,
       );
       return {
         edited,
@@ -196,7 +196,7 @@ it('changing a reviewed week rechecks duplicates and preserves edits without que
   expect(result.changed).toEqual([
     { ...result.edited, action: 'modify', dueDate: '2026-09-12' },
   ]);
-  expect(result.invalid._tag).toBe('Left');
+  expect(result.invalid._tag).toBe('Failure');
   expect(result.pending).toHaveLength(1);
 });
 

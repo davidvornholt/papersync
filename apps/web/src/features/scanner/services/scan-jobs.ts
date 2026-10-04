@@ -10,7 +10,7 @@ export type ScanJobState = { readonly status: 'processing' } | FinishedScanJob;
 type ScanJob = {
   readonly startedAt: number;
   readonly outcome: Deferred.Deferred<FinishedScanJob>;
-  readonly fiber: Fiber.RuntimeFiber<boolean>;
+  readonly fiber: Fiber.Fiber<boolean>;
 };
 
 // Analysis runs on the server, so the browser can be backgrounded, frozen, or
@@ -46,7 +46,9 @@ const removeJob = (id: string) =>
     const jobs = getJobs();
     const job = jobs.get(id);
     jobs.delete(id);
-    return job ? Fiber.interruptFork(job.fiber) : Effect.void;
+    return job
+      ? Effect.asVoid(Effect.forkDetach(Fiber.interrupt(job.fiber)))
+      : Effect.void;
   });
 
 const removeExpiredJobs = Effect.suspend(() => {
@@ -96,7 +98,7 @@ export const startScanJob = <E extends { readonly message: string }, R>(
       Effect.map(
         (result): FinishedScanJob => ({ status: 'complete', analysis: result }),
       ),
-      Effect.catchAll((error) =>
+      Effect.catch((error) =>
         Effect.logWarning('Scan analysis failed').pipe(
           Effect.annotateLogs(
             'errorType',
@@ -108,7 +110,7 @@ export const startScanJob = <E extends { readonly message: string }, R>(
           }),
         ),
       ),
-      Effect.catchAllDefect((defect) =>
+      Effect.catchDefect((defect) =>
         Effect.logError('Scan analysis crashed', Cause.die(defect)).pipe(
           Effect.as<FinishedScanJob>({
             status: 'failed',
@@ -117,7 +119,7 @@ export const startScanJob = <E extends { readonly message: string }, R>(
         ),
       ),
       Effect.flatMap((finished) => Deferred.succeed(outcome, finished)),
-      Effect.forkDaemon,
+      Effect.forkDetach,
     );
     const id = crypto.randomUUID();
     getJobs().set(id, { startedAt: Date.now(), outcome, fiber });
@@ -125,7 +127,7 @@ export const startScanJob = <E extends { readonly message: string }, R>(
   });
 
 /** Reads a job, waiting up to `waitFor` for it to finish. */
-export const getScanJob = (id: string, waitFor: Duration.DurationInput) =>
+export const getScanJob = (id: string, waitFor: Duration.Input) =>
   Effect.gen(function* () {
     yield* removeExpiredJobs;
     const job = getJobs().get(id);

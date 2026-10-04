@@ -45,7 +45,7 @@ export const useScanScreen = () => {
       requestAction(() => fetch(imageData)).pipe(
         Effect.flatMap((response) => requestAction(() => response.blob())),
         Effect.tap((blob) => Effect.sync(() => scan.addPages([blob]))),
-        Effect.catchAll((error) =>
+        Effect.catch((error) =>
           Effect.sync(() => addToast(error.message, 'error')),
         ),
       ),

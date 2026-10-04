@@ -94,9 +94,7 @@ export const useScanDraft = ({
     const fiber = Effect.runFork(
       readScanDraft.pipe(
         Effect.map((draft): ScanDraft | null => draft),
-        Effect.catchAll((error) =>
-          logStoreFailure(error).pipe(Effect.as(null)),
-        ),
+        Effect.catch((error) => logStoreFailure(error).pipe(Effect.as(null))),
         Effect.flatMap((draft) => Effect.sync(() => onLoaded(draft))),
       ),
     );
@@ -114,7 +112,7 @@ export const useScanDraft = ({
     hasTakenSharedRef.current = true;
     Effect.runFork(
       takeSharedPhotos.pipe(
-        Effect.catchAll((error) =>
+        Effect.catch((error) =>
           logStoreFailure(error).pipe(Effect.as<ReadonlyArray<Blob>>([])),
         ),
         Effect.flatMap((photos) =>
@@ -130,9 +128,7 @@ export const useScanDraft = ({
 
   useEffect(() => {
     if (hasLoaded) {
-      Effect.runFork(
-        writeScanPages(pages).pipe(Effect.catchAll(logStoreFailure)),
-      );
+      Effect.runFork(writeScanPages(pages).pipe(Effect.catch(logStoreFailure)));
     }
   }, [hasLoaded, pages]);
 
@@ -140,7 +136,7 @@ export const useScanDraft = ({
     if (hasLoaded) {
       Effect.runFork(
         writeScanReview(toStoredReview({ state, weekId, entries })).pipe(
-          Effect.catchAll(logStoreFailure),
+          Effect.catch(logStoreFailure),
         ),
       );
     }

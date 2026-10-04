@@ -6,14 +6,14 @@ import {
 } from '../errors/scan-client';
 import type { AISettings } from './use-scan-types';
 
-const ScanJobState = Schema.Union(
+const ScanJobState = Schema.Union([
   Schema.Struct({ status: Schema.Literal('processing') }),
   Schema.Struct({
     status: Schema.Literal('complete'),
     analysis: Schema.Struct({ data: OCRResponse, modelUsed: Schema.String }),
   }),
   Schema.Struct({ status: Schema.Literal('failed'), error: Schema.String }),
-);
+]);
 type ScanJobState = typeof ScanJobState.Type;
 export type FinishedScanJob = Exclude<ScanJobState, { status: 'processing' }>;
 
@@ -33,7 +33,7 @@ const send = (url: string, init?: RequestInit) =>
 const readError = (response: Response) =>
   Effect.tryPromise(() => response.json() as Promise<unknown>).pipe(
     Effect.flatMap(
-      Schema.decodeUnknown(Schema.Struct({ error: Schema.String })),
+      Schema.decodeUnknownEffect(Schema.Struct({ error: Schema.String })),
     ),
     Effect.map(({ error }) => error),
     Effect.orElseSucceed(
@@ -84,7 +84,7 @@ export const startScanJob = (
       catch: (cause) =>
         new ScanJobRequestError({ message: uploadMessage, cause }),
     });
-    const { id } = yield* Schema.decodeUnknown(
+    const { id } = yield* Schema.decodeUnknownEffect(
       Schema.Struct({ id: Schema.String }),
     )(body).pipe(
       Effect.mapError(
@@ -119,7 +119,7 @@ const readScanJob = (id: string) =>
       catch: (cause) =>
         new ScanJobRequestError({ message: connectionMessage, cause }),
     });
-    return yield* Schema.decodeUnknown(ScanJobState)(body).pipe(
+    return yield* Schema.decodeUnknownEffect(ScanJobState)(body).pipe(
       Effect.mapError(
         (cause) =>
           new ScanJobRequestError({
@@ -135,9 +135,10 @@ const readScanJob = (id: string) =>
 // and the gateway answers 502–504 while PaperSync restarts. Keep asking until
 // the server answers, without retrying a lost sign-in or a rejected request.
 const longestReconnectSeconds = 5;
-const reconnect = Schedule.exponential(Duration.seconds(1)).pipe(
-  Schedule.union(Schedule.spaced(Duration.seconds(longestReconnectSeconds))),
-);
+const reconnect = Schedule.min([
+  Schedule.exponential(Duration.seconds(1)),
+  Schedule.spaced(Duration.seconds(longestReconnectSeconds)),
+]);
 const badGatewayStatus = 502;
 const gatewayTimeoutStatus = 504;
 const isTransient = (error: ScanJobRequestError | ScanJobMissingError) =>
@@ -156,7 +157,7 @@ export const awaitScanJob = (
     Effect.flatMap((state) =>
       state.status === 'processing'
         ? Effect.sleep(pollPause).pipe(
-            Effect.zipRight(Effect.suspend(() => awaitScanJob(id))),
+            Effect.andThen(Effect.suspend(() => awaitScanJob(id))),
           )
         : Effect.succeed(state),
     ),

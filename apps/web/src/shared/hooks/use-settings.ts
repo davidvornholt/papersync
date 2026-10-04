@@ -70,7 +70,7 @@ export const useSettings = (): UseSettingsReturn => {
             setIsLoading(false);
           }),
         ),
-        Effect.catchAll((error) =>
+        Effect.catch((error) =>
           Effect.sync(() => {
             setLoadError(error.message);
             setIsLoading(false);
@@ -106,7 +106,7 @@ export const useSettings = (): UseSettingsReturn => {
               setSaveStatus({ kind: 'saved' });
             }),
           ),
-          Effect.catchAll((error) =>
+          Effect.catch((error) =>
             Effect.sync(() => {
               setFailedVersion(version);
               setSaveStatus({ kind: 'error', message: error.message });

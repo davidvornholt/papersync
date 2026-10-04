@@ -14,7 +14,7 @@ export const ServiceWorkerRegistration = (): null => {
       Effect.tryPromise(() =>
         navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' }),
       ).pipe(
-        Effect.catchAll((error) =>
+        Effect.catch((error) =>
           Effect.logWarning('Service worker registration failed', error),
         ),
       ),

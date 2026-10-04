@@ -32,7 +32,7 @@ export const discoverScanners = async (
 ): Promise<DiscoveryResult> => {
   await requireSession();
   const program = Effect.gen(function* () {
-    const decodedTimeout = yield* Schema.decodeUnknown(Schema.Number)(
+    const decodedTimeout = yield* Schema.decodeUnknownEffect(Schema.Number)(
       timeoutMs,
     );
     const discovery = yield* ScannerDiscoveryService;
@@ -40,7 +40,7 @@ export const discoverScanners = async (
   }).pipe(
     Effect.provide(MdnsDiscoveryLayer),
     Effect.map((scanners) => ({ success: true as const, scanners })),
-    Effect.catchAll((error) =>
+    Effect.catch((error) =>
       Effect.succeed({
         success: false as const,
         error: getErrorMessage(error),
@@ -56,15 +56,15 @@ export const getScannerCapabilities = async (
 ): Promise<CapabilitiesResult> => {
   await requireSession();
   const program = Effect.gen(function* () {
-    const decodedScanner = yield* Schema.decodeUnknown(DiscoveredScannerSchema)(
-      scanner,
-    );
+    const decodedScanner = yield* Schema.decodeUnknownEffect(
+      DiscoveredScannerSchema,
+    )(scanner);
     const client = yield* ESCLClient;
     return yield* client.getCapabilities(decodedScanner);
   }).pipe(
     Effect.provide(ESCLClientLayer),
     Effect.map((capabilities) => ({ success: true as const, capabilities })),
-    Effect.catchAll((error) =>
+    Effect.catch((error) =>
       Effect.succeed({
         success: false as const,
         error: getErrorMessage(error),

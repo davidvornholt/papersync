@@ -9,7 +9,7 @@ export const createImportController = () => {
     const fiber = Effect.runFork(importEffect);
     activeImports.add(fiber);
     Effect.runFork(
-      fiber.await.pipe(
+      Fiber.await(fiber).pipe(
         Effect.ensuring(Effect.sync(() => activeImports.delete(fiber))),
       ),
     );

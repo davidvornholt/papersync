@@ -46,20 +46,20 @@ export const handleHomeworkRequest = (request: Request): Promise<Response> => {
         catch: (cause) =>
           new HomeworkError({ message: 'Send a JSON acknowledgement.', cause }),
       }).pipe(
-        Effect.flatMap(Schema.decodeUnknown(Acknowledgement)),
-        Effect.either,
+        Effect.flatMap(Schema.decodeUnknownEffect(Acknowledgement)),
+        Effect.result,
       );
-      if (acknowledgement._tag === 'Left') {
+      if (acknowledgement._tag === 'Failure') {
         return Response.json(
           { error: 'Invalid acknowledgement.' },
           { status: invalidRequestStatus, headers },
         );
       }
-      const { id, revision, taskId } = acknowledgement.right;
+      const { id, revision, taskId } = acknowledgement.success;
       yield* acknowledgeHomework(id, revision, taskId);
       return Response.json({ ok: true }, { headers });
     }).pipe(
-      Effect.catchAll(() =>
+      Effect.catch(() =>
         Effect.succeed(
           Response.json(
             { error: 'The homework queue is unavailable. Retry shortly.' },

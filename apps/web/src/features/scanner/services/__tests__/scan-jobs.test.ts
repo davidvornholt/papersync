@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'bun:test';
-import { Duration, Effect, Either, Schema } from 'effect';
+import { Duration, Effect, Result, Schema } from 'effect';
 import { WeekId } from '@/shared/types/schemas';
 import type { ScanAnalysis } from '../scan-analysis';
 import { cancelScanJob, getScanJob, startScanJob } from '../scan-jobs';
@@ -23,8 +23,8 @@ const start = (
     started.push(id);
     return id;
   });
-const read = (id: string, waitFor: Duration.DurationInput = noWait) =>
-  Effect.runPromise(getScanJob(id, waitFor).pipe(Effect.either));
+const read = (id: string, waitFor: Duration.Input = noWait) =>
+  Effect.runPromise(getScanJob(id, waitFor).pipe(Effect.result));
 
 afterEach(() =>
   Effect.runPromise(
@@ -36,39 +36,39 @@ describe('scan jobs', () => {
   it('keeps the result for the browser after the request that started it', async () => {
     const id = await start(Effect.succeed(analysis));
     expect(await read(id, Duration.seconds(1))).toEqual(
-      Either.right({ status: 'complete', analysis }),
+      Result.succeed({ status: 'complete', analysis }),
     );
     expect(await read(id)).toEqual(
-      Either.right({ status: 'complete', analysis }),
+      Result.succeed({ status: 'complete', analysis }),
     );
   });
 
   it('reports processing while the wait times out', async () => {
     const id = await start(Effect.never);
     expect(await read(id, Duration.millis(10))).toEqual(
-      Either.right({ status: 'processing' }),
+      Result.succeed({ status: 'processing' }),
     );
   });
 
   it('reports expected failures with their message and crashes generically', async () => {
     const failed = await start(Effect.fail({ message: 'Gemini is down.' }));
     expect(await read(failed, Duration.seconds(1))).toEqual(
-      Either.right({ status: 'failed', error: 'Gemini is down.' }),
+      Result.succeed({ status: 'failed', error: 'Gemini is down.' }),
     );
     const crashed = await start(Effect.die('boom'));
     const result = await read(crashed, Duration.seconds(1));
-    expect(Either.getOrNull(result)).toMatchObject({ status: 'failed' });
+    expect(Result.getOrNull(result)).toMatchObject({ status: 'failed' });
   });
 
   it('forgets cancelled and unknown jobs', async () => {
     const id = await start(Effect.never);
     await Effect.runPromise(cancelScanJob(id));
     const cancelled = await read(id);
-    expect(Either.isLeft(cancelled) && cancelled.left._tag).toBe(
+    expect(Result.isFailure(cancelled) && cancelled.failure._tag).toBe(
       'ScanJobNotFoundError',
     );
     const unknown = await read('missing');
-    expect(Either.isLeft(unknown) && unknown.left._tag).toBe(
+    expect(Result.isFailure(unknown) && unknown.failure._tag).toBe(
       'ScanJobNotFoundError',
     );
   });
@@ -78,8 +78,10 @@ describe('scan jobs', () => {
       Array.from({ length: runningJobLimit }, () => start(Effect.never)),
     );
     const result = await Effect.runPromise(
-      startScanJob(Effect.never).pipe(Effect.either),
+      startScanJob(Effect.never).pipe(Effect.result),
     );
-    expect(Either.isLeft(result) && result.left.status).toBe(tooManyRequests);
+    expect(Result.isFailure(result) && result.failure.status).toBe(
+      tooManyRequests,
+    );
   });
 });

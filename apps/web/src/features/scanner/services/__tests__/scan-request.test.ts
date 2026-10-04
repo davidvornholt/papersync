@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { Effect, Either } from 'effect';
+import { Effect, Result } from 'effect';
 import {
   scanPageByteLimit,
   scanPageLimit,
@@ -41,7 +41,7 @@ const upload = (
   return Effect.runPromise(
     parseScanRequest(
       new Request('http://localhost/api/scans', { method: 'POST', body: form }),
-    ).pipe(Effect.either),
+    ).pipe(Effect.result),
   );
 };
 const rejection = async (
@@ -49,7 +49,7 @@ const rejection = async (
   fields?: Record<string, string>,
 ) => {
   const result = await upload(pages, fields);
-  return Either.isLeft(result) ? result.left.status : null;
+  return Result.isFailure(result) ? result.failure.status : null;
 };
 
 describe('scan uploads', () => {
@@ -59,7 +59,7 @@ describe('scan uploads', () => {
       provider: 'ollama',
       ollamaEndpoint: 'http://localhost:11434',
     });
-    const input = Either.getOrThrow(result);
+    const input = Result.getOrThrow(result);
     expect(input.pages.map((item) => decodeContent(item.data))).toEqual([
       'front',
       'back',
@@ -102,9 +102,9 @@ describe('scan uploads', () => {
           body: unread,
           headers: { 'content-length': String(scanUploadByteLimit + 1) },
         }),
-      ).pipe(Effect.either),
+      ).pipe(Effect.result),
     );
-    expect(Either.isLeft(declared) && declared.left.status).toBe(
+    expect(Result.isFailure(declared) && declared.failure.status).toBe(
       payloadTooLarge,
     );
 
@@ -126,9 +126,9 @@ describe('scan uploads', () => {
             },
           }),
         }),
-      ).pipe(Effect.either),
+      ).pipe(Effect.result),
     );
-    expect(Either.isLeft(streamed) && streamed.left.status).toBe(
+    expect(Result.isFailure(streamed) && streamed.failure.status).toBe(
       payloadTooLarge,
     );
     expect(sent).toBeLessThanOrEqual(pieces);

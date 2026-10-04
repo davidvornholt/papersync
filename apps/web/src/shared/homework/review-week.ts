@@ -11,7 +11,7 @@ export type ReviewWeekResult =
 const ReviewWeek = Schema.Struct({
   weekId: WeekId,
   entries: Schema.Array(
-    TaskEntry.pipe(Schema.extend(Schema.Struct({ id: Schema.String }))),
+    Schema.Struct({ ...TaskEntry.fields, id: Schema.String }),
   ),
 });
 
@@ -20,7 +20,10 @@ export const reconcileReviewWeek = (
   weekId: string,
 ) =>
   Effect.gen(function* () {
-    const input = yield* Schema.decodeUnknown(ReviewWeek)({ entries, weekId });
+    const input = yield* Schema.decodeUnknownEffect(ReviewWeek)({
+      entries,
+      weekId,
+    });
     const result = yield* reconcileHomework({
       weekId: input.weekId,
       confidence: 1,

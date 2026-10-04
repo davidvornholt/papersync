@@ -1,12 +1,10 @@
-import { Data } from 'effect';
-export class ESCLError extends Data.TaggedError('ESCLError')<{
-  readonly message: string;
-  readonly statusCode?: number;
-  readonly cause?: unknown;
-}> {}
-export class ESCLCapabilitiesError extends Data.TaggedError(
+import { Schema } from 'effect';
+export class ESCLError extends Schema.TaggedError<ESCLError>()('ESCLError', {
+  message: Schema.String,
+  statusCode: Schema.optional(Schema.Number),
+  cause: Schema.optional(Schema.Defect()),
+}) {}
+export class ESCLCapabilitiesError extends Schema.TaggedError<ESCLCapabilitiesError>()(
   'ESCLCapabilitiesError',
-)<{
-  readonly message: string;
-  readonly cause?: unknown;
-}> {}
+  { message: Schema.String, cause: Schema.optional(Schema.Defect()) },
+) {}

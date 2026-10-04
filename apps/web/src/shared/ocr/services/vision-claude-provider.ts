@@ -65,8 +65,8 @@ export const createClaudeVisionProvider = (
               }),
             );
           }
-          return yield* Schema.decodeUnknown(
-            Schema.parseJson(OCRResponseSchema),
+          return yield* Schema.decodeUnknownEffect(
+            Schema.fromJsonString(OCRResponseSchema),
           )(
             response.output?.message?.content
               ?.flatMap((block) =>

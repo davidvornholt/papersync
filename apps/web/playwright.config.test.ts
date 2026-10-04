@@ -45,7 +45,7 @@ it('keeps browser OCR fixtures isolated from host and dotenv Bedrock values', ()
 
   process.env.BEDROCK_REGION = 'eu-central-1';
   expect(hasBedrockConfiguration()).toBe(true);
-  expect(Effect.runSync(Effect.either(getBedrockConfiguration()))._tag).toBe(
-    'Left',
+  expect(Effect.runSync(Effect.result(getBedrockConfiguration()))._tag).toBe(
+    'Failure',
   );
 });

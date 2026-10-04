@@ -1,4 +1,4 @@
-import { Effect } from 'effect';
+import { Effect, Semaphore } from 'effect';
 import type { PluginApi } from './api';
 import { configure } from './configure';
 import { importHomework } from './import-homework';
@@ -9,7 +9,7 @@ declare const plugin: {
   readonly onUnload: (callback: () => void) => void;
 };
 
-const semaphore = Effect.runSync(Effect.makeSemaphore(1));
+const semaphore = Semaphore.makeUnsafe(1);
 const importController = createImportController();
 const runImport = () =>
   semaphore.withPermits(1)(

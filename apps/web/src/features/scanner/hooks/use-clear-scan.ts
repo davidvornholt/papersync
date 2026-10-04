@@ -38,7 +38,7 @@ export const useClearScan = ({
     Effect.runFork(
       clearScanDraft.pipe(
         Effect.tap(() => Effect.sync(reset)),
-        Effect.catchAll((error) =>
+        Effect.catch((error) =>
           Effect.sync(() => notify(error.message, 'error')),
         ),
         Effect.ensuring(

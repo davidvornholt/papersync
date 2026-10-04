@@ -50,7 +50,7 @@ export const useScanJob = ({
   setEntries,
   notify,
 }: ScanJobOptions) => {
-  const uploadFiberRef = useRef<Fiber.RuntimeFiber<void> | null>(null);
+  const uploadFiberRef = useRef<Fiber.Fiber<void> | null>(null);
 
   const showFinished = useEffectEvent((finished: FinishedScanJob) => {
     if (finished.status === 'failed') {

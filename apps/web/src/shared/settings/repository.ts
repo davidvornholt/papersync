@@ -1,13 +1,11 @@
 import { PgClient } from '@effect/sql-pg';
-import { Data, Effect, Schema } from 'effect';
+import { Effect, Schema } from 'effect';
 import { SaveSchoolSettingsSchema, SchoolSettingsSchema } from './schema';
 
-export class SchoolSettingsError extends Data.TaggedError(
+export class SchoolSettingsError extends Schema.TaggedError<SchoolSettingsError>()(
   'SchoolSettingsError',
-)<{
-  readonly message: string;
-  readonly status: number;
-}> {}
+  { message: Schema.String, status: Schema.Number },
+) {}
 
 const unavailable = () =>
   new SchoolSettingsError({
@@ -28,7 +26,7 @@ export const loadSchoolSettings = Effect.gen(function* () {
   if (!row) {
     return { revision: null, school: null };
   }
-  const school = yield* Schema.decodeUnknown(SchoolSettingsSchema)(
+  const school = yield* Schema.decodeUnknownEffect(SchoolSettingsSchema)(
     row.payload,
   ).pipe(Effect.mapError(unavailable));
   return { revision: row.revision, school };
@@ -36,7 +34,7 @@ export const loadSchoolSettings = Effect.gen(function* () {
 
 export const saveSchoolSettings = (input: unknown) =>
   Effect.gen(function* () {
-    const decoded = yield* Schema.decodeUnknown(SaveSchoolSettingsSchema)(
+    const decoded = yield* Schema.decodeUnknownEffect(SaveSchoolSettingsSchema)(
       input,
       { onExcessProperty: 'error' },
     ).pipe(

@@ -82,15 +82,15 @@ it('preserves the local migration source and reports a stale save', async () => 
     Response.json({ error: 'Reload before saving.' }, { status: 409 }),
   );
   const result = await Effect.runPromise(
-    saveSettings(defaultSettings, null).pipe(Effect.either),
+    saveSettings(defaultSettings, null).pipe(Effect.result),
   );
-  expect(result._tag).toBe('Left');
+  expect(result._tag).toBe('Failure');
   expect(JSON.parse(stored ?? '{}').subjects).toEqual(defaultSettings.subjects);
 });
 
 it('does not substitute defaults when the server is unavailable', async () => {
   fetchMock.mockRejectedValue(new TypeError('offline'));
   expect(
-    (await Effect.runPromise(loadSettings().pipe(Effect.either)))._tag,
-  ).toBe('Left');
+    (await Effect.runPromise(loadSettings().pipe(Effect.result)))._tag,
+  ).toBe('Failure');
 });

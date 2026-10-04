@@ -42,7 +42,7 @@ export const useReviewWeek = ({
     setIsUpdatingWeek(true);
     Effect.runFork(
       requestAction(() => applyReviewWeek(entries, weekId)).pipe(
-        Effect.catchAll((error) =>
+        Effect.catch((error) =>
           Effect.succeed({ success: false as const, error: error.message }),
         ),
         Effect.tap((result) =>

@@ -1,6 +1,6 @@
 'use client';
 
-import { Effect, Either } from 'effect';
+import { Effect, Result } from 'effect';
 import { type Dispatch, type SetStateAction, useState } from 'react';
 import { scanPageLimit } from '../services/scan-limits';
 import { prepareScanPage } from './scan-page-image';
@@ -30,17 +30,17 @@ export const useScanPages = ({
     setIsPreparing(true);
     Effect.runFork(
       Effect.forEach(files.slice(0, room), (file) =>
-        Effect.either(prepareScanPage(file)),
+        Effect.result(prepareScanPage(file)),
       ).pipe(
         Effect.flatMap((results) =>
           Effect.sync(() => {
-            const failure = results.find(Either.isLeft);
+            const failure = results.find(Result.isFailure);
             if (failure) {
-              notify(failure.left.message, 'error');
+              notify(failure.failure.message, 'error');
             }
-            const prepared = results.filter(Either.isRight).map((result) => ({
+            const prepared = results.filter(Result.isSuccess).map((result) => ({
               id: crypto.randomUUID(),
-              image: result.right,
+              image: result.success,
             }));
             setPages((current) =>
               [...current, ...prepared].slice(0, scanPageLimit),

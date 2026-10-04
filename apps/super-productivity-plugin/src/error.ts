@@ -1,5 +1,5 @@
-import { Data } from 'effect';
-export class ImportError extends Data.TaggedError('ImportError')<{
-  readonly message: string;
-  readonly cause?: unknown;
-}> {}
+import { Schema } from 'effect';
+export class ImportError extends Schema.TaggedError<ImportError>()(
+  'ImportError',
+  { message: Schema.String, cause: Schema.optional(Schema.Defect()) },
+) {}

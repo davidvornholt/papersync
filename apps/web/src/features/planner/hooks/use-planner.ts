@@ -1,6 +1,6 @@
 'use client';
 
-import { Data, Effect } from 'effect';
+import { Effect, Schema } from 'effect';
 import { useCallback, useRef, useState } from 'react';
 import { getWeekDateRange, getWeekId } from '@/shared/planner/week';
 import type { Subject, WeekId } from '@/shared/types/schemas';
@@ -30,10 +30,10 @@ export type UsePlannerReturn = {
   readonly reset: () => void;
 };
 
-class PlannerPdfFetchError extends Data.TaggedError('PlannerPdfFetchError')<{
-  readonly message: string;
-  readonly cause?: unknown;
-}> {}
+class PlannerPdfFetchError extends Schema.TaggedError<PlannerPdfFetchError>()(
+  'PlannerPdfFetchError',
+  { message: Schema.String, cause: Schema.optional(Schema.Defect()) },
+) {}
 
 const fetchPdfEffect = (
   weekId: WeekId,
@@ -97,7 +97,7 @@ export const usePlanner = (initialWeekId?: WeekId): UsePlannerReturn => {
               }
             }),
           ),
-          Effect.catchAll((error) =>
+          Effect.catch((error) =>
             Effect.sync(() => {
               if (revision === revisionRef.current) {
                 setState({ status: 'error', error: error.message });

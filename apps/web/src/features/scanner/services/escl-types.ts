@@ -16,10 +16,10 @@ export type ScanSettings = {
 };
 
 export const ScanSettingsSchema = Schema.Struct({
-  colorMode: Schema.Literal('color', 'grayscale', 'blackwhite'),
+  colorMode: Schema.Literals(['color', 'grayscale', 'blackwhite']),
   resolution: Schema.Number,
-  format: Schema.Literal('pdf', 'jpeg', 'png'),
-  inputSource: Schema.Literal('Platen', 'Adf'),
+  format: Schema.Literals(['pdf', 'jpeg', 'png']),
+  inputSource: Schema.Literals(['Platen', 'Adf']),
 });
 
 export type SourceCapabilities = {
@@ -55,4 +55,4 @@ export type ESCLClient = {
   readonly getScanResult: (jobUrl: string) => Effect.Effect<string, ESCLError>;
 };
 
-export const ESCLClient = Context.GenericTag<ESCLClient>('ESCLClient');
+export const ESCLClient = Context.Service<ESCLClient>('ESCLClient');

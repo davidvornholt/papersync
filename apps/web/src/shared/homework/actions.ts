@@ -38,7 +38,7 @@ export const saveHomework = async (
   return databaseRuntime.runPromise(
     enqueueHomework(entries, { weekId }).pipe(
       Effect.map((count) => ({ success: true as const, count })),
-      Effect.catchAll((error) =>
+      Effect.catch((error) =>
         Effect.succeed({ success: false as const, error: error.message }),
       ),
     ),
@@ -56,7 +56,7 @@ export const applyReviewWeek = async (
         success: true as const,
         entries: reviewEntries,
       })),
-      Effect.catchAll((error) =>
+      Effect.catch((error) =>
         Effect.succeed({ success: false as const, error: error.message }),
       ),
     ),

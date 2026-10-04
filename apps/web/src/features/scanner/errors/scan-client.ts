@@ -1,23 +1,21 @@
-import { Data } from 'effect';
-export class ScanPageError extends Data.TaggedError('ScanPageError')<{
-  readonly message: string;
-  readonly cause?: unknown;
-}> {}
-export class ScanJobRequestError extends Data.TaggedError(
+import { Schema } from 'effect';
+export class ScanPageError extends Schema.TaggedError<ScanPageError>()(
+  'ScanPageError',
+  { message: Schema.String, cause: Schema.optional(Schema.Defect()) },
+) {}
+export class ScanJobRequestError extends Schema.TaggedError<ScanJobRequestError>()(
   'ScanJobRequestError',
-)<{
-  readonly message: string;
-  readonly status?: number;
-  readonly cause?: unknown;
-}> {}
-export class ScanJobMissingError extends Data.TaggedError(
+  {
+    message: Schema.String,
+    status: Schema.optional(Schema.Number),
+    cause: Schema.optional(Schema.Defect()),
+  },
+) {}
+export class ScanJobMissingError extends Schema.TaggedError<ScanJobMissingError>()(
   'ScanJobMissingError',
-)<{
-  readonly message: string;
-}> {}
-export class ScanDraftStoreError extends Data.TaggedError(
+  { message: Schema.String },
+) {}
+export class ScanDraftStoreError extends Schema.TaggedError<ScanDraftStoreError>()(
   'ScanDraftStoreError',
-)<{
-  readonly message: string;
-  readonly cause?: unknown;
-}> {}
+  { message: Schema.String, cause: Schema.optional(Schema.Defect()) },
+) {}

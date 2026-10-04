@@ -1,9 +1,9 @@
-import { Data, Effect } from 'effect';
+import { Effect, Schema } from 'effect';
 
-export class ActionRequestError extends Data.TaggedError('ActionRequestError')<{
-  readonly message: string;
-  readonly cause: unknown;
-}> {}
+export class ActionRequestError extends Schema.TaggedError<ActionRequestError>()(
+  'ActionRequestError',
+  { message: Schema.String, cause: Schema.Defect() },
+) {}
 export const requestAction = <A>(request: () => Promise<A>) =>
   Effect.tryPromise({
     try: request,
