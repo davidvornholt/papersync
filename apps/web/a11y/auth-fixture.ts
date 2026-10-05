@@ -1,6 +1,6 @@
 import { symmetricEncodeJWT } from 'better-auth/crypto';
 export const browserAuth = {
-  baseUrl: 'http://127.0.0.1:3100',
+  baseUrl: 'http://127.0.0.1:3120',
   secret: 'papersync-public-test-secret-only-for-loopback-browser-tests',
   accountId: 'browser-test-account',
 };
