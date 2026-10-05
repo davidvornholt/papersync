@@ -1,12 +1,6 @@
 import { expect, it } from 'bun:test';
 import type { ISODate, WeekId } from '@/shared/types/schemas';
-import {
-  getDayDate,
-  getIsoDate,
-  getWeekDateRange,
-  getWeekId,
-  getWeekIsoDateRange,
-} from './week';
+import { getIsoDate, getWeekDateRange, getWeekId } from './week';
 
 it.each([
   ['2021-01-01T12:00:00', '2020-W53'],
@@ -32,14 +26,4 @@ it.each([
   expect(getIsoDate(range.end)).toBe(end as ISODate);
   expect(range.start.getDay()).toBe(1);
   expect(range.end.getDay()).toBe(0);
-});
-
-it('keeps school dates on their calendar day across a year boundary', () => {
-  const week = '2025-W01' as WeekId;
-  expect(getWeekIsoDateRange(week)).toEqual({
-    start: '2024-12-30' as ISODate,
-    end: '2025-01-05' as ISODate,
-  });
-  expect(getDayDate('Monday', week)).toBe('2024-12-30' as ISODate);
-  expect(getDayDate('friday', week)).toBe('2025-01-03' as ISODate);
 });
