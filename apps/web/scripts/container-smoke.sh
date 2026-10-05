@@ -59,6 +59,9 @@ manifest="$(curl --fail --silent "$origin/manifest.webmanifest")"
 [[ "$manifest" == *'"start_url":"/scan"'* ]]
 curl --fail --silent "$origin/icons/icon-512.png" -o /dev/null
 curl --fail --silent "$origin/icons/maskable-512.png" -o /dev/null
+# Browsers fall back to /favicon.ico wherever no icon link applies, such as raw API responses.
+curl --fail --silent "$origin/favicon.ico" -o /dev/null
+curl --fail --silent "$origin/icon.svg" -o /dev/null
 offline="$(curl --fail --silent "$origin/offline.html")"
 [[ "$offline" == *'You’re offline'* ]]
 worker="$(curl --fail --silent "$origin/sw.js")"
