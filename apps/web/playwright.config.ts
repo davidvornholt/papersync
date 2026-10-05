@@ -1,7 +1,7 @@
 import { createA11yPlaywrightConfig } from '@davidvornholt/a11y-testing/playwright-config';
 import { browserAuth } from './a11y/auth-fixture';
 
-const webServerCommand = 'bun run start --hostname 127.0.0.1 --port 3100';
+const webServerCommand = 'bun run start --hostname 127.0.0.1 --port 3120';
 export default {
   ...createA11yPlaywrightConfig({
     baseUrl: browserAuth.baseUrl,
