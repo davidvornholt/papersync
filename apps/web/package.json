@@ -16,7 +16,7 @@
   },
   "dependencies": {
     "@ai-sdk/google": "^4.0.85",
-    "@aws-sdk/client-bedrock-runtime": "^3.1145.0",
+    "@aws-sdk/client-bedrock-runtime": "^3.1146.0",
     "@effect/sql-pg": "^4.0.0",
     "@papersync/db": "workspace:*",
     "@papersync/homework": "workspace:*",
