@@ -25,12 +25,15 @@ ENV HOSTNAME=0.0.0.0
 ENV PORT=3000
 ENV PLUGIN_ARCHIVE_PATH=/app/papersync-plugin.zip
 COPY --from=builder /app/apps/web/.next/standalone /app
-COPY --from=production-dependencies /app/node_modules /app/node_modules
+# --link keeps the dependency layers independent of the standalone output
+# above, so they keep their digests while bun.lock is unchanged and prod-1
+# pulls only the layers a commit changed.
+COPY --link --from=production-dependencies /app/node_modules /app/node_modules
 COPY --from=builder /app/packages/db/package.json /app/packages/db/
 COPY --from=builder /app/packages/db/drizzle.config.ts /app/packages/db/
 COPY --from=builder /app/packages/db/src /app/packages/db/src
 COPY --from=builder /app/packages/db/migrations /app/packages/db/migrations
-COPY --from=production-dependencies /app/packages/db/node_modules /app/packages/db/node_modules
+COPY --link --from=production-dependencies /app/packages/db/node_modules /app/packages/db/node_modules
 COPY --from=builder /app/packages/typescript-config /app/packages/typescript-config
 COPY --from=builder /app/apps/web/.next/static ./.next/static
 COPY --from=builder /app/apps/web/public ./public
