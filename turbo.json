@@ -3,53 +3,36 @@
   "agentGuidance": false,
   "tasks": {
     "build": {
-      "dependsOn": [
-        "^build"
-      ],
-      "outputs": [
-        ".next/**",
-        "!.next/cache/**"
-      ]
+      "dependsOn": ["^build"],
+      "outputs": [".next/**", "!.next/cache/**"]
     },
     "dev": {
       "cache": false,
       "persistent": true
     },
     "start": {
-      "dependsOn": [
-        "build"
-      ],
+      "dependsOn": ["build"],
       "cache": false,
       "persistent": true
     },
-    "lint": {
+    "//#lint": {
       "outputs": []
     },
-    "lint:fix": {
+    "//#lint:fix": {
       "cache": false,
       "outputs": []
     },
     "check-types": {
-      "dependsOn": [
-        "^check-types"
-      ],
+      "dependsOn": ["^check-types"],
       "outputs": []
     },
     "test": {
-      "dependsOn": [
-        "^build"
-      ],
+      "dependsOn": ["^build"],
       "outputs": []
     },
     "test:a11y": {
-      "dependsOn": [
-        "build",
-        "test"
-      ],
-      "env": [
-        "CI",
-        "DATABASE_URL"
-      ],
+      "dependsOn": ["build", "test"],
+      "env": ["CI", "DATABASE_URL"],
       "outputs": []
     },
     "test:watch": {
@@ -57,40 +40,23 @@
       "persistent": true
     },
     "check:fix": {
-      "dependsOn": [
-        "^check:fix"
-      ],
+      "dependsOn": ["^check:fix"],
       "outputs": []
     },
     "@papersync/super-productivity-plugin#build": {
-      "outputs": [
-        "dist/**"
-      ]
+      "outputs": ["dist/**"]
     },
     "@papersync/web#build": {
-      "dependsOn": [
-        "^build",
-        "@papersync/super-productivity-plugin#build"
-      ],
-      "outputs": [
-        ".next/**",
-        "!.next/cache/**"
-      ]
+      "dependsOn": ["^build", "@papersync/super-productivity-plugin#build"],
+      "outputs": [".next/**", "!.next/cache/**"]
     },
     "@papersync/web#test": {
-      "dependsOn": [
-        "^build",
-        "test:integration"
-      ],
+      "dependsOn": ["^build", "test:integration"],
       "outputs": []
     },
     "test:integration": {
-      "dependsOn": [
-        "^build"
-      ],
-      "env": [
-        "DATABASE_URL"
-      ],
+      "dependsOn": ["^build"],
+      "env": ["DATABASE_URL"],
       "cache": false,
       "outputs": []
     }
