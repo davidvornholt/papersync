@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-FROM docker.io/oven/bun:1.4.2-alpine AS dependencies
+FROM docker.io/oven/bun:1.4.3-alpine AS dependencies
 WORKDIR /app
 COPY package.json bun.lock ./
 COPY apps/web/package.json apps/web/package.json
@@ -18,7 +18,7 @@ RUN bunx turbo run build --filter @papersync/web
 FROM dependencies AS production-dependencies
 RUN rm -rf node_modules apps/*/node_modules packages/*/node_modules && bun install --frozen-lockfile --production
 
-FROM docker.io/oven/bun:1.4.2-alpine AS runner
+FROM docker.io/oven/bun:1.4.3-alpine AS runner
 WORKDIR /app/apps/web
 ENV NODE_ENV=production
 ENV HOSTNAME=0.0.0.0
