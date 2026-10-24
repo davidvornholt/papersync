@@ -92,6 +92,7 @@ test('an older sheet retains its week and supports review, empty scans, and extr
 test('a sheet uses OCR for its week and only asks for unreadable weeks', async ({
   page,
   context,
+  isMobile,
 }) => {
   await context.addCookies(await createSessionCookies());
   await page.addInitScript(
@@ -151,10 +152,17 @@ test('a sheet uses OCR for its week and only asks for unreadable weeks', async (
   const weekInput = page.getByLabel('Week printed on the sheet');
   await expect(weekInput).toBeVisible();
   await weekInput.focus();
-  // Native week inputs emit a change for the partial year while typing.
-  await page.keyboard.type('01');
-  await page.keyboard.press('ArrowRight');
-  await page.keyboard.press('2');
+  // On desktop, native week inputs emit a change for the partial year while
+  // typing. Under mobile emulation Chromium draws the field as one control that
+  // opens the system picker, with no segments for the keyboard to edit, so
+  // there the same values are filled instead.
+  if (isMobile) {
+    await weekInput.fill('0002-W01');
+  } else {
+    await page.keyboard.type('01');
+    await page.keyboard.press('ArrowRight');
+    await page.keyboard.press('2');
+  }
   await expect(weekInput).toHaveValue('0002-W01');
   await expect(homework).toHaveValue('Exercises 1–4, corrected');
   await expect(approve).toBeDisabled();
@@ -163,7 +171,11 @@ test('a sheet uses OCR for its week and only asks for unreadable weeks', async (
     page.locator('details').filter({ has: weekInput }),
   ).toHaveAttribute('open', '');
   await expect(weekInput).toBeFocused();
-  await page.keyboard.type('026');
+  if (isMobile) {
+    await weekInput.fill('2026-W01');
+  } else {
+    await page.keyboard.type('026');
+  }
   await expect(weekInput).toHaveValue('2026-W01');
   await expect(weekInput).toBeFocused();
   await expect(approve).toBeDisabled();
