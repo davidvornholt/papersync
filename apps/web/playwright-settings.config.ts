@@ -6,6 +6,8 @@ import config from './playwright.config';
 export default {
   ...config,
   testMatch: /settings\.integration\.ts/u,
+  // The scenarios share that row, so they run one after another.
+  workers: 1,
   projects: [
     { name: 'settings-chromium', use: { browserName: 'chromium' as const } },
   ],

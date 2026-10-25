@@ -16,15 +16,10 @@ import {
   type Subject,
   type TimetableDay,
 } from '../settings/schema';
-import { loadSettings, saveSettings } from './use-settings-storage';
+import { type SaveStatus, useSettingsAutosave } from './use-settings-autosave';
+import { loadSettings } from './use-settings-storage';
 import { useSubjectSettings } from './use-subject-settings';
 import { useTimetableSettings } from './use-timetable-settings';
-
-export type SaveStatus =
-  | { readonly kind: 'idle' }
-  | { readonly kind: 'saving' }
-  | { readonly kind: 'saved' }
-  | { readonly kind: 'error'; readonly message: string };
 
 export type UseSettingsReturn = {
   readonly settings: Settings;
@@ -42,31 +37,35 @@ export type UseSettingsReturn = {
   readonly removeSubjectFromDay: (day: DayOfWeek, subjectId: string) => void;
 };
 
-// Wait for a pause in editing before writing, so a burst of toggles is one save.
-const autosaveDelayMilliseconds = 600;
-
 export const useSettings = (): UseSettingsReturn => {
   const [settings, setSettings] = useState<Settings>(defaultSettings);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [saveStatus, setSaveStatus] = useState<SaveStatus>({ kind: 'idle' });
-  // Every edit bumps the version; a save covers the version it started from.
-  const [version, setVersion] = useState(0);
-  const [savedVersion, setSavedVersion] = useState(0);
-  const [savingVersion, setSavingVersion] = useState<number | null>(null);
-  // A failed version waits for the next edit or an explicit retry.
-  const [failedVersion, setFailedVersion] = useState<number | null>(null);
   const revisionRef = useRef<string | null>(null);
   const latestSettingsRef = useRef(settings);
   latestSettingsRef.current = settings;
+  const { saveStatus, versionRef, savedVersionRef, bumpVersion } =
+    useSettingsAutosave({
+      settingsRef: latestSettingsRef,
+      revisionRef,
+      canSave: !(isLoading || loadError),
+    });
 
   useEffect(() => {
+    // Next.js keeps a left screen and runs this again when it returns. Edits
+    // that are not saved yet stay on screen instead of the stored settings.
+    const loadVersion = versionRef.current;
+    if (loadVersion !== savedVersionRef.current) {
+      return;
+    }
     const fiber = Effect.runFork(
       loadSettings().pipe(
         Effect.tap((loaded) =>
           Effect.sync(() => {
-            revisionRef.current = loaded.revision;
-            setSettings(loaded.settings);
+            if (versionRef.current === loadVersion) {
+              revisionRef.current = loaded.revision;
+              setSettings(loaded.settings);
+            }
             setIsLoading(false);
           }),
         ),
@@ -81,59 +80,15 @@ export const useSettings = (): UseSettingsReturn => {
     return () => {
       Effect.runFork(Fiber.interrupt(fiber));
     };
-  }, []);
+  }, [versionRef, savedVersionRef]);
 
-  useEffect(() => {
-    if (
-      isLoading ||
-      loadError ||
-      savingVersion !== null ||
-      version === savedVersion ||
-      version === failedVersion
-    ) {
-      return;
-    }
-    setSaveStatus({ kind: 'saving' });
-    const timer = setTimeout(() => {
-      setSavingVersion(version);
-      Effect.runFork(
-        saveSettings(latestSettingsRef.current, revisionRef.current).pipe(
-          Effect.tap((saved) =>
-            Effect.sync(() => {
-              revisionRef.current = saved.revision;
-              setSavedVersion(version);
-              setFailedVersion(null);
-              setSaveStatus({ kind: 'saved' });
-            }),
-          ),
-          Effect.catch((error) =>
-            Effect.sync(() => {
-              setFailedVersion(version);
-              setSaveStatus({ kind: 'error', message: error.message });
-            }),
-          ),
-          Effect.ensuring(Effect.sync(() => setSavingVersion(null))),
-        ),
-      );
-    }, autosaveDelayMilliseconds);
-    return () => clearTimeout(timer);
-  }, [
-    version,
-    savedVersion,
-    savingVersion,
-    failedVersion,
-    isLoading,
-    loadError,
-  ]);
-
-  const edit: Dispatch<SetStateAction<Settings>> = useCallback((update) => {
-    setSettings(update);
-    setVersion((current) => current + 1);
-  }, []);
-
-  const retrySave = useCallback((): void => {
-    setVersion((current) => current + 1);
-  }, []);
+  const edit: Dispatch<SetStateAction<Settings>> = useCallback(
+    (update) => {
+      setSettings(update);
+      bumpVersion();
+    },
+    [bumpVersion],
+  );
 
   const updateAI = useCallback(
     (updates: Partial<Settings['ai']>): void => {
@@ -151,7 +106,7 @@ export const useSettings = (): UseSettingsReturn => {
     isLoading,
     loadError,
     saveStatus,
-    retrySave,
+    retrySave: bumpVersion,
     updateAI,
   };
 };
