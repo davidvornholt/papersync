@@ -162,21 +162,30 @@ const slowStoreTimeout = 10_000;
 const camera = { width: 4000, height: 3000, fontSize: 160, margin: 200 };
 const reduced = { width: 2048, height: 1536 };
 
-const cameraPhoto = async (page: Page, name: string) => {
-  const large = await page.evaluate(({ width, height, fontSize, margin }) => {
-    const canvas = document.createElement('canvas');
-    canvas.width = width;
-    canvas.height = height;
-    const drawing = canvas.getContext('2d');
-    if (drawing) {
-      drawing.fillStyle = 'white';
-      drawing.fillRect(0, 0, width, height);
-      drawing.fillStyle = 'black';
-      drawing.font = `${fontSize}px sans-serif`;
-      drawing.fillText('2026-W01 — Monday', margin, margin + fontSize);
-    }
-    return canvas.toDataURL('image/png');
-  }, camera);
+const cameraPhoto = async (
+  page: Page,
+  name: string,
+  background: 'white' | 'transparent' = 'white',
+) => {
+  const large = await page.evaluate(
+    ({ width, height, fontSize, margin, transparent }) => {
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const drawing = canvas.getContext('2d');
+      if (drawing) {
+        if (!transparent) {
+          drawing.fillStyle = 'white';
+          drawing.fillRect(0, 0, width, height);
+        }
+        drawing.fillStyle = 'black';
+        drawing.font = `${fontSize}px sans-serif`;
+        drawing.fillText('2026-W01 — Monday', margin, margin + fontSize);
+      }
+      return canvas.toDataURL('image/png');
+    },
+    { ...camera, transparent: background === 'transparent' },
+  );
   return {
     name,
     mimeType: 'image/png',
@@ -184,7 +193,13 @@ const cameraPhoto = async (page: Page, name: string) => {
   };
 };
 
-type StoredPage = { type: string; width: number; height: number };
+// The sheet is mostly blank paper, so most stored pixels should be light.
+type StoredPage = {
+  type: string;
+  width: number;
+  height: number;
+  mostlyLight: boolean;
+};
 const readStoredPages = (page: Page) =>
   page.evaluate(
     () =>
@@ -201,10 +216,21 @@ const readStoredPages = (page: Page) =>
             const pages = await Promise.all(
               stored.map(async ({ image }) => {
                 const bitmap = await createImageBitmap(image);
+                const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
+                const drawing = canvas.getContext('2d');
+                drawing?.drawImage(bitmap, 0, 0);
+                const pixels =
+                  drawing?.getImageData(0, 0, bitmap.width, bitmap.height)
+                    .data ?? new Uint8ClampedArray();
+                let light = 0;
+                for (let index = 0; index < pixels.length; index += 4) {
+                  light += Number((pixels[index] ?? 0) > 200);
+                }
                 return {
                   type: image.type,
                   width: bitmap.width,
                   height: bitmap.height,
+                  mostlyLight: light * 4 > pixels.length / 2,
                 };
               }),
             );
@@ -222,7 +248,21 @@ test('large photos are reduced before upload', async ({ page }) => {
   await picker.setInputFiles(await cameraPhoto(page, 'camera.png'));
   await expect(page.getByAltText('Page 1 of the sheet')).toBeVisible();
   const [stored] = await readStoredPages(page);
-  expect(stored).toEqual({ type: 'image/jpeg', ...reduced });
+  expect(stored).toEqual({ type: 'image/jpeg', ...reduced, mostlyLight: true });
+});
+
+test('large transparent images keep dark writing readable', async ({
+  page,
+}) => {
+  await page.goto('/scan');
+  const picker = page.getByLabel('Select images from device');
+  await expect(picker).toBeEnabled();
+  await picker.setInputFiles(
+    await cameraPhoto(page, 'transparent.png', 'transparent'),
+  );
+  await expect(page.getByAltText('Page 1 of the sheet')).toBeVisible();
+  const [stored] = await readStoredPages(page);
+  expect(stored).toEqual({ type: 'image/jpeg', ...reduced, mostlyLight: true });
 });
 
 const goTo = async (page: Page, name: string, path: string) => {
