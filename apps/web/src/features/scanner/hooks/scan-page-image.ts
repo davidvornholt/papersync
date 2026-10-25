@@ -25,9 +25,14 @@ const encodeJpeg = (bitmap: ImageBitmap, scale: number) =>
         Math.round(bitmap.width * scale),
         Math.round(bitmap.height * scale),
       );
-      canvas
-        .getContext('2d')
-        ?.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+      const drawing = canvas.getContext('2d');
+      if (drawing) {
+        // JPEG has no transparency and encodes transparent pixels as black,
+        // which hides dark writing, so the page is laid on white paper first.
+        drawing.fillStyle = 'white';
+        drawing.fillRect(0, 0, canvas.width, canvas.height);
+        drawing.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+      }
       return canvas.convertToBlob({ type: 'image/jpeg', quality: jpegQuality });
     },
     catch: (cause) =>
