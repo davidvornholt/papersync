@@ -28,7 +28,6 @@ export const useSettingsAutosave = ({
   readonly canSave: boolean;
 }) => {
   const [saveStatus, setSaveStatus] = useState<SaveStatus>({ kind: 'idle' });
-  // Every edit bumps the version; a save covers the version it started from.
   const [version, setVersion] = useState(0);
   const [savingVersion, setSavingVersion] = useState<number | null>(null);
   const versionRef = useRef(version);
@@ -38,7 +37,6 @@ export const useSettingsAutosave = ({
   // A failed version waits for the next edit or an explicit retry.
   const attemptedVersionRef = useRef(0);
   const savedVersionRef = useRef(0);
-  // The edit version whose autosave timer is running, if any.
   const pendingVersionRef = useRef<number | null>(null);
 
   const save = useCallback(
