@@ -12,6 +12,7 @@ const timetable = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'].map(
   }),
 );
 const removeMath = /^Remove Math from /u;
+const signInProblem = /Check your connection and sign-in/u;
 const plannerSettings = {
   ...defaultSettings,
   subjects: [{ id: 'math', name: 'Math' }],
@@ -128,3 +129,22 @@ for (const timezoneId of ['Europe/Berlin', 'America/Los_Angeles']) {
     }
   });
 }
+
+test('reports an expired sign-in instead of blaming the timetable', async ({
+  page,
+  context,
+}) => {
+  await context.addCookies(await createSessionCookies());
+  await page.addInitScript((settings) => {
+    localStorage.setItem('papersync-settings', JSON.stringify(settings));
+  }, plannerSettings);
+  await page.goto('/planner');
+  const generate = page.getByRole('button', {
+    name: 'Generate PDF',
+    exact: true,
+  });
+  await expect(generate).toBeEnabled();
+  await context.clearCookies();
+  await generate.click();
+  await expect(page.getByText(signInProblem)).toBeVisible();
+});
