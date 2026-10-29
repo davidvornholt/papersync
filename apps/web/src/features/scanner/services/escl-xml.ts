@@ -90,8 +90,9 @@ const parseSourceCapabilities = (
   sourceCapabilities: Record<InputSource, SourceCapabilities>;
 } => {
   // Each source states its own limits; the first stated one covers a source that doesn't.
-  const maxWidth = parseDimension(xml, 'scan:MaxWidth', letterWidth);
-  const maxHeight = parseDimension(xml, 'scan:MaxHeight', letterHeight);
+  // With none stated, the full A4 page is requested as before.
+  const maxWidth = parseDimension(xml, 'scan:MaxWidth', a4Width);
+  const maxHeight = parseDimension(xml, 'scan:MaxHeight', a4Height);
   const inputSources: Array<InputSource> = [];
   const sourceCapabilities: Record<InputSource, SourceCapabilities> = {
     // biome-ignore lint/style/useNamingConvention: eSCL protocol value required by scanners.

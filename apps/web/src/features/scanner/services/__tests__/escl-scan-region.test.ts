@@ -29,9 +29,13 @@ afterEach(() => {
 const tagValue = (xml: string, tag: string): number =>
   Number(new RegExp(`<${tag}>(\\d+)</${tag}>`, 'u').exec(xml)?.[1]);
 
+/** An unlimited side isn't stated, as with a scanner that leaves its limits out. */
+const limitTag = (tag: string, value: number) =>
+  Number.isFinite(value) ? `<scan:${tag}>${value}</scan:${tag}>` : '';
+
 const inputCaps = (width: number, height: number) => `
-      <scan:MaxWidth>${width}</scan:MaxWidth>
-      <scan:MaxHeight>${height}</scan:MaxHeight>
+      ${limitTag('MaxWidth', width)}
+      ${limitTag('MaxHeight', height)}
       <scan:SettingProfiles><scan:SettingProfile><scan:ColorModes>
         <scan:ColorMode>RGB24</scan:ColorMode>
       </scan:ColorModes></scan:SettingProfile></scan:SettingProfiles>`;
@@ -155,4 +159,21 @@ it('keeps the scan region within the feeder when it is narrower than the glass',
 
   expect(job.status).toBe('pending');
   expect(requested).toEqual([{ width: smallFeederWidth, height: a4Height }]);
+});
+
+it('scans an A4 page on a scanner that leaves its limits out', async () => {
+  const unstated = {
+    width: Number.POSITIVE_INFINITY,
+    height: Number.POSITIVE_INFINITY,
+  };
+  const { requested, scanner } = await startScanner({
+    // biome-ignore lint/style/useNamingConvention: eSCL protocol value required by scanners.
+    Platen: unstated,
+    // biome-ignore lint/style/useNamingConvention: eSCL protocol value required by scanners.
+    Adf: unstated,
+  });
+
+  await scan(scanner, 'Platen');
+
+  expect(requested).toEqual([{ width: a4Width, height: a4Height }]);
 });
