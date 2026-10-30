@@ -23,7 +23,7 @@ describe('OCRResponse Schema', () => {
     expect(response.confidence).toBe(expectedConfidence);
   });
 
-  it('should clamp confidence to valid range', () => {
+  it('should reject confidence outside 0 to 1', () => {
     expect(() =>
       Schema.decodeUnknownSync(OCRResponse)({
         weekId: '2026-W37',

@@ -14,7 +14,6 @@ import type { DiscoveredScanner } from '../../services/scanner-discovery-types';
 import { useScannerDiscovery } from './use-scanner-discovery';
 
 const defaultResolution = 300;
-const _discoveryMilliseconds = 10_000;
 export const useNetworkScanner = (
   onScanComplete: (imageData: string) => void,
 ) => {

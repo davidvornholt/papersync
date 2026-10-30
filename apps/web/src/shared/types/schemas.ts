@@ -9,20 +9,12 @@ export type ISODate = typeof ISODate.Type;
 
 export const NonEmptyTrimmedString = Schema.Trimmed.check(Schema.isNonEmpty());
 
-export const ISODateTime = Schema.String.check(
-  Schema.isPattern(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/u),
-).pipe(Schema.brand('ISODateTime'));
-export type ISODateTime = typeof ISODateTime.Type;
-
 export const Subject = Schema.Struct({
   id: Schema.String,
   name: Schema.String,
   color: Schema.optional(Schema.String),
 });
 export type Subject = typeof Subject.Type;
-
-export const SubjectsConfig = Schema.Array(Subject);
-export type SubjectsConfig = typeof SubjectsConfig.Type;
 
 export const DayOfWeek = Schema.Literals([
   'monday',
@@ -34,38 +26,6 @@ export const DayOfWeek = Schema.Literals([
   'sunday',
 ]);
 export type DayOfWeek = typeof DayOfWeek.Type;
-
-export const TimeSlot = Schema.Struct({
-  id: Schema.String,
-  subjectId: Schema.String,
-  startTime: Schema.String, // HH:MM format
-  endTime: Schema.String, // HH:MM format
-});
-export type TimeSlot = typeof TimeSlot.Type;
-
-export const DaySchedule = Schema.Struct({
-  day: DayOfWeek,
-  slots: Schema.Array(TimeSlot),
-});
-export type DaySchedule = typeof DaySchedule.Type;
-
-export const ScheduleException = Schema.Struct({
-  id: Schema.String,
-  date: ISODate,
-  reason: Schema.optional(Schema.String),
-  slots: Schema.Array(TimeSlot), // Override slots for this specific date
-});
-export type ScheduleException = typeof ScheduleException.Type;
-
-export const Timetable = Schema.Struct({
-  id: Schema.String,
-  name: Schema.String,
-  weeklySchedule: Schema.Array(DaySchedule),
-  exceptions: Schema.Array(ScheduleException),
-  createdAt: ISODateTime,
-  updatedAt: ISODateTime,
-});
-export type Timetable = typeof Timetable.Type;
 
 export const TaskAction = Schema.Literals([
   'add',
