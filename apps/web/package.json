@@ -15,7 +15,7 @@
   "dependencies": {
     "@ai-sdk/google": "^4.0.85",
     "@aws-sdk/client-bedrock-runtime": "^3.1155.0",
-    "@effect/sql-pg": "^4.0.4",
+    "@effect/sql-pg": "^4.0.6",
     "@papersync/db": "workspace:*",
     "@papersync/homework": "workspace:*",
     "@papersync/ui": "workspace:*",
@@ -24,7 +24,7 @@
     "ai": "^7.0.126",
     "better-auth": "^1.7.7",
     "bonjour-service": "^1.4.4",
-    "effect": "^4.0.4",
+    "effect": "^4.0.6",
     "lucide-react": "^1.61.0",
     "motion": "^14.5.0",
     "next": "16.4.1",
