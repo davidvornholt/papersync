@@ -81,48 +81,60 @@ const getCauseMessage = (error: unknown): string => {
   return error.message;
 };
 
-const createESCLClient = (): ESCLClient => ({
-  getCapabilities: (scanner: DiscoveredScanner) =>
-    Effect.tryPromise({
-      try: () => {
-        const scannerBaseUrl = getScannerResourceBaseUrl(scanner);
-        const capabilitiesUrl = `${scannerBaseUrl}/ScannerCapabilities`;
+const getCapabilities = (scanner: DiscoveredScanner) =>
+  Effect.tryPromise({
+    try: () => {
+      const scannerBaseUrl = getScannerResourceBaseUrl(scanner);
+      const capabilitiesUrl = `${scannerBaseUrl}/ScannerCapabilities`;
 
-        return requestScanner(capabilitiesUrl, {
-          method: 'GET',
-          headers: { accept: 'text/xml, application/xml' },
-        }).then((response) => {
-          if (
-            response.statusCode < successStatus ||
-            response.statusCode >= redirectStatus
-          ) {
-            return Promise.reject(new Error(`HTTP ${response.statusCode}`));
-          }
-          return parseCapabilitiesXml(response.body.toString('utf8'));
-        });
-      },
-      catch: (error) =>
-        new ESCLCapabilitiesError({
-          message: `Failed to fetch scanner capabilities from ${scanner.name} (${getScannerResourceBaseUrl(scanner)}): ${getCauseMessage(error)}`,
-          cause: error,
-        }),
-    }),
+      return requestScanner(capabilitiesUrl, {
+        method: 'GET',
+        headers: { accept: 'text/xml, application/xml' },
+      }).then((response) => {
+        if (
+          response.statusCode < successStatus ||
+          response.statusCode >= redirectStatus
+        ) {
+          return Promise.reject(new Error(`HTTP ${response.statusCode}`));
+        }
+        return parseCapabilitiesXml(response.body.toString('utf8'));
+      });
+    },
+    catch: (error) =>
+      new ESCLCapabilitiesError({
+        message: `Failed to fetch scanner capabilities from ${scanner.name} (${getScannerResourceBaseUrl(scanner)}): ${getCauseMessage(error)}`,
+        cause: error,
+      }),
+  });
+
+const createESCLClient = (): ESCLClient => ({
+  getCapabilities,
 
   startScan: (scanner: DiscoveredScanner, settings: ScanSettings) =>
-    Effect.tryPromise({
-      try: () => {
-        const scannerBaseUrl = getScannerResourceBaseUrl(scanner);
-        const scanJobsUrl = `${scannerBaseUrl}/ScanJobs`;
+    getCapabilities(scanner).pipe(
+      Effect.mapError(
+        (error) =>
+          new ESCLError({ message: error.message, cause: error.cause }),
+      ),
+      Effect.flatMap((capabilities) =>
+        Effect.tryPromise({
+          try: () => {
+            const scannerBaseUrl = getScannerResourceBaseUrl(scanner);
+            const scanJobsUrl = `${scannerBaseUrl}/ScanJobs`;
 
-        return requestScanner(scanJobsUrl, {
-          method: 'POST',
-          headers: { 'content-type': 'text/xml; charset=utf-8' },
-          body: createScanRequestXml(settings),
-        });
-      },
-      catch: (error) =>
-        new ESCLError({ message: 'Failed to start scan job', cause: error }),
-    }).pipe(
+            return requestScanner(scanJobsUrl, {
+              method: 'POST',
+              headers: { 'content-type': 'text/xml; charset=utf-8' },
+              body: createScanRequestXml(settings, capabilities),
+            });
+          },
+          catch: (error) =>
+            new ESCLError({
+              message: 'Failed to start scan job',
+              cause: error,
+            }),
+        }),
+      ),
       Effect.flatMap((response) => {
         if (response.statusCode !== createdStatus) {
           return Effect.fail(
