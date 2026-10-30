@@ -25,6 +25,9 @@ export const ScanSettingsSchema = Schema.Struct({
 export type SourceCapabilities = {
   readonly resolutions: ReadonlyArray<number>;
   readonly colorModes: ReadonlyArray<ColorMode>;
+  /** The largest region this source scans, in 1/300 inch. */
+  readonly maxWidth: number;
+  readonly maxHeight: number;
 };
 
 export type ScannerCapabilities = {
