@@ -16,6 +16,11 @@ const fallbackResolutions = [
   defaultResolution,
   highResolution,
 ];
+// Page sizes in 1/300 inch, the unit of the scan region.
+const a4Width = 2480;
+const a4Height = 3507;
+const letterWidth = 2550;
+const letterHeight = 3300;
 const parseXmlValue = (xml: string, tag: string): string | null => {
   const regex = new RegExp(`<${tag}[^>]*>([^<]*)</${tag}>`, 'iu');
   const match = xml.match(regex);
@@ -73,42 +78,55 @@ const parseColorModes = (section: string): Array<ColorMode> => {
   return colorModes.length > 0 ? colorModes : ['color', 'grayscale'];
 };
 
+const parseDimension = (xml: string, tag: string, fallback: number): number => {
+  const value = Number.parseInt(parseXmlValue(xml, tag) ?? '', 10);
+  return Number.isNaN(value) ? fallback : value;
+};
+
 const parseSourceCapabilities = (
   xml: string,
 ): {
   inputSources: Array<InputSource>;
   sourceCapabilities: Record<InputSource, SourceCapabilities>;
 } => {
+  // Each source states its own limits; the first stated one covers a source that doesn't.
+  // With none stated, the full A4 page is requested as before.
+  const maxWidth = parseDimension(xml, 'scan:MaxWidth', a4Width);
+  const maxHeight = parseDimension(xml, 'scan:MaxHeight', a4Height);
   const inputSources: Array<InputSource> = [];
   const sourceCapabilities: Record<InputSource, SourceCapabilities> = {
     // biome-ignore lint/style/useNamingConvention: eSCL protocol value required by scanners.
     Platen: {
       resolutions: [defaultResolution],
       colorModes: ['color', 'grayscale'],
+      maxWidth,
+      maxHeight,
     },
     // biome-ignore lint/style/useNamingConvention: eSCL protocol value required by scanners.
     Adf: {
       resolutions: [defaultResolution],
       colorModes: ['color', 'grayscale'],
+      maxWidth,
+      maxHeight,
     },
   };
+  const parseSection = (section: string): SourceCapabilities => ({
+    resolutions: parseResolutions(section),
+    colorModes: parseColorModes(section),
+    maxWidth: parseDimension(section, 'scan:MaxWidth', maxWidth),
+    maxHeight: parseDimension(section, 'scan:MaxHeight', maxHeight),
+  });
 
   const platenSection = extractSection(xml, 'Platen');
   if (platenSection) {
     inputSources.push('Platen');
-    sourceCapabilities.Platen = {
-      resolutions: parseResolutions(platenSection),
-      colorModes: parseColorModes(platenSection),
-    };
+    sourceCapabilities.Platen = parseSection(platenSection);
   }
 
   const adfSection = extractSection(xml, 'Adf');
   if (adfSection) {
     inputSources.push('Adf');
-    sourceCapabilities.Adf = {
-      resolutions: parseResolutions(adfSection),
-      colorModes: parseColorModes(adfSection),
-    };
+    sourceCapabilities.Adf = parseSection(adfSection);
   }
 
   if (inputSources.length === 0) {
@@ -129,14 +147,8 @@ export const parseCapabilitiesXml = (xml: string): ScannerCapabilities => {
     inputSources,
     sourceCapabilities,
     formats,
-    maxWidth: Number.parseInt(
-      parseXmlValue(xml, 'scan:MaxWidth') || '2550',
-      10,
-    ),
-    maxHeight: Number.parseInt(
-      parseXmlValue(xml, 'scan:MaxHeight') || '3300',
-      10,
-    ),
+    maxWidth: parseDimension(xml, 'scan:MaxWidth', letterWidth),
+    maxHeight: parseDimension(xml, 'scan:MaxHeight', letterHeight),
     minWidth: Number.parseInt(parseXmlValue(xml, 'scan:MinWidth') || '16', 10),
     minHeight: Number.parseInt(
       parseXmlValue(xml, 'scan:MinHeight') || '16',
@@ -145,7 +157,12 @@ export const parseCapabilitiesXml = (xml: string): ScannerCapabilities => {
   };
 };
 
-export const createScanRequestXml = (settings: ScanSettings): string => {
+/** Scans an A4 page, cut to what the chosen source can take so the scanner accepts the job. */
+export const createScanRequestXml = (
+  settings: ScanSettings,
+  capabilities: ScannerCapabilities,
+): string => {
+  const source = capabilities.sourceCapabilities[settings.inputSource];
   const colorModeMap: Record<ColorMode, string> = {
     color: 'RGB24',
     grayscale: 'Grayscale8',
@@ -173,8 +190,8 @@ export const createScanRequestXml = (settings: ScanSettings): string => {
       <pwg:ContentRegionUnits>escl:ThreeHundredthsOfInches</pwg:ContentRegionUnits>
       <pwg:XOffset>0</pwg:XOffset>
       <pwg:YOffset>0</pwg:YOffset>
-      <pwg:Width>2480</pwg:Width>
-      <pwg:Height>3507</pwg:Height>
+      <pwg:Width>${Math.min(a4Width, source.maxWidth)}</pwg:Width>
+      <pwg:Height>${Math.min(a4Height, source.maxHeight)}</pwg:Height>
     </pwg:ScanRegion>
   </pwg:ScanRegions>
   <pwg:InputSource>${inputSourceMap[settings.inputSource]}</pwg:InputSource>

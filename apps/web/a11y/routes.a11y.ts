@@ -107,6 +107,11 @@ test('settings help and icon actions work with a keyboard', async ({
   await expect(
     page.getByRole('list', { name: 'Subjects on Monday' }),
   ).toContainText('Chemistry');
+  // The edit autosaves after a pause. Scanning before the indicator settles
+  // lets the status text change while Axe is still running.
+  await expect(page.getByRole('status', { name: 'Save status' })).toContainText(
+    'Saved',
+  );
   expect(await scanWcag22AaViolations(page)).toEqual([]);
   await remove.click();
   await expect(remove).toHaveCount(0);
