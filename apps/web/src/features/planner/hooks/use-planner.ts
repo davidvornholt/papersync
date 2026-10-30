@@ -47,11 +47,15 @@ const fetchPdfEffect = (
           method: 'POST',
           headers: { 'content-type': 'application/json' },
           body: JSON.stringify({ weekId, subjects, timetable }),
+          // An expired sign-in redirects to the login page. Following it would
+          // report a planner failure instead of the sign-in problem.
+          redirect: 'error',
           signal,
         }),
       catch: (cause) =>
         new PlannerPdfFetchError({
-          message: 'Could not reach PaperSync to generate the planner.',
+          message:
+            'Could not reach PaperSync to generate the planner. Check your connection and sign-in, then retry.',
           cause,
         }),
     });
