@@ -15,7 +15,7 @@
   "dependencies": {
     "@ai-sdk/google": "^4.0.85",
     "@aws-sdk/client-bedrock-runtime": "^3.1155.0",
-    "@effect/sql-pg": "^4.0.4",
+    "@effect/sql-pg": "^4.0.6",
     "@papersync/db": "workspace:*",
     "@papersync/homework": "workspace:*",
     "@papersync/ui": "workspace:*",
@@ -24,12 +24,12 @@
     "ai": "^7.0.126",
     "better-auth": "^1.7.7",
     "bonjour-service": "^1.4.4",
-    "effect": "^4.0.4",
+    "effect": "^4.0.6",
     "lucide-react": "^1.61.0",
     "motion": "^14.5.0",
-    "next": "16.4.1",
-    "react": "^19.3.0",
-    "react-dom": "^19.3.0"
+    "next": "16.4.3",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.13.0",
@@ -38,7 +38,7 @@
     "@playwright/test": "1.64.1",
     "@tailwindcss/postcss": "^4.3.3",
     "@types/bun": "^1.4.2",
-    "@types/node": "^26.6.3",
+    "@types/node": "^26.6.5",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "babel-plugin-react-compiler": "^1.0.0",
