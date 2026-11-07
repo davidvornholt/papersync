@@ -33,6 +33,7 @@ const StoredReview = Schema.Struct({
       confidence: Schema.Number,
       modelUsed: Schema.String,
       notes: Schema.optional(Schema.String),
+      hasNewPages: Schema.Boolean,
     }),
   ),
   entries: Schema.Array(StoredEntry),

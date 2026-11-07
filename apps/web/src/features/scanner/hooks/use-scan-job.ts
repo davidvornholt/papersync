@@ -69,6 +69,7 @@ export const useScanJob = ({
       confidence: data.confidence,
       modelUsed,
       notes: data.notes,
+      hasNewPages: false,
     });
     const reviewCount = entries.filter(
       (entry) => entry.action !== 'skip',

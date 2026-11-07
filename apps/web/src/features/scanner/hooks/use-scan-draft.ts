@@ -46,6 +46,7 @@ const toStoredReview = ({
           confidence: state.confidence,
           modelUsed: state.modelUsed,
           notes: state.notes,
+          hasNewPages: state.hasNewPages,
         }
       : null,
   entries,

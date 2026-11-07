@@ -21,6 +21,7 @@ type ResultsPanelCompleteProps = {
   readonly onSync: () => void;
   readonly isSyncing: boolean;
   readonly canSave: boolean;
+  readonly hasNewPages: boolean;
 };
 
 export const ResultsPanelComplete = ({
@@ -33,6 +34,7 @@ export const ResultsPanelComplete = ({
   onSync,
   isSyncing,
   canSave,
+  hasNewPages,
 }: ResultsPanelCompleteProps): React.ReactElement => {
   const reviewEntries = entries.filter((entry) => entry.action !== 'skip');
   const savedEntries = entries.filter((entry) => entry.action === 'skip');
@@ -104,8 +106,9 @@ export const ResultsPanelComplete = ({
         </p>
         {canSave ? null : (
           <p className="mb-3 text-sm">
-            Enter the printed week and choose “Use this week” before saving.
-            Your entries will stay here.
+            {hasNewPages
+              ? 'You added photos after this analysis. Analyze all photos again before saving, so their homework is read too.'
+              : 'Enter the printed week and choose “Use this week” before saving. Your entries will stay here.'}
           </p>
         )}
         <Button

@@ -37,6 +37,7 @@ const canSaveReview = (
   isUpdatingWeek: boolean,
 ): boolean =>
   state.status === 'complete' &&
+  !state.hasNewPages &&
   weekId !== null &&
   state.weekId === weekId &&
   !isUpdatingWeek;

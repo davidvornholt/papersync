@@ -51,7 +51,11 @@ export const useReviewWeek = ({
               return;
             }
             if (result.success) {
-              setState({ ...state, weekId });
+              setState((current) =>
+                current.status === 'complete'
+                  ? { ...current, weekId }
+                  : current,
+              );
               setEntries(result.entries);
               notify(
                 'Week applied. Your edits are preserved; check due dates against the paper before saving.',

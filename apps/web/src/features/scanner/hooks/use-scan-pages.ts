@@ -9,6 +9,11 @@ import type { ScanNotify, ScanPage, ScanState } from './use-scan-types';
 const clearError = (current: ScanState): ScanState =>
   current.status === 'error' ? { status: 'idle' } : current;
 
+const markNewPages = (current: ScanState): ScanState =>
+  current.status === 'complete'
+    ? { ...current, hasNewPages: true }
+    : clearError(current);
+
 export const useScanPages = ({
   notify,
   setState,
@@ -45,7 +50,11 @@ export const useScanPages = ({
             setPages((current) =>
               [...current, ...prepared].slice(0, scanPageLimit),
             );
-            setState(clearError);
+            if (prepared.length > 0) {
+              setState(markNewPages);
+            } else {
+              setState(clearError);
+            }
           }),
         ),
         Effect.ensuring(Effect.sync(() => setIsPreparing(false))),

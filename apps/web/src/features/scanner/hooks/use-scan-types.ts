@@ -13,6 +13,9 @@ export type CompletedScan = {
   readonly confidence: number;
   readonly modelUsed: string;
   readonly notes?: string;
+  // Photos added after the analysis are not in its entries, and saving clears
+  // every photo, so the review can't be saved until they are analyzed.
+  readonly hasNewPages: boolean;
 };
 
 export type ScanState =
