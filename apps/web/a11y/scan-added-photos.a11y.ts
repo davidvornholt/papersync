@@ -180,3 +180,97 @@ test('a photo shared during the analysis is analyzed before saving', async ({
   await expect(page.getByText(addedPhotoMessage)).toHaveCount(0);
   await expect(approve).toBeEnabled();
 });
+
+test('a photo scanned while saving stays in the scan', async ({ page }) => {
+  const finish = await holdAnalyses(page);
+  finish();
+  const scanned = Promise.withResolvers<void>();
+  const saved = Promise.withResolvers<void>();
+  const scannedImage = await page
+    .goto('/scan')
+    .then(() => createPlannerImage(page, '2026-W02'));
+  // Discovery, the scanner and saving are Server Actions posted to this page.
+  // Each is told apart by its arguments, so no real scanner is needed.
+  await page.route('**/scan', async (route) => {
+    const body = route.request().postData() ?? '';
+    if (!route.request().headers()['next-action']) {
+      return route.continue();
+    }
+    let result: unknown = {
+      success: true,
+      scanners: [
+        {
+          id: 'fixture',
+          name: 'Fixture scanner',
+          host: '192.0.2.1',
+          port: 80,
+          protocol: 'http',
+          resourcePath: '/eSCL',
+          capabilities: { colorModes: ['color'], documentFormats: [] },
+        },
+      ],
+    };
+    if (body.includes('"colorMode"')) {
+      await scanned.promise;
+      result = { success: true, imageData: scannedImage };
+    } else if (body.includes('"resourcePath"')) {
+      const source = {
+        resolutions: [300],
+        colorModes: ['color'],
+        maxWidth: 2550,
+        maxHeight: 3300,
+      };
+      result = {
+        success: true,
+        capabilities: {
+          inputSources: ['Platen'],
+          sourceCapabilities: Object.fromEntries(
+            ['Platen', 'Adf'].map((name) => [name, source]),
+          ),
+          formats: ['image/jpeg'],
+          maxWidth: 2550,
+          maxHeight: 3300,
+          minWidth: 1,
+          minHeight: 1,
+        },
+      };
+    } else if (body.includes('"subject"')) {
+      await saved.promise;
+      result = { success: true, count: 1 };
+    }
+    return route
+      .fulfill({
+        contentType: 'text/x-component',
+        body: `0:{"a":"$@1","f":"","b":"test"}\n1:${JSON.stringify(result)}\n`,
+      })
+      .catch(() => undefined);
+  });
+
+  const picker = page.getByLabel('Select images from device');
+  await expect(picker).toBeEnabled();
+  await picker.setInputFiles(await photo(page, 'front.png'));
+  await page
+    .getByRole('button', { name: 'Analyze photo', exact: true })
+    .click();
+  const approve = page.getByRole('button', { name: 'Approve and save' });
+  await expect(approve).toBeEnabled();
+
+  // The back of the sheet is on the network scanner when saving starts.
+  await page.getByText('Use a network scanner', { exact: true }).click();
+  await page.getByRole('button', { name: 'Discover', exact: true }).click();
+  await page.getByRole('button', { name: 'Fixture scanner' }).click();
+  await page.getByRole('button', { name: 'Scan document' }).click();
+  await approve.click();
+  scanned.resolve();
+  const pages = page.getByRole('list', { name: 'Photos of the sheet' });
+  await expect(pages.getByRole('listitem')).toHaveCount(2);
+  saved.resolve();
+
+  await expect(
+    page.getByText('1 tasks waiting for Super Productivity'),
+  ).toBeVisible();
+  await expect(pages.getByRole('listitem')).toHaveCount(1);
+  await expect(approve).toHaveCount(0);
+  await page.reload();
+  await expect(pages.getByRole('listitem')).toHaveCount(1);
+});
