@@ -316,3 +316,55 @@ test('review retains informational entries and only excludes entries explicitly 
   expect(savedRequest).toContain(reference);
   expect(savedRequest).not.toContain(unwanted);
 });
+
+test('a photo added after the analysis is analyzed before saving', async ({
+  page,
+  context,
+}) => {
+  await context.addCookies(await createSessionCookies());
+  await page.addInitScript(
+    (settings) =>
+      localStorage.setItem('papersync-settings', JSON.stringify(settings)),
+    {
+      ...defaultSettings,
+      ai: { provider: 'ollama', ollamaEndpoint: endpoint },
+    },
+  );
+  modelResponse = JSON.stringify({
+    weekId: '2026-W01',
+    entries: [entry],
+    confidence: 1,
+  });
+  const photo = async (name: string) => ({
+    name,
+    mimeType: 'image/png',
+    buffer: Buffer.from(
+      (await createPlannerImage(page, '2026-W01')).split(',')[1] ?? '',
+      'base64',
+    ),
+  });
+  await page.goto('/scan');
+  const picker = page.getByLabel('Select images from device');
+  await expect(picker).toBeEnabled();
+  await picker.setInputFiles(await photo('front.png'));
+  await page.getByRole('button', { name: analyzeButton }).click();
+  await expect(page.getByLabel('Task')).toHaveValue(entry.content);
+  const approve = page.getByRole('button', { name: 'Approve and save' });
+  await expect(approve).toBeEnabled();
+
+  // The back of the sheet joins after the front was read. Saving now would
+  // clear both photos although only the front's homework was read.
+  await picker.setInputFiles(await photo('back.png'));
+  const pages = page.getByRole('list', { name: 'Photos of the sheet' });
+  await expect(pages.getByRole('listitem')).toHaveCount(2);
+  await expect(approve).toBeDisabled();
+  expect(await scanWcag22AaViolations(page)).toEqual([]);
+  await page.reload();
+  await expect(pages.getByRole('listitem')).toHaveCount(2);
+  await expect(approve).toBeDisabled();
+
+  const requestsBefore = modelRequests;
+  await page.getByRole('button', { name: 'Analyze 2 photos again' }).click();
+  await expect.poll(() => modelRequests).toBeGreaterThan(requestsBefore);
+  await expect(approve).toBeEnabled();
+});
