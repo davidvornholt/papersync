@@ -177,7 +177,7 @@ it('an edit made while a save is running is saved after leaving Settings', async
     await expect(restoreMath).toBeVisible();
     await navigation.getByRole('link', { name: 'Planner' }).click();
     await expect(page).toHaveURL(plannerPath);
-    // Settings is hidden, and its effects cleaned up, before the save returns.
+    // The first save returns only after Settings is hidden.
     await expect(restoreMath).toBeHidden();
     firstSave.resolve();
     await expect
