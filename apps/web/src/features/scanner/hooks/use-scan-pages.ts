@@ -10,7 +10,7 @@ const clearError = (current: ScanState): ScanState =>
   current.status === 'error' ? { status: 'idle' } : current;
 
 const markNewPages = (current: ScanState): ScanState =>
-  current.status === 'complete'
+  current.status === 'complete' || current.status === 'processing'
     ? { ...current, hasNewPages: true }
     : clearError(current);
 

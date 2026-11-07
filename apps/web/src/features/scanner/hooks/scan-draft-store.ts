@@ -27,13 +27,14 @@ const StoredEntry = Schema.Struct({
 const StoredReview = Schema.Struct({
   weekId: Schema.NullOr(WeekId),
   jobId: Schema.NullOr(Schema.String),
+  // Absent in drafts stored before PaperSync tracked photos added later.
+  hasNewPages: Schema.optional(Schema.Boolean),
   result: Schema.NullOr(
     Schema.Struct({
       weekId: Schema.NullOr(WeekId),
       confidence: Schema.Number,
       modelUsed: Schema.String,
       notes: Schema.optional(Schema.String),
-      hasNewPages: Schema.Boolean,
     }),
   ),
   entries: Schema.Array(StoredEntry),

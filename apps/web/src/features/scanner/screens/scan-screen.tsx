@@ -48,7 +48,7 @@ const WeekEditor = ({ scan }: { readonly scan: UseScanReturn }) => {
             Changing the week keeps your entries and due dates. Check dates
             against the paper before saving.
           </p>
-          {scan.canSave || scan.state.hasNewPages ? null : (
+          {scan.canSave || scan.state.hasNewPages || scan.isPreparing ? null : (
             <Button
               className="mt-3"
               onClick={scan.applyWeek}

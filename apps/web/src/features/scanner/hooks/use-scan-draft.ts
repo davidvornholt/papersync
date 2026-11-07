@@ -39,6 +39,9 @@ const toStoredReview = ({
 }: Pick<ScanDraftOptions, 'state' | 'weekId' | 'entries'>): StoredReview => ({
   weekId,
   jobId: state.status === 'processing' ? state.jobId : null,
+  hasNewPages:
+    (state.status === 'processing' || state.status === 'complete') &&
+    state.hasNewPages,
   result:
     state.status === 'complete'
       ? {
@@ -46,7 +49,6 @@ const toStoredReview = ({
           confidence: state.confidence,
           modelUsed: state.modelUsed,
           notes: state.notes,
-          hasNewPages: state.hasNewPages,
         }
       : null,
   entries,
