@@ -38,28 +38,48 @@ export const useSettingsAutosave = ({
   const attemptedVersionRef = useRef(0);
   const savedVersionRef = useRef(0);
   const pendingVersionRef = useRef<number | null>(null);
+  const savingRef = useRef(false);
+
+  // Set when the screen is left while a save runs and a newer edit waits, so
+  // that edit saves once the running save settles.
+  const saveAfterRunningRef = useRef(false);
 
   const save = useCallback(
     (editVersion: number): void => {
-      attemptedVersionRef.current = editVersion;
-      setSavingVersion(editVersion);
-      Effect.runFork(
-        saveSettings(settingsRef.current, revisionRef.current).pipe(
-          Effect.tap((saved) =>
-            Effect.sync(() => {
-              revisionRef.current = saved.revision;
-              savedVersionRef.current = editVersion;
-              setSaveStatus({ kind: 'saved' });
-            }),
-          ),
-          Effect.catch((error) =>
-            Effect.sync(() =>
-              setSaveStatus({ kind: 'error', message: error.message }),
+      const run = (runVersion: number): void => {
+        attemptedVersionRef.current = runVersion;
+        savingRef.current = true;
+        setSavingVersion(runVersion);
+        Effect.runFork(
+          saveSettings(settingsRef.current, revisionRef.current).pipe(
+            Effect.tap((saved) =>
+              Effect.sync(() => {
+                revisionRef.current = saved.revision;
+                savedVersionRef.current = runVersion;
+                setSaveStatus({ kind: 'saved' });
+              }),
+            ),
+            Effect.catch((error) =>
+              Effect.sync(() =>
+                setSaveStatus({ kind: 'error', message: error.message }),
+              ),
+            ),
+            Effect.ensuring(
+              Effect.sync(() => {
+                savingRef.current = false;
+                setSavingVersion(null);
+                if (saveAfterRunningRef.current) {
+                  saveAfterRunningRef.current = false;
+                  if (versionRef.current > attemptedVersionRef.current) {
+                    run(versionRef.current);
+                  }
+                }
+              }),
             ),
           ),
-          Effect.ensuring(Effect.sync(() => setSavingVersion(null))),
-        ),
-      );
+        );
+      };
+      run(editVersion);
     },
     [settingsRef, revisionRef],
   );
@@ -82,13 +102,19 @@ export const useSettingsAutosave = ({
     return () => clearTimeout(timer);
   }, [version, savingVersion, canSave, save]);
 
-  // Leaving the screen clears the autosave timer, so a waiting edit saves now.
+  // Leaving the screen clears the autosave timer, so a waiting edit saves now,
+  // or right after the save that is still running.
   useEffect(
     () => () => {
       const pendingVersion = pendingVersionRef.current;
       if (pendingVersion !== null) {
         pendingVersionRef.current = null;
         save(pendingVersion);
+      } else if (
+        savingRef.current &&
+        versionRef.current > attemptedVersionRef.current
+      ) {
+        saveAfterRunningRef.current = true;
       }
     },
     [save],
