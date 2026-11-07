@@ -2,7 +2,7 @@
 
 import { Effect } from 'effect';
 import { useRef, useState } from 'react';
-import { clearScanDraft } from './scan-draft-store';
+import { clearSavedScanDraft, clearScanDraft } from './scan-draft-store';
 import { cancelScanJob } from './scan-job-client';
 import type { ScanNotify, ScanPage, ScanState } from './use-scan-types';
 
@@ -37,7 +37,7 @@ export const useClearScan = ({
     setIsClearing(true);
     stopScanAnalysis(state, stop);
     Effect.runFork(
-      clearScanDraft.pipe(
+      (saved ? clearSavedScanDraft(saved) : clearScanDraft).pipe(
         Effect.tap(() => Effect.sync(() => reset(saved))),
         Effect.catch((error) =>
           Effect.sync(() => notify(error.message, 'error')),
