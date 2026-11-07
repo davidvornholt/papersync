@@ -39,9 +39,6 @@ export const useSettingsAutosave = ({
   const savedVersionRef = useRef(0);
   const pendingVersionRef = useRef<number | null>(null);
   const savingRef = useRef(false);
-
-  // Set when the screen is left while a save runs and a newer edit waits, so
-  // that edit saves once the running save settles.
   const saveAfterRunningRef = useRef(false);
 
   const save = useCallback(
@@ -50,6 +47,7 @@ export const useSettingsAutosave = ({
         attemptedVersionRef.current = runVersion;
         savingRef.current = true;
         setSavingVersion(runVersion);
+        setSaveStatus({ kind: 'saving' });
         Effect.runFork(
           saveSettings(settingsRef.current, revisionRef.current).pipe(
             Effect.tap((saved) =>

@@ -171,8 +171,14 @@ it('an edit made while a save is running is saved after leaving Settings', async
     await page
       .getByRole('button', { name: 'Remove Mathematics from Monday' })
       .click();
+    const restoreMath = page.getByRole('button', {
+      name: 'Add Mathematics to Monday',
+    });
+    await expect(restoreMath).toBeVisible();
     await navigation.getByRole('link', { name: 'Planner' }).click();
     await expect(page).toHaveURL(plannerPath);
+    // Settings is hidden, and its effects cleaned up, before the save returns.
+    await expect(restoreMath).toBeHidden();
     firstSave.resolve();
     await expect
       .poll(async () => {
@@ -182,6 +188,7 @@ it('an edit made while a save is running is saved after leaving Settings', async
         return stored.school?.timetable;
       })
       .toEqual([{ day: 'monday', subjectIds: ['demo-arts'] }]);
+    expect(saves).toBe(2);
   } finally {
     firstSave.resolve();
     await page.unrouteAll({ behavior: 'wait' });
