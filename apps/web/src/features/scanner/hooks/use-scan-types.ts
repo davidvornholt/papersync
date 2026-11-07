@@ -62,4 +62,6 @@ export type UseScanReturn = {
   readonly analyze: () => void;
   readonly cancel: () => void;
   readonly clear: () => void;
+  // Saving clears the photos it read; a photo added while saving stays.
+  readonly clearSaved: (saved: ReadonlyArray<ScanPage>) => void;
 };

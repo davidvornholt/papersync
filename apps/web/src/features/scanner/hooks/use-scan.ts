@@ -12,6 +12,7 @@ import { type ScanDraft, useScanDraft } from './use-scan-draft';
 import { useScanJob } from './use-scan-job';
 import { useScanPages } from './use-scan-pages';
 import type {
+  ScanPage,
   ScanState,
   UseScanOptions,
   UseScanReturn,
@@ -44,6 +45,11 @@ const canSaveReview = (
   weekId !== null &&
   state.weekId === weekId &&
   !isChanging;
+
+const withoutPages =
+  (saved: ReadonlyArray<ScanPage>) =>
+  (current: ReadonlyArray<ScanPage>): ReadonlyArray<ScanPage> =>
+    current.filter((page) => !saved.includes(page));
 
 const restoredState = (stored: StoredReview): ScanState | null => {
   const hasNewPages = stored.hasNewPages ?? false;
@@ -100,9 +106,9 @@ export const useScan = ({
     state,
     stop: job.stop,
     notify,
-    reset: () => {
+    reset: (saved) => {
       revisionRef.current += 1;
-      pageList.setPages([]);
+      pageList.setPages(saved ? withoutPages(saved) : []);
       setState({ status: 'idle' });
       review.setIsUpdatingWeek(false);
       setWeek(null);
@@ -139,7 +145,6 @@ export const useScan = ({
   return {
     state,
     isRestoring,
-    isClearing: clearing.isClearing,
     isPreparing: pageList.isPreparing,
     pages: pageList.pages,
     pageLimit: scanPageLimit,
@@ -169,6 +174,6 @@ export const useScan = ({
     applyWeek: review.applyWeek,
     analyze,
     cancel,
-    clear: clearing.clear,
+    ...clearing,
   };
 };

@@ -4,12 +4,13 @@ import { Effect } from 'effect';
 import { useRef, useState } from 'react';
 import { clearScanDraft } from './scan-draft-store';
 import { cancelScanJob } from './scan-job-client';
-import type { ScanNotify, ScanState } from './use-scan-types';
+import type { ScanNotify, ScanPage, ScanState } from './use-scan-types';
 
 type ClearScanOptions = {
   readonly state: ScanState;
   readonly stop: () => void;
-  readonly reset: () => void;
+  // Null clears every photo; saved photos leave the ones added since.
+  readonly reset: (saved: ReadonlyArray<ScanPage> | null) => void;
   readonly notify: ScanNotify;
 };
 
@@ -28,7 +29,7 @@ export const useClearScan = ({
 }: ClearScanOptions) => {
   const isClearingRef = useRef(false);
   const [isClearing, setIsClearing] = useState(false);
-  const clear = () => {
+  const run = (saved: ReadonlyArray<ScanPage> | null) => {
     if (isClearingRef.current) {
       return;
     }
@@ -37,7 +38,7 @@ export const useClearScan = ({
     stopScanAnalysis(state, stop);
     Effect.runFork(
       clearScanDraft.pipe(
-        Effect.tap(() => Effect.sync(reset)),
+        Effect.tap(() => Effect.sync(() => reset(saved))),
         Effect.catch((error) =>
           Effect.sync(() => notify(error.message, 'error')),
         ),
@@ -50,5 +51,9 @@ export const useClearScan = ({
       ),
     );
   };
-  return { clear, isClearing };
+  return {
+    clear: () => run(null),
+    clearSaved: (saved: ReadonlyArray<ScanPage>) => run(saved),
+    isClearing,
+  };
 };
