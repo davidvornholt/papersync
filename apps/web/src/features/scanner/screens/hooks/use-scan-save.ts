@@ -13,7 +13,7 @@ export const useScanSave = ({ scan }: SaveOptions) => {
   const [isSyncing, setIsSyncing] = useState(false);
   const { addToast } = useToast();
   const handleSync = () => {
-    const { entries, weekId } = scan;
+    const { entries, weekId, pages } = scan;
     if (entries.length === 0 || !weekId || !scan.canSave || isSyncing) {
       return;
     }
@@ -32,7 +32,7 @@ export const useScanSave = ({ scan }: SaveOptions) => {
                 `${result.count} tasks waiting for Super Productivity. Click “Import homework” there.`,
                 'success',
               );
-              scan.clear();
+              scan.clearSaved(pages);
             } else {
               addToast(`Save failed: ${result.error}`, 'error');
             }

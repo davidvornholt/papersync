@@ -29,6 +29,7 @@ type ResultsPanelProps = {
   readonly onSync: () => void;
   readonly isSyncing: boolean;
   readonly canSave: boolean;
+  readonly hasNewPages: boolean;
 };
 
 export const ResultsPanel = ({
@@ -45,6 +46,7 @@ export const ResultsPanel = ({
   onSync,
   isSyncing,
   canSave,
+  hasNewPages,
 }: ResultsPanelProps): React.ReactElement => (
   <Card className="flex h-full min-h-[360px] flex-col sm:min-h-[420px]">
     <CardContent className="flex min-h-0 flex-1 flex-col">
@@ -60,6 +62,7 @@ export const ResultsPanel = ({
             onSync={onSync}
             isSyncing={isSyncing}
             canSave={canSave}
+            hasNewPages={hasNewPages}
           />
         ) : null}
 

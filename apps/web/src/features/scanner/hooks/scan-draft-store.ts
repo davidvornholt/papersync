@@ -27,6 +27,8 @@ const StoredEntry = Schema.Struct({
 const StoredReview = Schema.Struct({
   weekId: Schema.NullOr(WeekId),
   jobId: Schema.NullOr(Schema.String),
+  // Absent in drafts stored before PaperSync tracked photos added later.
+  hasNewPages: Schema.optional(Schema.Boolean),
   result: Schema.NullOr(
     Schema.Struct({
       weekId: Schema.NullOr(WeekId),
@@ -116,6 +118,21 @@ export const clearScanDraft = transact('readwrite', (store) => {
   store.delete(pagesKey);
   return store.delete(reviewKey);
 });
+
+/** Drop the photos a save read and the review in one step, keeping the rest. */
+export const clearSavedScanDraft = (saved: ReadonlyArray<ScanPage>) =>
+  transact('readwrite', (store) => {
+    const savedIds = new Set(saved.map((page) => page.id));
+    const stored = store.get(pagesKey);
+    stored.onsuccess = () => {
+      const pages: unknown = stored.result;
+      const kept = Schema.is(StoredPages)(pages)
+        ? pages.filter((page) => !savedIds.has(page.id))
+        : [];
+      store.put(kept, pagesKey);
+    };
+    return store.delete(reviewKey);
+  });
 
 const SharedPhotos = Schema.Array(Schema.instanceOf(Blob));
 

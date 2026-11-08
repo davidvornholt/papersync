@@ -13,12 +13,19 @@ export type CompletedScan = {
   readonly confidence: number;
   readonly modelUsed: string;
   readonly notes?: string;
+  readonly hasNewPages: boolean;
 };
 
 export type ScanState =
   | { readonly status: 'idle' }
-  // A null job id means the photos are still uploading.
-  | { readonly status: 'processing'; readonly jobId: string | null }
+  // A null job id means the photos are still uploading. Photos added after the
+  // analysis started are not in its entries, and saving clears every photo, so
+  // the review can't be saved until they are analyzed.
+  | {
+      readonly status: 'processing';
+      readonly jobId: string | null;
+      readonly hasNewPages: boolean;
+    }
   | ({ readonly status: 'complete' } & CompletedScan)
   | { readonly status: 'error'; readonly error: string };
 
@@ -55,4 +62,6 @@ export type UseScanReturn = {
   readonly analyze: () => void;
   readonly cancel: () => void;
   readonly clear: () => void;
+  // Saving clears the photos it read; a photo added while saving stays.
+  readonly clearSaved: (saved: ReadonlyArray<ScanPage>) => void;
 };

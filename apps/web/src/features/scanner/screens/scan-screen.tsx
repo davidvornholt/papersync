@@ -48,7 +48,7 @@ const WeekEditor = ({ scan }: { readonly scan: UseScanReturn }) => {
             Changing the week keeps your entries and due dates. Check dates
             against the paper before saving.
           </p>
-          {scan.canSave ? null : (
+          {scan.canSave || scan.state.hasNewPages || scan.isPreparing ? null : (
             <Button
               className="mt-3"
               onClick={scan.applyWeek}
@@ -133,6 +133,9 @@ export const ScanScreen = (): React.ReactElement => {
               onSync={controller.handleSync}
               isSyncing={controller.isSyncing}
               canSave={scan.canSave}
+              hasNewPages={
+                scan.state.status === 'complete' && scan.state.hasNewPages
+              }
             />
           </fieldset>
         </section>

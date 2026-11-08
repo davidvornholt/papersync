@@ -63,13 +63,14 @@ export const useScanJob = ({
     const entries = toReviewEntries(finished);
     setWeek(data.weekId);
     setEntries(entries);
-    setState({
+    setState((current) => ({
       status: 'complete',
       weekId: data.weekId,
       confidence: data.confidence,
       modelUsed,
       notes: data.notes,
-    });
+      hasNewPages: current.status === 'processing' && current.hasNewPages,
+    }));
     const reviewCount = entries.filter(
       (entry) => entry.action !== 'skip',
     ).length;
@@ -125,7 +126,13 @@ export const useScanJob = ({
             setState({ status: 'error', error: error.message });
             notify(error.message, 'error');
           },
-          onSuccess: (jobId) => setState({ status: 'processing', jobId }),
+          onSuccess: (jobId) =>
+            setState((current) => ({
+              status: 'processing',
+              jobId,
+              hasNewPages:
+                current.status === 'processing' && current.hasNewPages,
+            })),
         }),
         Effect.ensuring(
           Effect.sync(() => {

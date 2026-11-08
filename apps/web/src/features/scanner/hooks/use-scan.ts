@@ -5,12 +5,14 @@ import { useRef, useState } from 'react';
 import type { ExtractedEntry } from '@/shared/homework/entry';
 import { WeekId } from '@/shared/types/schemas';
 import { scanPageLimit } from '../services/scan-limits';
+import type { StoredReview } from './scan-draft-store';
 import { stopScanAnalysis, useClearScan } from './use-clear-scan';
 import { useReviewWeek } from './use-review-week';
 import { type ScanDraft, useScanDraft } from './use-scan-draft';
 import { useScanJob } from './use-scan-job';
 import { useScanPages } from './use-scan-pages';
 import type {
+  ScanPage,
   ScanState,
   UseScanOptions,
   UseScanReturn,
@@ -31,15 +33,33 @@ const markReviewed = (
       : entry,
   );
 
+// Saving waits while the week is being applied, and while a photo is still
+// being prepared: it joins the scan after the analysis was shown.
 const canSaveReview = (
   state: ScanState,
   weekId: WeekId | null,
-  isUpdatingWeek: boolean,
+  isChanging: boolean,
 ): boolean =>
   state.status === 'complete' &&
+  !state.hasNewPages &&
   weekId !== null &&
   state.weekId === weekId &&
-  !isUpdatingWeek;
+  !isChanging;
+
+const withoutPages =
+  (saved: ReadonlyArray<ScanPage>) =>
+  (current: ReadonlyArray<ScanPage>): ReadonlyArray<ScanPage> =>
+    current.filter((page) => !saved.includes(page));
+
+const restoredState = (stored: StoredReview): ScanState | null => {
+  const hasNewPages = stored.hasNewPages ?? false;
+  if (stored.result) {
+    return { status: 'complete', ...stored.result, hasNewPages };
+  }
+  return stored.jobId
+    ? { status: 'processing', jobId: stored.jobId, hasNewPages }
+    : null;
+};
 
 export const useScan = ({
   aiSettings,
@@ -69,11 +89,7 @@ export const useScan = ({
       pageList.setPages(pages);
       setWeek(stored.weekId);
       setEntries(stored.entries);
-      if (stored.result) {
-        setState({ status: 'complete', ...stored.result });
-      } else if (stored.jobId) {
-        setState({ status: 'processing', jobId: stored.jobId });
-      }
+      setState((current) => restoredState(stored) ?? current);
     },
     receiveShared: (photos) => {
       pageList.addPages(photos);
@@ -90,9 +106,9 @@ export const useScan = ({
     state,
     stop: job.stop,
     notify,
-    reset: () => {
+    reset: (saved) => {
       revisionRef.current += 1;
-      pageList.setPages([]);
+      pageList.setPages(saved ? withoutPages(saved) : []);
       setState({ status: 'idle' });
       review.setIsUpdatingWeek(false);
       setWeek(null);
@@ -111,7 +127,7 @@ export const useScan = ({
     }
     revisionRef.current += 1;
     setEntries([]);
-    setState({ status: 'processing', jobId: null });
+    setState({ status: 'processing', jobId: null, hasNewPages: false });
     job.start(
       pageList.pages.map((page) => page.image),
       weekId,
@@ -129,7 +145,6 @@ export const useScan = ({
   return {
     state,
     isRestoring,
-    isClearing: clearing.isClearing,
     isPreparing: pageList.isPreparing,
     pages: pageList.pages,
     pageLimit: scanPageLimit,
@@ -151,10 +166,14 @@ export const useScan = ({
     deleteEntry: (id) =>
       setEntries((current) => current.filter((entry) => entry.id !== id)),
     isUpdatingWeek: review.isUpdatingWeek,
-    canSave: canSaveReview(state, weekId, review.isUpdatingWeek),
+    canSave: canSaveReview(
+      state,
+      weekId,
+      review.isUpdatingWeek || pageList.isPreparing,
+    ),
     applyWeek: review.applyWeek,
     analyze,
     cancel,
-    clear: clearing.clear,
+    ...clearing,
   };
 };
