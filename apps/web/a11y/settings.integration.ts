@@ -142,3 +142,56 @@ it('an edit made right before leaving Settings stays on screen and is saved', as
     await restoreSchool(page, previous);
   }
 });
+
+it('an edit made while a save is running is saved after leaving Settings', async ({
+  page,
+}) => {
+  const { previous } = await storeDemoSchool(page);
+  const navigation = page.getByRole('navigation', { name: 'Primary' });
+  const firstSave = Promise.withResolvers<void>();
+  const firstSaveHeld = Promise.withResolvers<void>();
+  let saves = 0;
+  await page.route('**/api/settings', async (route) => {
+    if (route.request().method() !== 'PUT') {
+      return route.continue();
+    }
+    saves += 1;
+    if (saves === 1) {
+      firstSaveHeld.resolve();
+      await firstSave.promise;
+    }
+    return route.continue();
+  });
+  try {
+    await page.goto('/settings');
+    await page.getByRole('button', { name: 'Add Arts to Monday' }).click();
+    await firstSaveHeld.promise;
+    // The second edit waits for the running save, and the user leaves before
+    // it finishes.
+    await page
+      .getByRole('button', { name: 'Remove Mathematics from Monday' })
+      .click();
+    const restoreMath = page.getByRole('button', {
+      name: 'Add Mathematics to Monday',
+    });
+    await expect(restoreMath).toBeVisible();
+    await navigation.getByRole('link', { name: 'Planner' }).click();
+    await expect(page).toHaveURL(plannerPath);
+    // The first save returns only after Settings is hidden.
+    await expect(restoreMath).toBeHidden();
+    firstSave.resolve();
+    await expect
+      .poll(async () => {
+        const stored: StoredSettings = await (
+          await page.request.get('/api/settings')
+        ).json();
+        return stored.school?.timetable;
+      })
+      .toEqual([{ day: 'monday', subjectIds: ['demo-arts'] }]);
+    expect(saves).toBe(2);
+  } finally {
+    firstSave.resolve();
+    await page.unrouteAll({ behavior: 'wait' });
+    await restoreSchool(page, previous);
+  }
+});
