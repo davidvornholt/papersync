@@ -7,7 +7,6 @@ const readClaudeApiKey = Effect.suspend(() =>
   claudeApiKeyConfig.parse(ConfigProvider.fromEnv()),
 );
 
-/** The server's Claude API key, or none when ANTHROPIC_API_KEY is unset or blank. */
 export const getClaudeApiKey = (): Option.Option<Redacted.Redacted<string>> =>
   Effect.runSync(readClaudeApiKey).pipe(
     Option.filter((apiKey) => Redacted.value(apiKey).trim().length > 0),

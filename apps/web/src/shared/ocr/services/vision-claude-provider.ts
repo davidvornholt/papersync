@@ -34,8 +34,6 @@ export const createClaudeVisionProvider = (
     baseURL: 'https://api.anthropic.com',
     logLevel: 'warn',
     openTelemetry: false,
-    // Three attempts in all. The SDK retries rate limits, overload, server
-    // errors, timeouts, and connection failures, but no other rejection.
     maxRetries: 2,
     // Ten minutes per attempt, the most a non-streaming request may take.
     timeout: 600_000,
@@ -112,7 +110,6 @@ export const createClaudeVisionProvider = (
                     confidence: validated.confidence,
                     notes: validated.notes,
                   },
-                  // After a fallback this names the model that answered.
                   modelUsed: response.model,
                 })),
               )
