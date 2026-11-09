@@ -24,14 +24,10 @@ export default {
       GITHUB_CLIENT_SECRET: 'browser-test-client-secret',
       // biome-ignore lint/style/useNamingConvention: Runtime environment variable name.
       GITHUB_ALLOWED_ACCOUNT_ID: browserAuth.accountId,
-      // Empty values prevent host credentials and Next.js dotenv files from
-      // selecting a paid provider in the local fixture suite.
+      // An empty value prevents a host key or Next.js dotenv file from
+      // selecting the paid provider in the local fixture suite.
       // biome-ignore lint/style/useNamingConvention: Runtime environment variable name.
-      BEDROCK_REGION: '',
-      // biome-ignore lint/style/useNamingConvention: Runtime environment variable name.
-      BEDROCK_ACCESS_KEY_ID: '',
-      // biome-ignore lint/style/useNamingConvention: Runtime environment variable name.
-      BEDROCK_SECRET_ACCESS_KEY: '',
+      ANTHROPIC_API_KEY: '',
     },
   },
 };
