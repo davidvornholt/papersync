@@ -1,51 +1,35 @@
 import { afterEach, expect, it } from 'bun:test';
 // biome-ignore lint/correctness/noNodejsModules: This test restores the disposable process environment used by the browser server.
 import process from 'node:process';
-import { Effect } from 'effect';
 import defaultConfig from './playwright.config';
 import managedConfig from './playwright-managed.config';
-import {
-  getBedrockConfiguration,
-  hasBedrockConfiguration,
-} from './src/shared/ocr/services/vision-bedrock-config';
+import { hasClaudeConfiguration } from './src/shared/ocr/services/vision-claude-config';
 
-const bedrockKeys = [
-  'BEDROCK_REGION',
-  'BEDROCK_ACCESS_KEY_ID',
-  'BEDROCK_SECRET_ACCESS_KEY',
-] as const;
-const originalEnvironment = bedrockKeys.map((key) => process.env[key]);
+const originalApiKey = process.env.ANTHROPIC_API_KEY;
 
 afterEach(() => {
-  bedrockKeys.forEach((key, index) => {
-    const value = originalEnvironment[index];
-    if (value === undefined) {
-      delete process.env[key];
-    } else {
-      process.env[key] = value;
-    }
-  });
+  if (originalApiKey === undefined) {
+    delete process.env.ANTHROPIC_API_KEY;
+  } else {
+    process.env.ANTHROPIC_API_KEY = originalApiKey;
+  }
 });
 
-it('keeps browser OCR fixtures isolated from host and dotenv Bedrock values', () => {
-  expect(bedrockKeys.map((key) => defaultConfig.webServer?.env?.[key])).toEqual(
-    ['', '', ''],
-  );
-  expect(bedrockKeys.map((key) => managedConfig.webServer?.env?.[key])).toEqual(
-    ['eu-central-1', '', ''],
+it('keeps browser OCR fixtures isolated from a host or dotenv Claude API key', () => {
+  expect(defaultConfig.webServer?.env?.ANTHROPIC_API_KEY).toBe('');
+  expect(managedConfig.webServer?.env?.ANTHROPIC_API_KEY).toBe(
+    'inert-browser-fixture-key',
   );
 
-  process.env.BEDROCK_REGION = '';
-  process.env.BEDROCK_ACCESS_KEY_ID = '';
-  process.env.BEDROCK_SECRET_ACCESS_KEY = '';
-  expect(hasBedrockConfiguration()).toBe(false);
+  process.env.ANTHROPIC_API_KEY = '';
+  expect(hasClaudeConfiguration()).toBe(false);
 
-  process.env.BEDROCK_REGION = ' \t';
-  expect(hasBedrockConfiguration()).toBe(false);
+  process.env.ANTHROPIC_API_KEY = ' \t';
+  expect(hasClaudeConfiguration()).toBe(false);
 
-  process.env.BEDROCK_REGION = 'eu-central-1';
-  expect(hasBedrockConfiguration()).toBe(true);
-  expect(Effect.runSync(Effect.result(getBedrockConfiguration()))._tag).toBe(
-    'Failure',
-  );
+  delete process.env.ANTHROPIC_API_KEY;
+  expect(hasClaudeConfiguration()).toBe(false);
+
+  process.env.ANTHROPIC_API_KEY = 'inert-browser-fixture-key';
+  expect(hasClaudeConfiguration()).toBe(true);
 });

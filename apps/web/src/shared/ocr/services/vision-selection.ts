@@ -1,14 +1,14 @@
-import { Effect, Layer } from 'effect';
+import { Effect, Layer, Option } from 'effect';
 import { VisionConfigurationError } from '../errors/vision-contract';
-import { hasBedrockConfiguration } from './vision-bedrock-config';
-import { getBedrockVisionProvider } from './vision-bedrock-provider';
+import { getClaudeApiKey } from './vision-claude-config';
+import { createClaudeVisionProvider } from './vision-claude-provider';
 import { VisionProvider } from './vision-contract';
 import {
   makeGoogleVisionLayer,
   makeOllamaVisionLayer,
 } from './vision-provider';
 
-/** Browser-local AI preferences; ignored when the server manages AWS Bedrock. */
+/** Browser-local AI preferences; ignored when the server has a Claude API key. */
 export type VisionSettings = {
   readonly provider: 'google' | 'ollama';
   readonly googleApiKey?: string;
@@ -17,9 +17,12 @@ export type VisionSettings = {
 
 export const getVisionLayer = (settings: VisionSettings) =>
   Effect.gen(function* () {
-    if (hasBedrockConfiguration()) {
-      const provider = yield* getBedrockVisionProvider();
-      return Layer.succeed(VisionProvider, provider);
+    const claudeApiKey = getClaudeApiKey();
+    if (Option.isSome(claudeApiKey)) {
+      return Layer.succeed(
+        VisionProvider,
+        createClaudeVisionProvider(claudeApiKey.value),
+      );
     }
     if (settings.provider === 'google' && settings.googleApiKey) {
       return makeGoogleVisionLayer(settings.googleApiKey);
@@ -30,7 +33,7 @@ export const getVisionLayer = (settings: VisionSettings) =>
     return yield* Effect.fail(
       new VisionConfigurationError({
         message:
-          'AI is not configured. Configure AWS Bedrock on the server or add a provider in Settings.',
+          'AI is not configured. Configure the Claude API on the server or add a provider in Settings.',
       }),
     );
   });

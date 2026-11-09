@@ -1,5 +1,6 @@
 import { Context, type Effect } from 'effect';
 import type {
+  VisionConfigurationError,
   VisionError,
   VisionValidationError,
 } from '@/shared/ocr/errors/vision-contract';
@@ -26,10 +27,13 @@ export type VisionProvider = {
   readonly extractHandwriting: (
     images: ReadonlyArray<ScanImage>,
     weekId: WeekId | null,
-  ) => Effect.Effect<OCRResultWithModel, VisionError | VisionValidationError>;
+  ) => Effect.Effect<
+    OCRResultWithModel,
+    VisionError | VisionValidationError | VisionConfigurationError
+  >;
 };
 
 export const VisionProvider = Context.Service<VisionProvider>('VisionProvider');
 
 export const GEMINI_MODEL = 'gemini-3.8-flash';
-export const CLAUDE_MODEL = 'global.anthropic.claude-sonnet-5-5';
+export const CLAUDE_MODEL = 'claude-sonnet-5-5';

@@ -36,10 +36,10 @@ export const SettingsAICard = ({
           <h3 className="serif text-[20px] text-ink">Claude Sonnet 5.5</h3>
         </CardHeader>
         <CardContent className="space-y-3">
-          <p>Medium effort through AWS Bedrock.</p>
+          <p>Medium effort through the Claude API.</p>
           <p className="text-graphite">
-            This server manages the AI connection. Your scan is sent to AWS
-            Bedrock when you process it. Review the recognized homework before
+            This server manages the AI connection. Your scan is sent to
+            Anthropic when you process it. Review the recognized homework before
             approving it.
           </p>
         </CardContent>
