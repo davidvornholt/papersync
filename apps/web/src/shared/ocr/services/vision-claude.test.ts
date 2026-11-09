@@ -1,7 +1,7 @@
 import { afterAll, afterEach, beforeEach, expect, it, spyOn } from 'bun:test';
 // biome-ignore lint/correctness/noNodejsModules: This server configuration test isolates its runtime environment.
 import process from 'node:process';
-import { Effect, Schema } from 'effect';
+import { Cause, Effect, Schema } from 'effect';
 import { WeekId } from '@/shared/types/schemas';
 import { VisionProvider } from './vision-contract';
 import { getVisionLayer } from './vision-selection';
@@ -83,9 +83,9 @@ const claudeMessage = ({
     // biome-ignore lint/style/useNamingConvention: Claude API field name.
     usage: { input_tokens: 10, output_tokens: 10 },
   });
-const apiError = (status: number, type: string) =>
+const apiError = (status: number, type: string, message = 'Fixture error.') =>
   Response.json(
-    { type: 'error', error: { type, message: 'Fixture error.' } },
+    { type: 'error', error: { type, message } },
     // A short retry-after-ms keeps retried attempts fast.
     { status, headers: { 'retry-after-ms': '1' } },
   );
@@ -283,10 +283,15 @@ it('retries a connection failure', async () => {
   expect(fetchSpy).toHaveBeenCalledTimes(2);
 });
 
-it('does not retry a rejected request', async () => {
-  fetchSpy.mockResolvedValueOnce(apiError(400, 'invalid_request_error'));
+it('does not retry a rejected request or keep what the API quoted from it', async () => {
+  const quotedRequest = 'fixture-quoted-scan-content';
+  fetchSpy.mockResolvedValueOnce(
+    apiError(400, 'invalid_request_error', `Invalid value: ${quotedRequest}`),
+  );
   const error = await Effect.runPromise(Effect.flip(extract()));
   expect(error._tag).toBe('VisionError');
+  expect(JSON.stringify(error)).not.toContain(quotedRequest);
+  expect(Cause.pretty(Cause.fail(error))).not.toContain(quotedRequest);
   expect(fetchSpy).toHaveBeenCalledTimes(1);
 });
 

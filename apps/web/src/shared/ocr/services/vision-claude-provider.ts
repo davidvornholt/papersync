@@ -80,7 +80,8 @@ export const createClaudeVisionProvider = (
                 message:
                   'The Claude API rejected the server key. Ask the server administrator to check ANTHROPIC_API_KEY.',
               })
-            : new VisionError({ message: extractionFailure, cause }),
+            : // An API error can quote the request, so it stays out of the error.
+              new VisionError({ message: extractionFailure }),
       }).pipe(
         Effect.flatMap((response) =>
           // A refusal after every fallback, or output cut off at max_tokens,
