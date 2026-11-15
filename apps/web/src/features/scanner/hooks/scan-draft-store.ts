@@ -7,7 +7,8 @@ import {
 import type { ScanPage } from './use-scan-types';
 
 // The scan in progress lives in this browser until it is saved or cleared, so
-// switching apps, a discarded tab, or a reload never loses photos or edits.
+// switching apps, a discarded tab, or a reload keeps it. Edits are refused in
+// a tab whose copy another tab has changed since; see `makeScanDraftSession`.
 // public/sw.js writes shared photos to the same store; keep both in sync.
 const databaseName = 'papersync';
 const databaseVersion = 1;
