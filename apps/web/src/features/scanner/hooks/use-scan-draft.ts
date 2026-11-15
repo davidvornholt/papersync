@@ -110,6 +110,8 @@ export const useScanDraft = ({
       entries.length === 0;
     if (draft && isUntouched) {
       restore(draft);
+    } else if (draft) {
+      scanDraft.keepLocalWork();
     }
     setHasLoaded(true);
     setIsRestoring(false);

@@ -116,6 +116,7 @@ const encodeReview = (review: StoredReview) =>
     ...review,
     hasNewPages: review.hasNewPages ?? false,
   }).pipe(Effect.mapError(storeError));
+const emptyPages = pagesFingerprint([]);
 const emptyReviewFingerprint = JSON.stringify(
   Schema.encodeSync(StoredReview)(emptyReview),
 );
@@ -123,9 +124,11 @@ const emptyReviewFingerprint = JSON.stringify(
 // What one tab last read or wrote. `revision` is null until the tab has read
 // the draft once. The fingerprints let a tab skip writing what it already
 // stored, so showing Scan again or writing back a restored draft does not
-// count as a change and make other tabs stale.
+// count as a change and make other tabs stale. `isStale` marks a tab that
+// kept its own work over a stored scan it never showed.
 type TabDraft = {
   revision: number | null;
+  isStale: boolean;
   pages: string | null;
   review: string | null;
 };
@@ -149,7 +152,9 @@ const writeIfCurrent = (
     current.onsuccess = () => {
       unchanged = isUnchanged();
       const found = storedRevision(current);
-      if (unchanged || (tab.revision !== null && found !== tab.revision)) {
+      const isRefused =
+        tab.isStale || (tab.revision !== null && found !== tab.revision);
+      if (unchanged || isRefused) {
         return;
       }
       apply(store);
@@ -194,6 +199,7 @@ const readDraft = (tab: TabDraft) =>
           Effect.flatMap(encodeReview(draft.review), (encoded) =>
             Effect.sync(() => {
               tab.revision = stored.revision;
+              tab.isStale = false;
               tab.pages = pagesFingerprint(draft.pages);
               tab.review = JSON.stringify(encoded);
             }),
@@ -234,9 +240,23 @@ const clearSavedDraft = (tab: TabDraft, saved: ReadonlyArray<ScanPage>) => {
  * newer photos or review.
  */
 export const makeScanDraftSession = () => {
-  const tab: TabDraft = { revision: null, pages: null, review: null };
+  const tab: TabDraft = {
+    revision: null,
+    isStale: false,
+    pages: null,
+    review: null,
+  };
   return {
     read: readDraft(tab),
+    /**
+     * Call instead of restoring what `read` returned. A tab that keeps its own
+     * work may not write over a stored scan it never showed.
+     */
+    keepLocalWork: () => {
+      if (tab.pages !== emptyPages || tab.review !== emptyReviewFingerprint) {
+        tab.isStale = true;
+      }
+    },
     writePages: (pages: ReadonlyArray<ScanPage>) => {
       // A page's image never changes under the same id.
       const fingerprint = pagesFingerprint(pages);
@@ -273,7 +293,7 @@ export const makeScanDraftSession = () => {
         store.delete(reviewKey);
       },
       () => {
-        tab.pages = pagesFingerprint([]);
+        tab.pages = emptyPages;
         tab.review = emptyReviewFingerprint;
       },
     ),

@@ -197,3 +197,37 @@ it('keeps tabs current when they write back a draft from an older version', asyn
   await run(tabB.writePages([photo('photo-b')]));
   expect(pageIds(await run(makeScanDraftSession().read))).toEqual(['photo-b']);
 });
+
+it('refuses a tab that kept its own work instead of the draft it read', async () => {
+  const tabA = makeScanDraftSession();
+  const tabB = makeScanDraftSession();
+  await run(tabA.read);
+  await run(tabA.writePages([photo('photo-a')]));
+  await run(tabA.writeReview(review('Task in tab A')));
+
+  // Tab B's read finished after its user had already added a photo.
+  await run(tabB.read);
+  tabB.keepLocalWork();
+
+  expect(await failureTag(tabB.writePages([photo('photo-b')]))).toBe(
+    'ScanDraftConflictError',
+  );
+  expect(await failureTag(tabB.writeReview(idleReview))).toBe(
+    'ScanDraftConflictError',
+  );
+  expect(await failureTag(tabB.clear)).toBe('ScanDraftConflictError');
+  const after = await run(makeScanDraftSession().read);
+  expect(pageIds(after)).toEqual(['photo-a']);
+  expect(after.review.entries.map((entry) => entry.content)).toEqual([
+    'Task in tab A',
+  ]);
+});
+
+it('lets a tab keep its own work over an empty stored draft', async () => {
+  const tab = makeScanDraftSession();
+  await run(tab.read);
+  tab.keepLocalWork();
+  await run(tab.writePages([photo('photo-b')]));
+
+  expect(pageIds(await run(makeScanDraftSession().read))).toEqual(['photo-b']);
+});
