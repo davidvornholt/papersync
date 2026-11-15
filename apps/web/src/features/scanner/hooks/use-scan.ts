@@ -8,7 +8,11 @@ import { scanPageLimit } from '../services/scan-limits';
 import type { StoredReview } from './scan-draft-store';
 import { stopScanAnalysis, useClearScan } from './use-clear-scan';
 import { useReviewWeek } from './use-review-week';
-import { type ScanDraft, useScanDraft } from './use-scan-draft';
+import {
+  type ScanDraft,
+  useConflictWarning,
+  useScanDraft,
+} from './use-scan-draft';
 import { useScanJob } from './use-scan-job';
 import { useScanPages } from './use-scan-pages';
 import type {
@@ -61,6 +65,9 @@ const restoredState = (stored: StoredReview): ScanState | null => {
     : null;
 };
 
+const sharedPhotosAdded = (count: number) =>
+  count === 1 ? 'Added the shared photo.' : `Added ${count} shared photos.`;
+
 export const useScan = ({
   aiSettings,
   notify,
@@ -69,6 +76,7 @@ export const useScan = ({
   const [weekId, setWeek] = useState<WeekId | null>(null);
   const [entries, setEntries] = useState<ReadonlyArray<ExtractedEntry>>([]);
   const revisionRef = useRef(0);
+  const warnConflict = useConflictWarning(notify);
   const pageList = useScanPages({ notify, setState });
   const job = useScanJob({ state, setState, setWeek, setEntries, notify });
   const review = useReviewWeek({
@@ -93,19 +101,16 @@ export const useScan = ({
     },
     receiveShared: (photos) => {
       pageList.addPages(photos);
-      notify(
-        photos.length === 1
-          ? 'Added the shared photo.'
-          : `Added ${photos.length} shared photos.`,
-        'success',
-      );
+      notify(sharedPhotosAdded(photos.length), 'success');
     },
+    onConflict: warnConflict,
   });
 
   const clearing = useClearScan({
     state,
     stop: job.stop,
     notify,
+    onConflict: warnConflict,
     reset: (saved) => {
       revisionRef.current += 1;
       pageList.setPages(saved ? withoutPages(saved) : []);

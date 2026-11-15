@@ -2,7 +2,8 @@
 
 import { Effect } from 'effect';
 import { useRef, useState } from 'react';
-import { clearSavedScanDraft, clearScanDraft } from './scan-draft-store';
+import type { ScanDraftConflictError } from '../errors/scan-client';
+import { scanDraft } from './scan-draft-store';
 import { cancelScanJob } from './scan-job-client';
 import type { ScanNotify, ScanPage, ScanState } from './use-scan-types';
 
@@ -12,6 +13,7 @@ type ClearScanOptions = {
   // Null clears every photo; saved photos leave the ones added since.
   readonly reset: (saved: ReadonlyArray<ScanPage> | null) => void;
   readonly notify: ScanNotify;
+  readonly onConflict: (error: ScanDraftConflictError) => void;
 };
 
 export const stopScanAnalysis = (state: ScanState, stop: () => void): void => {
@@ -26,6 +28,7 @@ export const useClearScan = ({
   stop,
   reset,
   notify,
+  onConflict,
 }: ClearScanOptions) => {
   const isClearingRef = useRef(false);
   const [isClearing, setIsClearing] = useState(false);
@@ -37,7 +40,12 @@ export const useClearScan = ({
     setIsClearing(true);
     stopScanAnalysis(state, stop);
     Effect.runFork(
-      (saved ? clearSavedScanDraft(saved) : clearScanDraft).pipe(
+      (saved ? scanDraft.clearSaved(saved) : scanDraft.clear).pipe(
+        // Another tab's newer scan stays stored, but this tab still drops
+        // what it saved or cleared.
+        Effect.catchTag('ScanDraftConflictError', (error) =>
+          Effect.sync(() => onConflict(error)),
+        ),
         Effect.tap(() => Effect.sync(() => reset(saved))),
         Effect.catch((error) =>
           Effect.sync(() => notify(error.message, 'error')),
