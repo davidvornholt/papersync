@@ -37,6 +37,8 @@ const storedPhotoCount = (page: Page) =>
         };
       }),
   );
+// How long a toast stays without being dismissed, set in ToastProvider.
+const toastMilliseconds = 4000;
 const photos = (page: Page) =>
   page.getByRole('list', { name: 'Photos of the sheet' }).getByRole('listitem');
 
@@ -56,11 +58,18 @@ test('a second tab cannot overwrite photos the first tab added', async ({
   await expect.poll(() => storedPhotoCount(first)).toBe(2);
   await addPhotos(second, ['other.png']);
   await expect(photos(second)).toHaveCount(1);
-  await expect(
-    second.getByText('This scan was changed in another tab or window'),
-  ).toBeVisible();
+  const warning = second
+    .getByRole('status')
+    .filter({ hasText: 'This scan was changed in another tab or window' });
+  await expect(warning).toBeVisible();
   expect(await scanWcag22AaViolations(second)).toEqual([]);
   expect(await storedPhotoCount(second)).toBe(2);
+  // A tab left in the background must still warn when the user returns, so
+  // the warning outlasts the usual 4-second toast until it is dismissed.
+  await second.waitForTimeout(toastMilliseconds + 500);
+  await expect(warning).toBeVisible();
+  await warning.getByRole('button', { name: 'Dismiss' }).click();
+  await expect(warning).toBeHidden();
 
   // The first tab's photos are kept, and reloading the second tab restores
   // them without making the first tab stale.

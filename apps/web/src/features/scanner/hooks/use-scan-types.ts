@@ -35,7 +35,12 @@ export type AISettings = {
   readonly ollamaEndpoint?: string;
 };
 
-export type ScanNotify = (message: string, type: ToastType) => void;
+// A duration of 0 keeps the toast until it is dismissed.
+export type ScanNotify = (
+  message: string,
+  type: ToastType,
+  duration?: number,
+) => void;
 
 export type UseScanOptions = {
   readonly aiSettings: AISettings;

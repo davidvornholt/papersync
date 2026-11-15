@@ -65,13 +65,17 @@ const toStoredReview = ({
   entries,
 });
 
-/** Every later write from a stale tab is refused too, so this warns once. */
+/**
+ * Every later write from a stale tab is refused too, so this warns once and
+ * keeps the warning until it is dismissed: a tab in the background would
+ * otherwise look normal again by the time the user returns to it.
+ */
 export const useConflictWarning = (notify: ScanNotify) => {
   const hasWarnedRef = useRef(false);
   return (error: ScanDraftConflictError) => {
     if (!hasWarnedRef.current) {
       hasWarnedRef.current = true;
-      notify(error.message, 'warning');
+      notify(error.message, 'warning', 0);
     }
   };
 };
