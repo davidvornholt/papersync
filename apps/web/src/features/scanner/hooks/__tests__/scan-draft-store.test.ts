@@ -114,3 +114,30 @@ it('does not make other tabs stale by writing back the draft it restored', async
     'photo-b',
   ]);
 });
+
+it('keeps a photo removed right after it was added', async () => {
+  const tab = makeScanDraftSession();
+  await run(tab.read);
+  await run(
+    Effect.all([tab.writePages([photo('photo-a')]), tab.writePages([])], {
+      concurrency: 'unbounded',
+    }),
+  );
+
+  expect(pageIds(await run(makeScanDraftSession().read))).toEqual([]);
+});
+
+it('keeps a review edit undone right after it was made', async () => {
+  const tab = makeScanDraftSession();
+  await run(tab.read);
+  await run(tab.writeReview(review('Task')));
+  await run(
+    Effect.all(
+      [tab.writeReview(review('Edited task')), tab.writeReview(review('Task'))],
+      { concurrency: 'unbounded' },
+    ),
+  );
+
+  const after = await run(makeScanDraftSession().read);
+  expect(after.review.entries.map((entry) => entry.content)).toEqual(['Task']);
+});

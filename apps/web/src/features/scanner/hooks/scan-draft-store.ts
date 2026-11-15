@@ -123,17 +123,22 @@ const storedRevision = (request: IDBRequest) =>
   typeof request.result === 'number' ? request.result : 0;
 
 // `remember` records what the tab now has stored, once the write commits.
+// `isUnchanged` runs inside the transaction, after this tab's earlier writes
+// have committed, so it compares against what they stored.
 const writeIfCurrent = (
   tab: TabDraft,
   apply: (store: IDBObjectStore) => void,
   remember: () => void,
+  isUnchanged: () => boolean = () => false,
 ) =>
   transact('readwrite', (store) => {
     let next: number | null = null;
+    let unchanged = false;
     const current = store.get(revisionKey);
     current.onsuccess = () => {
+      unchanged = isUnchanged();
       const found = storedRevision(current);
-      if (tab.revision !== null && found !== tab.revision) {
+      if (unchanged || (tab.revision !== null && found !== tab.revision)) {
         return;
       }
       apply(store);
@@ -144,7 +149,7 @@ const writeIfCurrent = (
     // it already compares against the revision recorded here.
     return () => {
       if (next === null) {
-        return false;
+        return unchanged;
       }
       tab.revision = next;
       remember();
@@ -222,31 +227,29 @@ export const makeScanDraftSession = () => {
     writePages: (pages: ReadonlyArray<ScanPage>) => {
       // A page's image never changes under the same id.
       const fingerprint = pagesFingerprint(pages);
-      return fingerprint === tab.pages
-        ? Effect.void
-        : writeIfCurrent(
-            tab,
-            (store) =>
-              store.put(
-                pages.map(({ id, image }) => ({ id, image })),
-                pagesKey,
-              ),
-            () => {
-              tab.pages = fingerprint;
-            },
-          );
+      return writeIfCurrent(
+        tab,
+        (store) =>
+          store.put(
+            pages.map(({ id, image }) => ({ id, image })),
+            pagesKey,
+          ),
+        () => {
+          tab.pages = fingerprint;
+        },
+        () => fingerprint === tab.pages,
+      );
     },
     writeReview: (review: StoredReview) => {
       const fingerprint = JSON.stringify(review);
-      return fingerprint === tab.review
-        ? Effect.void
-        : writeIfCurrent(
-            tab,
-            (store) => store.put(review, reviewKey),
-            () => {
-              tab.review = fingerprint;
-            },
-          );
+      return writeIfCurrent(
+        tab,
+        (store) => store.put(review, reviewKey),
+        () => {
+          tab.review = fingerprint;
+        },
+        () => fingerprint === tab.review,
+      );
     },
     /** Commit the reset before the page reports a cleared scan. */
     clear: writeIfCurrent(
