@@ -48,6 +48,7 @@ export type StoredReview = typeof StoredReview.Type;
 const emptyReview: StoredReview = {
   weekId: null,
   jobId: null,
+  hasNewPages: false,
   result: null,
   entries: [],
 };
@@ -108,6 +109,16 @@ const conflictMessage =
 
 const pagesFingerprint = (pages: ReadonlyArray<{ readonly id: string }>) =>
   JSON.stringify(pages.map((page) => page.id));
+// The stored form drops extra fields and fixes the key order, and a draft
+// from before `hasNewPages` means false, so a review reads and writes alike.
+const encodeReview = (review: StoredReview) =>
+  Schema.encodeEffect(StoredReview)({
+    ...review,
+    hasNewPages: review.hasNewPages ?? false,
+  }).pipe(Effect.mapError(storeError));
+const emptyReviewFingerprint = JSON.stringify(
+  Schema.encodeSync(StoredReview)(emptyReview),
+);
 
 // What one tab last read or wrote. `revision` is null until the tab has read
 // the draft once. The fingerprints let a tab skip writing what it already
@@ -180,11 +191,13 @@ const readDraft = (tab: TabDraft) =>
         review: decode(StoredReview, stored.review, emptyReview),
       }).pipe(
         Effect.tap((draft) =>
-          Effect.sync(() => {
-            tab.revision = stored.revision;
-            tab.pages = pagesFingerprint(draft.pages);
-            tab.review = JSON.stringify(draft.review);
-          }),
+          Effect.flatMap(encodeReview(draft.review), (encoded) =>
+            Effect.sync(() => {
+              tab.revision = stored.revision;
+              tab.pages = pagesFingerprint(draft.pages);
+              tab.review = JSON.stringify(encoded);
+            }),
+          ),
         ),
       ),
     ),
@@ -209,7 +222,7 @@ const clearSavedDraft = (tab: TabDraft, saved: ReadonlyArray<ScanPage>) => {
     },
     () => {
       tab.pages = pagesFingerprint(kept);
-      tab.review = JSON.stringify(emptyReview);
+      tab.review = emptyReviewFingerprint;
     },
   );
 };
@@ -240,17 +253,18 @@ export const makeScanDraftSession = () => {
         () => fingerprint === tab.pages,
       );
     },
-    writeReview: (review: StoredReview) => {
-      const fingerprint = JSON.stringify(review);
-      return writeIfCurrent(
-        tab,
-        (store) => store.put(review, reviewKey),
-        () => {
-          tab.review = fingerprint;
-        },
-        () => fingerprint === tab.review,
-      );
-    },
+    writeReview: (review: StoredReview) =>
+      Effect.flatMap(encodeReview(review), (encoded) => {
+        const fingerprint = JSON.stringify(encoded);
+        return writeIfCurrent(
+          tab,
+          (store) => store.put(encoded, reviewKey),
+          () => {
+            tab.review = fingerprint;
+          },
+          () => fingerprint === tab.review,
+        );
+      }),
     /** Commit the reset before the page reports a cleared scan. */
     clear: writeIfCurrent(
       tab,
@@ -260,7 +274,7 @@ export const makeScanDraftSession = () => {
       },
       () => {
         tab.pages = pagesFingerprint([]);
-        tab.review = JSON.stringify(emptyReview);
+        tab.review = emptyReviewFingerprint;
       },
     ),
     clearSaved: (saved: ReadonlyArray<ScanPage>) => clearSavedDraft(tab, saved),

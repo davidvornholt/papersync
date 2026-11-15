@@ -19,6 +19,29 @@ const review = (content: string): StoredReview => ({
     { id: 'entry-1', day: 'Monday', subject: 'Math', content, action: 'add' },
   ],
 });
+// The review the scan page stores before anything is scanned.
+const idleReview: StoredReview = {
+  weekId: null,
+  jobId: null,
+  hasNewPages: false,
+  result: null,
+  entries: [],
+};
+// Stores a value as another PaperSync version or public/sw.js would.
+const putStored = (key: string, value: unknown) =>
+  new Promise<void>((resolve, reject) => {
+    const open = indexedDB.open('papersync');
+    open.onerror = () => reject(open.error);
+    open.onsuccess = () => {
+      const transaction = open.result.transaction('scan-draft', 'readwrite');
+      transaction.objectStore('scan-draft').put(value, key);
+      transaction.oncomplete = () => {
+        open.result.close();
+        resolve();
+      };
+      transaction.onerror = () => reject(transaction.error);
+    };
+  });
 const pageIds = (draft: { readonly pages: ReadonlyArray<{ id: string }> }) =>
   draft.pages.map((page) => page.id);
 const run = Effect.runPromise;
@@ -140,4 +163,37 @@ it('keeps a review edit undone right after it was made', async () => {
 
   const after = await run(makeScanDraftSession().read);
   expect(after.review.entries.map((entry) => entry.content)).toEqual(['Task']);
+});
+
+it('keeps two tabs opened on an empty scan current until one edits', async () => {
+  const tabA = makeScanDraftSession();
+  const tabB = makeScanDraftSession();
+  await run(tabA.read);
+  await run(tabB.read);
+  // What each tab's autosave writes back while nothing has been scanned.
+  await run(
+    Effect.all([
+      tabA.writePages([]),
+      tabA.writeReview(idleReview),
+      tabB.writePages([]),
+      tabB.writeReview(idleReview),
+    ]),
+  );
+
+  await run(tabB.writePages([photo('photo-b')]));
+  expect(pageIds(await run(makeScanDraftSession().read))).toEqual(['photo-b']);
+});
+
+it('keeps tabs current when they write back a draft from an older version', async () => {
+  // Drafts stored before PaperSync tracked photos added later lack the flag.
+  const { hasNewPages: _, ...older } = review('Task');
+  await putStored('review', older);
+  const tabA = makeScanDraftSession();
+  const tabB = makeScanDraftSession();
+  const restored = await run(tabA.read);
+  await run(tabB.read);
+  await run(tabA.writeReview({ ...restored.review, hasNewPages: false }));
+
+  await run(tabB.writePages([photo('photo-b')]));
+  expect(pageIds(await run(makeScanDraftSession().read))).toEqual(['photo-b']);
 });
