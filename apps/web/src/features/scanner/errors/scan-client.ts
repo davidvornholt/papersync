@@ -19,3 +19,7 @@ export class ScanDraftStoreError extends Schema.TaggedError<ScanDraftStoreError>
   'ScanDraftStoreError',
   { message: Schema.String, cause: Schema.optional(Schema.Defect()) },
 ) {}
+export class ScanDraftConflictError extends Schema.TaggedError<ScanDraftConflictError>()(
+  'ScanDraftConflictError',
+  { message: Schema.String },
+) {}
