@@ -1,9 +1,13 @@
 import { afterAll, expect, it, mock } from 'bun:test';
-import type { QueuedHomework } from '@papersync/homework/contract';
+import {
+  correctionsProtocol,
+  pluginProtocolHeader,
+  type QueuedHomework,
+} from '@papersync/homework/contract';
 import { getTaskMarker } from '@papersync/homework/identity';
 import { Effect, Fiber } from 'effect';
 import type { PluginApi, Task } from './api';
-import { importHomework } from './import-homework';
+import { importHomework, serviceUrl } from './import-homework';
 import { createImportController } from './import-lifecycle';
 
 const originalDocument = Object.getOwnPropertyDescriptor(
@@ -171,6 +175,15 @@ it('a reviewed correction renames the imported task instead of adding one', asyn
     dueDay: '2026-09-10',
   });
   expect(api.addTask).not.toHaveBeenCalled();
+  // PaperSync sends corrections only to plugins that declare they apply them.
+  expect(api.request).toHaveBeenCalledWith(
+    serviceUrl,
+    expect.objectContaining({
+      headers: expect.objectContaining({
+        [pluginProtocolHeader]: String(correctionsProtocol),
+      }),
+    }),
+  );
 });
 
 it('invalid queue data cannot create tasks', async () => {

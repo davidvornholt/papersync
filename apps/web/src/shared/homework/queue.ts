@@ -103,3 +103,23 @@ export const acknowledgeHomework = (
     const sql = yield* PgClient.PgClient;
     yield* sql`UPDATE homework SET imported_revision = ${revision}, imported_task_id = ${taskId} WHERE id = ${id} AND revision = ${revision}`;
   });
+
+// A correction keeps the ID of its first wording, so its ID no longer matches it.
+const isCorrection = (payload: Homework) =>
+  getHomeworkId(
+    payload.week,
+    payload.day,
+    payload.subject,
+    payload.content,
+  ).pipe(Effect.map((id) => id !== payload.id));
+export const getImportableHomework = (canApplyCorrections: boolean) =>
+  Effect.gen(function* () {
+    const pending = yield* getPendingHomework;
+    return canApplyCorrections
+      ? pending
+      : yield* Effect.filter(pending, (item) =>
+          isCorrection(item.payload).pipe(
+            Effect.map((corrected) => !corrected),
+          ),
+        );
+  });

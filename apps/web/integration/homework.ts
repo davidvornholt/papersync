@@ -11,6 +11,7 @@ import type { ExtractedEntry } from '../src/shared/homework/entry';
 import {
   acknowledgeHomework,
   enqueueHomework,
+  getImportableHomework,
   getPendingHomework,
 } from '../src/shared/homework/queue';
 import { reconcileHomework } from '../src/shared/homework/reconcile';
@@ -268,7 +269,9 @@ it('correcting saved homework revises its queued task, and rescans match either 
       };
       const reviewed = yield* reconcileReviewWeek([corrected], options.weekId);
       yield* enqueueHomework(reviewed, options);
-      const pending = yield* getPendingHomework;
+      yield* enqueueHomework([{ ...entry, content: 'New homework' }], options);
+      const forOldPlugin = yield* getImportableHomework(false);
+      const pending = yield* getImportableHomework(true);
       const rescan = yield* reconcileHomework(
         scan([entry, { ...entry, content: correction }]),
       );
@@ -278,6 +281,7 @@ it('correcting saved homework revises its queued task, and rescans match either 
         saved,
         corrected,
         reviewed,
+        forOldPlugin,
         pending,
         rescan,
         otherWeek,
@@ -290,8 +294,14 @@ it('correcting saved homework revises its queued task, and rescans match either 
   const { id } = result.original.payload;
   expect(result.saved.savedHomeworkId).toBe(id);
   expect(result.reviewed).toEqual([result.corrected]);
-  expect(result.pending.map((item) => item.payload)).toEqual([
-    { ...result.original.payload, content: correction },
+  expect(result.pending.map((item) => item.payload)).toContainEqual({
+    ...result.original.payload,
+    content: correction,
+  });
+  expect(result.pending).toHaveLength(2);
+  // A plugin that cannot rename tasks must not consume the correction.
+  expect(result.forOldPlugin.map((item) => item.payload.content)).toEqual([
+    'New homework',
   ]);
   expect(
     result.rescan.entries.map((item) => [
