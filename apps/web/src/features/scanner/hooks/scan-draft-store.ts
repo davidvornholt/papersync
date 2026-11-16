@@ -28,7 +28,7 @@ const StoredEntry = Schema.Struct({
   content: Schema.String,
   action: TaskAction,
   dueDate: Schema.optional(Schema.String),
-  savedHomeworkId: Schema.optional(Schema.String),
+  savedHomeworkIds: Schema.optional(Schema.Array(Schema.String)),
 });
 const StoredReview = Schema.Struct({
   weekId: Schema.NullOr(WeekId),

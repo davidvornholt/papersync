@@ -17,14 +17,13 @@ const toHomework = (
     // A correction of saved homework keeps its ID, so the plugin updates the
     // task it imported instead of creating a second one.
     const id =
-      entry.savedHomeworkId !== undefined && savedIds.has(entry.savedHomeworkId)
-        ? entry.savedHomeworkId
-        : yield* getHomeworkId(
-            options.weekId,
-            entry.day,
-            entry.subject,
-            entry.content,
-          );
+      entry.savedHomeworkIds?.find((saved) => savedIds.has(saved)) ??
+      (yield* getHomeworkId(
+        options.weekId,
+        entry.day,
+        entry.subject,
+        entry.content,
+      ));
     return yield* Schema.decodeUnknownEffect(Homework)({
       id,
       week: options.weekId,
@@ -54,7 +53,7 @@ export const enqueueHomework = (
           subject: Schema.String,
           content: Schema.String,
           dueDate: Schema.optional(Schema.String),
-          savedHomeworkId: Schema.optional(Schema.String),
+          savedHomeworkIds: Schema.optional(Schema.Array(Schema.String)),
         }),
       ),
     )(entries);

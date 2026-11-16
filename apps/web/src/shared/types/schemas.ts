@@ -41,8 +41,9 @@ export const TaskEntry = Schema.Struct({
   content: Schema.String,
   action: TaskAction,
   dueDate: Schema.optional(ISODate),
-  // The saved homework this entry matches, so a correction updates its task.
-  savedHomeworkId: Schema.optional(Schema.String),
+  // The saved homework this entry matches, at most one per week, so a
+  // correction updates its task in whichever week it is saved.
+  savedHomeworkIds: Schema.optional(Schema.Array(Schema.String)),
 });
 export type TaskEntry = typeof TaskEntry.Type;
 

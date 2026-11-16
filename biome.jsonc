@@ -15,7 +15,8 @@
     {
       "includes": [
         "apps/super-productivity-plugin/src/build.ts",
-        "apps/web/integration/homework.ts"
+        "apps/web/integration/homework.ts",
+        "apps/web/integration/corrections.ts"
       ],
       "linter": {
         "rules": {

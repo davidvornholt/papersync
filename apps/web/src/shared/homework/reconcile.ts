@@ -21,30 +21,28 @@ const matchSaved = (
   id: string,
   saved: SavedHomework,
 ): TaskEntry => {
-  const { savedHomeworkId, ...unlinked } = entry;
-  // A reviewed entry stays linked to the saved homework it corrects.
-  const linked =
-    savedHomeworkId === undefined ? undefined : saved.byId.get(savedHomeworkId);
+  // A reviewed entry stays linked to the saved homework it corrects. Links
+  // into other weeks are kept, so returning to one still corrects it there.
+  const links = entry.savedHomeworkIds ?? [];
+  const linked = links
+    .map((link) => saved.byId.get(link))
+    .find((row) => row !== undefined);
   if (linked) {
     const unchanged =
       linked.wordingId === id && linked.payload.dueDate === entry.dueDate;
-    return {
-      ...unlinked,
-      savedHomeworkId: linked.payload.id,
-      action: unchanged ? 'skip' : 'modify',
-    };
+    return { ...entry, action: unchanged ? 'skip' : 'modify' };
   }
   const previous = saved.byId.get(id)?.payload ?? saved.byWording.get(id);
   if (!previous) {
-    return unlinked;
+    return entry;
   }
   return {
-    ...unlinked,
+    ...entry,
     // Identity already ignores whitespace; retain the reviewed wording.
     day: previous.day,
     subject: previous.subject,
     content: previous.content,
-    savedHomeworkId: previous.id,
+    savedHomeworkIds: [...links, previous.id],
     action: previous.dueDate === entry.dueDate ? 'skip' : 'modify',
   };
 };
