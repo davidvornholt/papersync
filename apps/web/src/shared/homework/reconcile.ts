@@ -5,8 +5,14 @@ import { Effect, Schema } from 'effect';
 import type { OCRResponse, TaskEntry } from '@/shared/types/schemas';
 import { HomeworkError } from './error';
 
+type SavedRow = {
+  readonly payload: Homework;
+  // A corrected entry keeps the ID of the wording first saved, so a rescan
+  // matches either that wording or the correction.
+  readonly wordingId: string;
+};
 type SavedHomework = {
-  readonly byId: ReadonlyMap<string, Homework>;
+  readonly byId: ReadonlyMap<string, SavedRow>;
   readonly byWording: ReadonlyMap<string, Homework>;
 };
 
@@ -16,24 +22,31 @@ const matchSaved = (
   saved: SavedHomework,
 ): TaskEntry => {
   const { savedHomeworkId, ...unlinked } = entry;
-  const previous = saved.byId.get(id) ?? saved.byWording.get(id);
-  if (previous) {
+  // A reviewed entry stays linked to the saved homework it corrects.
+  const linked =
+    savedHomeworkId === undefined ? undefined : saved.byId.get(savedHomeworkId);
+  if (linked) {
+    const unchanged =
+      linked.wordingId === id && linked.payload.dueDate === entry.dueDate;
     return {
       ...unlinked,
-      // Identity already ignores whitespace; retain the reviewed wording.
-      day: previous.day,
-      subject: previous.subject,
-      content: previous.content,
-      savedHomeworkId: previous.id,
-      action: previous.dueDate === entry.dueDate ? 'skip' : 'modify',
+      savedHomeworkId: linked.payload.id,
+      action: unchanged ? 'skip' : 'modify',
     };
   }
-  // A reviewed correction of saved homework in this week still corrects it.
-  const corrected =
-    savedHomeworkId === undefined ? undefined : saved.byId.get(savedHomeworkId);
-  return corrected
-    ? { ...unlinked, savedHomeworkId: corrected.id, action: 'modify' }
-    : unlinked;
+  const previous = saved.byId.get(id)?.payload ?? saved.byWording.get(id);
+  if (!previous) {
+    return unlinked;
+  }
+  return {
+    ...unlinked,
+    // Identity already ignores whitespace; retain the reviewed wording.
+    day: previous.day,
+    subject: previous.subject,
+    content: previous.content,
+    savedHomeworkId: previous.id,
+    action: previous.dueDate === entry.dueDate ? 'skip' : 'modify',
+  };
 };
 
 export const reconcileHomework = (data: OCRResponse) =>
@@ -43,26 +56,20 @@ export const reconcileHomework = (data: OCRResponse) =>
     }
     const sql = yield* PgClient.PgClient;
     // Include both queued and imported homework: either has already been reviewed.
-    const rows =
+    const stored =
       yield* sql`SELECT payload FROM homework WHERE payload->>'week' = ${data.weekId}`;
     const decoded = yield* Schema.decodeUnknownEffect(
       Schema.Array(Schema.Struct({ payload: Homework })),
-    )(rows);
+    )(stored);
     const week = data.weekId;
-    const saved: SavedHomework = {
-      byId: new Map(decoded.map(({ payload }) => [payload.id, payload])),
-      // A corrected entry keeps the ID of the wording first saved, so a rescan
-      // matches either that wording or the correction.
-      byWording: new Map(
-        yield* Effect.forEach(decoded, ({ payload }) =>
-          getHomeworkId(
-            week,
-            payload.day,
-            payload.subject,
-            payload.content,
-          ).pipe(Effect.map((id) => [id, payload] as const)),
-        ),
+    const rows = yield* Effect.forEach(decoded, ({ payload }) =>
+      getHomeworkId(week, payload.day, payload.subject, payload.content).pipe(
+        Effect.map((wordingId): SavedRow => ({ payload, wordingId })),
       ),
+    );
+    const saved: SavedHomework = {
+      byId: new Map(rows.map((row) => [row.payload.id, row])),
+      byWording: new Map(rows.map((row) => [row.wordingId, row.payload])),
     };
     const entries = yield* Effect.forEach(data.entries, (entry) =>
       getHomeworkId(week, entry.day, entry.subject, entry.content).pipe(

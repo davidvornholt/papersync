@@ -34,8 +34,12 @@ export const reconcileReviewWeek = (
     });
     // Recheck duplicate status while preserving review IDs, wording, and dates.
     return input.entries.map((entry, index): ExtractedEntry => {
-      const { action, savedHomeworkId }: TaskEntry = result.entries[index];
-      const { savedHomeworkId: _previousMatch, ...edited } = entry;
+      const { action, savedHomeworkId: match }: TaskEntry =
+        result.entries[index];
+      const { savedHomeworkId: previous, ...edited } = entry;
+      // Keep a link into another week, so returning to it still corrects that
+      // homework. Saving uses a link only within the week it belongs to.
+      const savedHomeworkId = match ?? previous;
       return savedHomeworkId === undefined
         ? { ...edited, action }
         : { ...edited, action, savedHomeworkId };

@@ -197,7 +197,9 @@ it('changing a reviewed week rechecks duplicates and preserves edits without que
   expect(result.sameWeek).toEqual([
     { ...result.edited, action: 'skip', savedHomeworkId },
   ]);
-  expect(result.otherWeek).toEqual([{ ...result.edited, action: 'add' }]);
+  expect(result.otherWeek).toEqual([
+    { ...result.edited, action: 'add', savedHomeworkId },
+  ]);
   expect(result.changed).toEqual([
     {
       ...result.edited,
@@ -268,14 +270,16 @@ it('correcting saved homework revises its queued task, and rescans match either 
         content: correction,
       };
       const reviewed = yield* reconcileReviewWeek([corrected], options.weekId);
-      yield* enqueueHomework(reviewed, options);
+      // Switching to another week and back before saving keeps the link.
+      const otherWeek = yield* reconcileReviewWeek(reviewed, '2026-W38');
+      const backAgain = yield* reconcileReviewWeek(otherWeek, options.weekId);
+      yield* enqueueHomework(backAgain, options);
       yield* enqueueHomework([{ ...entry, content: 'New homework' }], options);
       const forOldPlugin = yield* getImportableHomework(false);
       const pending = yield* getImportableHomework(true);
       const rescan = yield* reconcileHomework(
         scan([entry, { ...entry, content: correction }]),
       );
-      const otherWeek = yield* reconcileReviewWeek(reviewed, '2026-W38');
       return {
         original,
         saved,
@@ -285,6 +289,7 @@ it('correcting saved homework revises its queued task, and rescans match either 
         pending,
         rescan,
         otherWeek,
+        backAgain,
       };
     }),
   );
@@ -313,6 +318,53 @@ it('correcting saved homework revises its queued task, and rescans match either 
     ['skip', correction, id],
     ['skip', correction, id],
   ]);
-  const { savedHomeworkId: _id, ...unlinked } = result.corrected;
-  expect(result.otherWeek).toEqual([{ ...unlinked, action: 'add' }]);
+  expect(result.otherWeek).toEqual([{ ...result.corrected, action: 'add' }]);
+  expect(result.backAgain).toEqual([result.corrected]);
+});
+
+it('a reviewed correction stays with its saved homework when the week is applied again', async () => {
+  const tuesday = { ...entry, id: 'review-tuesday', day: 'Tuesday' };
+  const result = await runIsolated(
+    Effect.gen(function* () {
+      yield* enqueueHomework([entry, tuesday], options);
+      const scan = Schema.decodeUnknownSync(OCRResponse)({
+        weekId: options.weekId,
+        confidence: 1,
+        entries: [entry],
+      });
+      const [monday] = (yield* reconcileHomework(scan)).entries;
+      if (!monday) {
+        return null;
+      }
+      // Monday's entry moved to Tuesday, where the same wording is saved.
+      const moved = yield* reconcileReviewWeek(
+        [{ ...monday, id: 'review-1', action: 'modify', day: 'Tuesday' }],
+        options.weekId,
+      );
+      yield* enqueueHomework(
+        [
+          {
+            ...monday,
+            id: 'review-1',
+            action: 'modify',
+            content: 'Exercise 4',
+          },
+        ],
+        options,
+      );
+      // Reverting the correction to the first wording is still a change.
+      const reverted = yield* reconcileReviewWeek(
+        [{ ...monday, id: 'review-1', action: 'modify' }],
+        options.weekId,
+      );
+      return { id: monday.savedHomeworkId, moved, reverted };
+    }),
+  );
+  expect(result?.id).toBeDefined();
+  expect(
+    result?.moved.map((item) => [item.action, item.savedHomeworkId]),
+  ).toEqual([['modify', result?.id]]);
+  expect(
+    result?.reverted.map((item) => [item.action, item.savedHomeworkId]),
+  ).toEqual([['modify', result?.id]]);
 });
