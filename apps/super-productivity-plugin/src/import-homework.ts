@@ -1,5 +1,7 @@
 import {
+  correctionsProtocol,
   PendingHomework,
+  pluginProtocolHeader,
   type QueuedHomework,
 } from '@papersync/homework/contract';
 import { getTaskMarker } from '@papersync/homework/identity';
@@ -48,7 +50,10 @@ const importEntry = (
     }
     if (existing) {
       yield* call(() =>
-        api.updateTask(existing.id, { dueDay: payload.dueDate ?? null }),
+        api.updateTask(existing.id, {
+          title: payload.content,
+          dueDay: payload.dueDate ?? null,
+        }),
       );
       return existing.id;
     }
@@ -88,6 +93,7 @@ export const importHomework = (api: PluginApi) =>
     const headers = {
       authorization: `Bearer ${token}`,
       'content-type': 'application/json',
+      [pluginProtocolHeader]: String(correctionsProtocol),
     };
     const response = yield* call(() => api.request(serviceUrl, { headers }));
     const items = yield* Schema.decodeUnknownEffect(PendingHomework)(

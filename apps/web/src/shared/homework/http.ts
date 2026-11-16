@@ -1,9 +1,13 @@
 import { databaseRuntime } from '@papersync/db/runtime';
-import { Acknowledgement } from '@papersync/homework/contract';
+import {
+  Acknowledgement,
+  correctionsProtocol,
+  pluginProtocolHeader,
+} from '@papersync/homework/contract';
 import { Effect, Schema } from 'effect';
 import { isConnectionAuthorized } from './connection';
 import { HomeworkError } from './error';
-import { acknowledgeHomework, getPendingHomework } from './queue';
+import { acknowledgeHomework, getImportableHomework } from './queue';
 
 const unauthorizedStatus = 401;
 const invalidRequestStatus = 400;
@@ -12,7 +16,7 @@ const noContentStatus = 204;
 const headers = {
   'access-control-allow-origin': '*',
   'access-control-allow-methods': 'GET, POST, OPTIONS',
-  'access-control-allow-headers': 'Authorization, Content-Type',
+  'access-control-allow-headers': `Authorization, Content-Type, ${pluginProtocolHeader}`,
   'cache-control': 'no-store',
 };
 export const homeworkOptions = () =>
@@ -39,7 +43,11 @@ export const handleHomeworkRequest = (request: Request): Promise<Response> => {
         );
       }
       if (request.method === 'GET') {
-        return Response.json(yield* getPendingHomework, { headers });
+        const protocol = Number(request.headers.get(pluginProtocolHeader));
+        return Response.json(
+          yield* getImportableHomework(protocol >= correctionsProtocol),
+          { headers },
+        );
       }
       const acknowledgement = yield* Effect.tryPromise({
         try: () => request.json() as Promise<unknown>,

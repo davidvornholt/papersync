@@ -33,3 +33,7 @@ export const Acknowledgement = Schema.Struct({
   revision: NonEmptyTrimmedString,
   taskId: NonEmptyTrimmedString,
 });
+// Plugin 1.2.0 and older send no protocol and cannot rename a task, so the
+// queue holds corrected wording back from them instead of losing it.
+export const pluginProtocolHeader = 'x-papersync-protocol';
+export const correctionsProtocol = 2;

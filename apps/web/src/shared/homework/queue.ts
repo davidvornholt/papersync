@@ -11,14 +11,19 @@ type QueueOptions = {
 const toHomework = (
   entry: Omit<ExtractedEntry, 'action'>,
   options: QueueOptions,
+  savedIds: ReadonlySet<string>,
 ) =>
   Effect.gen(function* () {
-    const id = yield* getHomeworkId(
-      options.weekId,
-      entry.day,
-      entry.subject,
-      entry.content,
-    );
+    // A correction of saved homework keeps its ID, so the plugin updates the
+    // task it imported instead of creating a second one.
+    const id =
+      entry.savedHomeworkIds?.find((saved) => savedIds.has(saved)) ??
+      (yield* getHomeworkId(
+        options.weekId,
+        entry.day,
+        entry.subject,
+        entry.content,
+      ));
     return yield* Schema.decodeUnknownEffect(Homework)({
       id,
       week: options.weekId,
@@ -48,6 +53,7 @@ export const enqueueHomework = (
           subject: Schema.String,
           content: Schema.String,
           dueDate: Schema.optional(Schema.String),
+          savedHomeworkIds: Schema.optional(Schema.Array(Schema.String)),
         }),
       ),
     )(entries);
@@ -58,10 +64,14 @@ export const enqueueHomework = (
         }),
       );
     }
-    const payloads = yield* Effect.forEach(decoded, (entry) =>
-      toHomework(entry, options),
-    );
     const sql = yield* PgClient.PgClient;
+    const saved = yield* sql<{
+      id: string;
+    }>`SELECT id FROM homework WHERE payload->>'week' = ${options.weekId}`;
+    const savedIds = new Set(saved.map((row) => row.id));
+    const payloads = yield* Effect.forEach(decoded, (entry) =>
+      toHomework(entry, options, savedIds),
+    );
     yield* sql.withTransaction(
       Effect.forEach(payloads, setHomework, { discard: true }),
     );
@@ -91,4 +101,24 @@ export const acknowledgeHomework = (
   Effect.gen(function* () {
     const sql = yield* PgClient.PgClient;
     yield* sql`UPDATE homework SET imported_revision = ${revision}, imported_task_id = ${taskId} WHERE id = ${id} AND revision = ${revision}`;
+  });
+
+// A correction keeps the ID of its first wording, so its ID no longer matches it.
+const isCorrection = (payload: Homework) =>
+  getHomeworkId(
+    payload.week,
+    payload.day,
+    payload.subject,
+    payload.content,
+  ).pipe(Effect.map((id) => id !== payload.id));
+export const getImportableHomework = (canApplyCorrections: boolean) =>
+  Effect.gen(function* () {
+    const pending = yield* getPendingHomework;
+    return canApplyCorrections
+      ? pending
+      : yield* Effect.filter(pending, (item) =>
+          isCorrection(item.payload).pipe(
+            Effect.map((corrected) => !corrected),
+          ),
+        );
   });

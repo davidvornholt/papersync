@@ -35,6 +35,7 @@ const toReviewEntries = (finished: FinishedScanJob & { status: 'complete' }) =>
       content: entry.content,
       action: entry.action,
       dueDate: entry.dueDate,
+      savedHomeworkIds: entry.savedHomeworkIds,
     }),
   );
 

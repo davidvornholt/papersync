@@ -33,12 +33,12 @@ export const reconcileReviewWeek = (
       })),
     });
     // Recheck duplicate status while preserving review IDs, wording, and dates.
-    return input.entries.map(
-      (entry, index): ExtractedEntry => ({
-        ...entry,
-        action: result.entries[index].action,
-      }),
-    );
+    return input.entries.map((entry, index): ExtractedEntry => {
+      const { action, savedHomeworkIds }: TaskEntry = result.entries[index];
+      return savedHomeworkIds === undefined
+        ? { ...entry, action }
+        : { ...entry, action, savedHomeworkIds };
+    });
   }).pipe(
     Effect.mapError(
       (cause) =>

@@ -1,9 +1,13 @@
 import { afterAll, expect, it, mock } from 'bun:test';
-import type { QueuedHomework } from '@papersync/homework/contract';
+import {
+  correctionsProtocol,
+  pluginProtocolHeader,
+  type QueuedHomework,
+} from '@papersync/homework/contract';
 import { getTaskMarker } from '@papersync/homework/identity';
 import { Effect, Fiber } from 'effect';
 import type { PluginApi, Task } from './api';
-import { importHomework } from './import-homework';
+import { importHomework, serviceUrl } from './import-homework';
 import { createImportController } from './import-lifecycle';
 
 const originalDocument = Object.getOwnPropertyDescriptor(
@@ -112,6 +116,7 @@ it('an interrupted acknowledgement retries without duplicating a task or reopeni
     expect.objectContaining({ dueDay: '2026-09-10' }),
   );
   expect(api.updateTask).toHaveBeenCalledWith('task-1', {
+    title: item.payload.content,
     dueDay: '2026-09-10',
   });
   expect(api.request).toHaveBeenLastCalledWith(
@@ -146,8 +151,39 @@ it('removes a reviewed due date without touching completion', async () => {
 
   await Effect.runPromise(importHomework(api));
 
-  expect(api.updateTask).toHaveBeenCalledWith('task-1', { dueDay: null });
+  expect(api.updateTask).toHaveBeenCalledWith('task-1', {
+    title: item.payload.content,
+    dueDay: null,
+  });
   expect(api.addTask).not.toHaveBeenCalled();
+});
+
+it('a reviewed correction renames the imported task instead of adding one', async () => {
+  const { api, tasks } = makeApi();
+  tasks.push({ id: 'task-1', notes: getTaskMarker(item.payload.id) });
+  api.request.mockResolvedValue([
+    {
+      payload: { ...item.payload, content: 'Finish the corrected worksheet' },
+      revision: 'revision-2',
+    },
+  ]);
+
+  await Effect.runPromise(importHomework(api));
+
+  expect(api.updateTask).toHaveBeenCalledWith('task-1', {
+    title: 'Finish the corrected worksheet',
+    dueDay: '2026-09-10',
+  });
+  expect(api.addTask).not.toHaveBeenCalled();
+  // PaperSync sends corrections only to plugins that declare they apply them.
+  expect(api.request).toHaveBeenCalledWith(
+    serviceUrl,
+    expect.objectContaining({
+      headers: expect.objectContaining({
+        [pluginProtocolHeader]: String(correctionsProtocol),
+      }),
+    }),
+  );
 });
 
 it('invalid queue data cannot create tasks', async () => {

@@ -1,6 +1,4 @@
 import { expect, it } from 'bun:test';
-import { PgClient } from '@effect/sql-pg';
-import { databaseRuntime } from '@papersync/db/runtime';
 import { Effect, Schema } from 'effect';
 import {
   isConnectionAuthorized,
@@ -15,30 +13,7 @@ import {
 import { reconcileHomework } from '../src/shared/homework/reconcile';
 import { reconcileReviewWeek } from '../src/shared/homework/review-week';
 import { OCRResponse, type TaskAction } from '../src/shared/types/schemas';
-
-const runIsolated = <A, E>(program: Effect.Effect<A, E, PgClient.PgClient>) =>
-  databaseRuntime.runPromise(
-    Effect.gen(function* () {
-      const sql = yield* PgClient.PgClient;
-      return yield* sql.withTransaction(
-        Effect.gen(function* () {
-          yield* sql`CREATE TEMP TABLE homework (LIKE public.homework INCLUDING ALL) ON COMMIT DROP`;
-          yield* sql`CREATE TEMP TABLE integration (LIKE public.integration INCLUDING ALL) ON COMMIT DROP`;
-          return yield* program;
-        }),
-      );
-    }),
-  );
-
-const entry = {
-  id: 'review-1',
-  day: 'Monday',
-  subject: 'Math',
-  content: `Integration homework ${crypto.randomUUID()}`,
-  action: 'add' as const,
-  dueDate: '2026-09-10',
-};
-const options = { weekId: '2026-W37' };
+import { entry, options, runIsolated } from './support';
 
 it('queue retries deduplicate, while stale acknowledgements cannot erase a revised due date', async () => {
   const result = await runIsolated(
@@ -191,10 +166,20 @@ it('changing a reviewed week rechecks duplicates and preserves edits without que
       };
     }),
   );
-  expect(result.sameWeek).toEqual([{ ...result.edited, action: 'skip' }]);
-  expect(result.otherWeek).toEqual([{ ...result.edited, action: 'add' }]);
+  const savedHomeworkIds = [result.pending[0]?.payload.id];
+  expect(result.sameWeek).toEqual([
+    { ...result.edited, action: 'skip', savedHomeworkIds },
+  ]);
+  expect(result.otherWeek).toEqual([
+    { ...result.edited, action: 'add', savedHomeworkIds },
+  ]);
   expect(result.changed).toEqual([
-    { ...result.edited, action: 'modify', dueDate: '2026-09-12' },
+    {
+      ...result.edited,
+      action: 'modify',
+      dueDate: '2026-09-12',
+      savedHomeworkIds,
+    },
   ]);
   expect(result.invalid._tag).toBe('Failure');
   expect(result.pending).toHaveLength(1);
