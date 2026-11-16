@@ -11,14 +11,20 @@ type QueueOptions = {
 const toHomework = (
   entry: Omit<ExtractedEntry, 'action'>,
   options: QueueOptions,
+  savedIds: ReadonlySet<string>,
 ) =>
   Effect.gen(function* () {
-    const id = yield* getHomeworkId(
-      options.weekId,
-      entry.day,
-      entry.subject,
-      entry.content,
-    );
+    // A correction of saved homework keeps its ID, so the plugin updates the
+    // task it imported instead of creating a second one.
+    const id =
+      entry.savedHomeworkId !== undefined && savedIds.has(entry.savedHomeworkId)
+        ? entry.savedHomeworkId
+        : yield* getHomeworkId(
+            options.weekId,
+            entry.day,
+            entry.subject,
+            entry.content,
+          );
     return yield* Schema.decodeUnknownEffect(Homework)({
       id,
       week: options.weekId,
@@ -48,6 +54,7 @@ export const enqueueHomework = (
           subject: Schema.String,
           content: Schema.String,
           dueDate: Schema.optional(Schema.String),
+          savedHomeworkId: Schema.optional(Schema.String),
         }),
       ),
     )(entries);
@@ -58,10 +65,14 @@ export const enqueueHomework = (
         }),
       );
     }
-    const payloads = yield* Effect.forEach(decoded, (entry) =>
-      toHomework(entry, options),
-    );
     const sql = yield* PgClient.PgClient;
+    const saved = yield* sql<{
+      id: string;
+    }>`SELECT id FROM homework WHERE payload->>'week' = ${options.weekId}`;
+    const savedIds = new Set(saved.map((row) => row.id));
+    const payloads = yield* Effect.forEach(decoded, (entry) =>
+      toHomework(entry, options, savedIds),
+    );
     yield* sql.withTransaction(
       Effect.forEach(payloads, setHomework, { discard: true }),
     );

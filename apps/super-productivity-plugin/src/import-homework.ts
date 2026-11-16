@@ -47,8 +47,12 @@ const importEntry = (
       return archivedTask.id;
     }
     if (existing) {
+      // The reviewed wording and due date replace what was imported before.
       yield* call(() =>
-        api.updateTask(existing.id, { dueDay: payload.dueDate ?? null }),
+        api.updateTask(existing.id, {
+          title: payload.content,
+          dueDay: payload.dueDate ?? null,
+        }),
       );
       return existing.id;
     }

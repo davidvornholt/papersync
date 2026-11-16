@@ -7,6 +7,7 @@ import {
   revokeConnectionKey,
   rotateConnectionKey,
 } from '../src/shared/homework/connection';
+import type { ExtractedEntry } from '../src/shared/homework/entry';
 import {
   acknowledgeHomework,
   enqueueHomework,
@@ -191,10 +192,18 @@ it('changing a reviewed week rechecks duplicates and preserves edits without que
       };
     }),
   );
-  expect(result.sameWeek).toEqual([{ ...result.edited, action: 'skip' }]);
+  const savedHomeworkId = result.pending[0]?.payload.id;
+  expect(result.sameWeek).toEqual([
+    { ...result.edited, action: 'skip', savedHomeworkId },
+  ]);
   expect(result.otherWeek).toEqual([{ ...result.edited, action: 'add' }]);
   expect(result.changed).toEqual([
-    { ...result.edited, action: 'modify', dueDate: '2026-09-12' },
+    {
+      ...result.edited,
+      action: 'modify',
+      dueDate: '2026-09-12',
+      savedHomeworkId,
+    },
   ]);
   expect(result.invalid._tag).toBe('Failure');
   expect(result.pending).toHaveLength(1);
@@ -227,4 +236,73 @@ it('saves reference information and dates unchanged alongside assignments', asyn
   expect(new Set(result.pending.map((item) => item.payload.content))).toEqual(
     new Set(entries.map((item) => item.content)),
   );
+});
+
+it('correcting saved homework revises its queued task, and rescans match either wording', async () => {
+  const correction = 'Corrected integration homework';
+  const scan = (entries: ReadonlyArray<typeof entry>) =>
+    Schema.decodeUnknownSync(OCRResponse)({
+      weekId: options.weekId,
+      confidence: 1,
+      entries,
+    });
+  const result = await runIsolated(
+    Effect.gen(function* () {
+      yield* enqueueHomework([entry], options);
+      const [original] = yield* getPendingHomework;
+      const [saved] = (yield* reconcileHomework(scan([entry]))).entries;
+      if (!(original && saved)) {
+        return null;
+      }
+      yield* acknowledgeHomework(
+        original.payload.id,
+        original.revision,
+        'imported-task',
+      );
+      // Review entry, correct the wording, and apply the week again.
+      const corrected: ExtractedEntry = {
+        ...saved,
+        id: 'review-2',
+        action: 'modify',
+        content: correction,
+      };
+      const reviewed = yield* reconcileReviewWeek([corrected], options.weekId);
+      yield* enqueueHomework(reviewed, options);
+      const pending = yield* getPendingHomework;
+      const rescan = yield* reconcileHomework(
+        scan([entry, { ...entry, content: correction }]),
+      );
+      const otherWeek = yield* reconcileReviewWeek(reviewed, '2026-W38');
+      return {
+        original,
+        saved,
+        corrected,
+        reviewed,
+        pending,
+        rescan,
+        otherWeek,
+      };
+    }),
+  );
+  if (!result) {
+    throw new Error('The first save was not queued.');
+  }
+  const { id } = result.original.payload;
+  expect(result.saved.savedHomeworkId).toBe(id);
+  expect(result.reviewed).toEqual([result.corrected]);
+  expect(result.pending.map((item) => item.payload)).toEqual([
+    { ...result.original.payload, content: correction },
+  ]);
+  expect(
+    result.rescan.entries.map((item) => [
+      item.action,
+      item.content,
+      item.savedHomeworkId,
+    ]),
+  ).toEqual([
+    ['skip', correction, id],
+    ['skip', correction, id],
+  ]);
+  const { savedHomeworkId: _id, ...unlinked } = result.corrected;
+  expect(result.otherWeek).toEqual([{ ...unlinked, action: 'add' }]);
 });

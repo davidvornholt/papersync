@@ -112,6 +112,7 @@ it('an interrupted acknowledgement retries without duplicating a task or reopeni
     expect.objectContaining({ dueDay: '2026-09-10' }),
   );
   expect(api.updateTask).toHaveBeenCalledWith('task-1', {
+    title: item.payload.content,
     dueDay: '2026-09-10',
   });
   expect(api.request).toHaveBeenLastCalledWith(
@@ -146,7 +147,29 @@ it('removes a reviewed due date without touching completion', async () => {
 
   await Effect.runPromise(importHomework(api));
 
-  expect(api.updateTask).toHaveBeenCalledWith('task-1', { dueDay: null });
+  expect(api.updateTask).toHaveBeenCalledWith('task-1', {
+    title: item.payload.content,
+    dueDay: null,
+  });
+  expect(api.addTask).not.toHaveBeenCalled();
+});
+
+it('a reviewed correction renames the imported task instead of adding one', async () => {
+  const { api, tasks } = makeApi();
+  tasks.push({ id: 'task-1', notes: getTaskMarker(item.payload.id) });
+  api.request.mockResolvedValue([
+    {
+      payload: { ...item.payload, content: 'Finish the corrected worksheet' },
+      revision: 'revision-2',
+    },
+  ]);
+
+  await Effect.runPromise(importHomework(api));
+
+  expect(api.updateTask).toHaveBeenCalledWith('task-1', {
+    title: 'Finish the corrected worksheet',
+    dueDay: '2026-09-10',
+  });
   expect(api.addTask).not.toHaveBeenCalled();
 });
 
