@@ -1,0 +1,1 @@
+ALTER TABLE "homework" ADD COLUMN "reading_id" text;

@@ -134,7 +134,15 @@ it('rescans separate saved homework from new entries and changed paper details',
   expect(result.otherWeek.entries.every((item) => item.action === 'add')).toBe(
     true,
   );
-  expect(result.unknownWeek).toEqual({ ...response, weekId: null });
+  // Without a week nothing is matched, but each line keeps its reading.
+  expect(result.unknownWeek).toEqual({
+    ...response,
+    weekId: null,
+    entries: response.entries.map((item) => ({
+      ...item,
+      readingId: expect.any(String),
+    })),
+  });
   expect(result.remaining).toEqual([]);
 });
 
