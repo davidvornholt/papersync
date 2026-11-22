@@ -44,10 +44,10 @@ export const TaskEntry = Schema.Struct({
   // The saved homework this entry matches, at most one per week, so a
   // correction updates its task in whichever week it is saved.
   savedHomeworkIds: Schema.optional(Schema.Array(Schema.String)),
-  // The homework ID of the wording as the scan first read it, kept through
+  // The line as the scan first read it (see `getReadingId`), kept through
   // review, so a rescan that reads it the same way again recognizes the
-  // homework saved from it even when its wording was corrected before saving.
-  recognizedHomeworkId: Schema.optional(Schema.String),
+  // homework saved from it even when it was corrected before saving.
+  readingId: Schema.optional(Schema.String),
 });
 export type TaskEntry = typeof TaskEntry.Type;
 

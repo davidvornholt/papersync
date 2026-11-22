@@ -1,3 +1,4 @@
+import { getReadingId } from '@papersync/homework/identity';
 import { Effect, Schema } from 'effect';
 import { TaskEntry, WeekId } from '@/shared/types/schemas';
 import type { ExtractedEntry } from './entry';
@@ -32,13 +33,31 @@ export const reconcileReviewWeek = (
         action: 'add' as const,
       })),
     });
-    // Recheck duplicate status while preserving review IDs, wording, and dates.
-    return input.entries.map((entry, index): ExtractedEntry => {
-      const { action, savedHomeworkIds }: TaskEntry = result.entries[index];
-      return savedHomeworkIds === undefined
-        ? { ...entry, action }
-        : { ...entry, action, savedHomeworkIds };
-    });
+    // Recheck duplicate status while preserving review IDs, edits, and dates.
+    // An entry still as the scan read it shows the saved homework it matches,
+    // so approving it cannot overwrite a correction with the misreading.
+    return yield* Effect.forEach(input.entries, (entry, index) =>
+      Effect.gen(function* () {
+        const reconciled: TaskEntry = result.entries[index];
+        const { action, savedHomeworkIds } = reconciled;
+        const asRead =
+          entry.readingId ===
+          (yield* getReadingId(entry.day, entry.subject, entry.content));
+        const reviewed: ExtractedEntry = {
+          ...entry,
+          ...(asRead
+            ? {
+                day: reconciled.day,
+                subject: reconciled.subject,
+                content: reconciled.content,
+              }
+            : {}),
+          action,
+          ...(savedHomeworkIds === undefined ? {} : { savedHomeworkIds }),
+        };
+        return reviewed;
+      }),
+    );
   }).pipe(
     Effect.mapError(
       (cause) =>

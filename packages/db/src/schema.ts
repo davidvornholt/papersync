@@ -5,8 +5,8 @@ export const homework = pgTable('homework', {
   revision: text('revision').notNull(),
   importedRevision: text('imported_revision'),
   importedTaskId: text('imported_task_id'),
-  // The ID of the scan's first reading when it was corrected before saving.
-  recognizedId: text('recognized_id'),
+  // The scan's reading of homework corrected before its first save.
+  readingId: text('reading_id'),
   createdAt: timestamp('created_at', { withTimezone: true })
     .notNull()
     .defaultNow(),

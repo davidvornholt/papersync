@@ -1,6 +1,6 @@
 import { PgClient } from '@effect/sql-pg';
 import { Homework } from '@papersync/homework/contract';
-import { getHomeworkId } from '@papersync/homework/identity';
+import { getHomeworkId, getReadingId } from '@papersync/homework/identity';
 import { Effect, Schema } from 'effect';
 import type { OCRResponse, TaskEntry } from '@/shared/types/schemas';
 import { HomeworkError } from './error';
@@ -14,16 +14,15 @@ type SavedRow = {
 type SavedHomework = {
   readonly byId: ReadonlyMap<string, SavedRow>;
   readonly byWording: ReadonlyMap<string, Homework>;
-  // Homework whose wording was corrected before its first save, by the ID of
-  // the scan's reading, so a rescan that reads the same again matches it.
-  readonly byRecognition: ReadonlyMap<string, Homework>;
+  readonly byReading: ReadonlyMap<string, Homework>;
 };
+type ReadEntry = TaskEntry & { readonly readingId: string };
 
 const matchSaved = (
-  entry: TaskEntry,
+  entry: ReadEntry,
   id: string,
   saved: SavedHomework,
-): TaskEntry => {
+): ReadEntry => {
   // A reviewed entry stays linked to the saved homework it corrects. Links
   // into other weeks are kept, so returning to one still corrects it there.
   const links = entry.savedHomeworkIds ?? [];
@@ -38,10 +37,9 @@ const matchSaved = (
   const previous =
     saved.byId.get(id)?.payload ??
     saved.byWording.get(id) ??
-    saved.byRecognition.get(id);
+    saved.byReading.get(entry.readingId);
   if (!previous) {
-    // Keep the first reading when a reviewed week is applied again.
-    return { ...entry, recognizedHomeworkId: entry.recognizedHomeworkId ?? id };
+    return entry;
   }
   return {
     ...entry,
@@ -54,20 +52,31 @@ const matchSaved = (
   };
 };
 
+// A reviewed entry keeps its first reading when its week is applied again.
+const withReadingIds = (entries: OCRResponse['entries']) =>
+  Effect.forEach(entries, (entry) =>
+    entry.readingId === undefined
+      ? getReadingId(entry.day, entry.subject, entry.content).pipe(
+          Effect.map((readingId): ReadEntry => ({ ...entry, readingId })),
+        )
+      : Effect.succeed({ ...entry, readingId: entry.readingId }),
+  );
+
 export const reconcileHomework = (data: OCRResponse) =>
   Effect.gen(function* () {
-    if (!data.weekId || data.entries.length === 0) {
-      return data;
+    const read = yield* withReadingIds(data.entries);
+    if (!data.weekId || read.length === 0) {
+      return { ...data, entries: read };
     }
     const sql = yield* PgClient.PgClient;
     // Include both queued and imported homework: either has already been reviewed.
     const stored =
-      yield* sql`SELECT payload, recognized_id AS "recognizedId" FROM homework WHERE payload->>'week' = ${data.weekId}`;
+      yield* sql`SELECT payload, reading_id AS "readingId" FROM homework WHERE payload->>'week' = ${data.weekId}`;
     const decoded = yield* Schema.decodeUnknownEffect(
       Schema.Array(
         Schema.Struct({
           payload: Homework,
-          recognizedId: Schema.NullOr(Schema.String),
+          readingId: Schema.NullOr(Schema.String),
         }),
       ),
     )(stored);
@@ -80,13 +89,13 @@ export const reconcileHomework = (data: OCRResponse) =>
     const saved: SavedHomework = {
       byId: new Map(rows.map((row) => [row.payload.id, row])),
       byWording: new Map(rows.map((row) => [row.wordingId, row.payload])),
-      byRecognition: new Map(
-        decoded.flatMap(({ payload, recognizedId }) =>
-          recognizedId === null ? [] : [[recognizedId, payload] as const],
+      byReading: new Map(
+        decoded.flatMap(({ payload, readingId }) =>
+          readingId === null ? [] : [[readingId, payload] as const],
         ),
       ),
     };
-    const entries = yield* Effect.forEach(data.entries, (entry) =>
+    const entries = yield* Effect.forEach(read, (entry) =>
       getHomeworkId(week, entry.day, entry.subject, entry.content).pipe(
         Effect.map((id) => matchSaved(entry, id, saved)),
       ),

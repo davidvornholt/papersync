@@ -32,27 +32,21 @@ const toHomework = (
       content: entry.content.trim(),
       ...(entry.dueDate ? { dueDate: entry.dueDate } : {}),
     });
-    // Remember a reading corrected before the first save, so a rescan that
-    // reads it the same way again recognizes this homework.
-    const recognizedId =
-      entry.recognizedHomeworkId !== undefined &&
-      entry.recognizedHomeworkId !== id
-        ? entry.recognizedHomeworkId
-        : null;
-    return { payload, recognizedId };
+    return { payload, readingId: entry.readingId ?? null };
   });
 const setHomework = ({
   payload,
-  recognizedId,
+  readingId,
 }: {
   readonly payload: Homework;
-  readonly recognizedId: string | null;
+  readonly readingId: string | null;
 }) =>
   Effect.gen(function* () {
     const sql = yield* PgClient.PgClient;
     const revision = yield* hashContent(JSON.stringify(payload));
-    yield* sql`INSERT INTO homework (id, payload, revision, recognized_id) VALUES (${payload.id}, ${sql.json(payload)}, ${revision}, ${recognizedId})
-    ON CONFLICT (id) DO UPDATE SET payload = EXCLUDED.payload, revision = EXCLUDED.revision, recognized_id = COALESCE(homework.recognized_id, EXCLUDED.recognized_id)`;
+    // The first reading stays, so a rescan still recognizes it after later corrections.
+    yield* sql`INSERT INTO homework (id, payload, revision, reading_id) VALUES (${payload.id}, ${sql.json(payload)}, ${revision}, ${readingId})
+    ON CONFLICT (id) DO UPDATE SET payload = EXCLUDED.payload, revision = EXCLUDED.revision, reading_id = COALESCE(homework.reading_id, EXCLUDED.reading_id)`;
   });
 export const enqueueHomework = (
   entries: ReadonlyArray<ExtractedEntry>,
@@ -68,7 +62,7 @@ export const enqueueHomework = (
           content: Schema.String,
           dueDate: Schema.optional(Schema.String),
           savedHomeworkIds: Schema.optional(Schema.Array(Schema.String)),
-          recognizedHomeworkId: Schema.optional(Schema.String),
+          readingId: Schema.optional(Schema.String),
         }),
       ),
     )(entries);
