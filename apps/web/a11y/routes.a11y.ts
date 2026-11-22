@@ -1,4 +1,5 @@
 import { scanWcag22AaViolations } from '@davidvornholt/a11y-testing/axe';
+import { mobileDeviceTag } from '@davidvornholt/a11y-testing/playwright-config';
 import { expect } from '@playwright/test';
 import { createSessionCookies } from './auth-fixture';
 import { test } from './settings-fixture';
@@ -120,11 +121,9 @@ test('settings help and icon actions work with a keyboard', async ({
   ).toBeVisible();
 });
 
-test('shared styles preserve card spacing and heading sizes', async ({
-  page,
-  context,
-  isMobile,
-}) => {
+test('shared styles preserve card spacing and heading sizes', {
+  tag: mobileDeviceTag,
+}, async ({ page, context, isMobile }) => {
   await context.addCookies(await createSessionCookies());
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/settings');
@@ -173,11 +172,9 @@ test('shared styles preserve card spacing and heading sizes', async ({
   ).toHaveCSS('font-size', '24px');
 });
 
-test('pointer tooltips respect touch devices and dismiss without moving focus', async ({
-  page,
-  context,
-  isMobile,
-}) => {
+test('pointer tooltips respect touch devices and dismiss without moving focus', {
+  tag: mobileDeviceTag,
+}, async ({ page, context, isMobile }) => {
   await context.addCookies(await createSessionCookies());
   await page.goto('/settings');
   const help = page

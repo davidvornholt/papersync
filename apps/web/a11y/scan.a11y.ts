@@ -1,5 +1,6 @@
 import { createServer } from 'node:http';
 import { scanWcag22AaViolations } from '@davidvornholt/a11y-testing/axe';
+import { mobileDeviceTag } from '@davidvornholt/a11y-testing/playwright-config';
 import { expect } from '@playwright/test';
 import { defaultSettings } from '../src/shared/settings/schema';
 import { mockAnalysis } from './analysis-fixture';
@@ -89,11 +90,9 @@ test('an older sheet retains its week and supports review, empty scans, and extr
   expect(await scanWcag22AaViolations(page)).toEqual([]);
 });
 
-test('a sheet uses OCR for its week and only asks for unreadable weeks', async ({
-  page,
-  context,
-  isMobile,
-}) => {
+test('a sheet uses OCR for its week and only asks for unreadable weeks', {
+  tag: mobileDeviceTag,
+}, async ({ page, context, isMobile }) => {
   await context.addCookies(await createSessionCookies());
   await page.addInitScript(
     (settings) =>
