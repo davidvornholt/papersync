@@ -36,20 +36,23 @@ const paperSyncLines = (payload: Homework) => [
   `Written on: ${payload.day}`,
   `Subject: ${payload.subject}`,
 ];
-// PaperSync owns its marker and the detail lines right after it; anything
-// else in the notes was written in Super Productivity and stays as it is.
+// PaperSync owns its marker and the detail lines right after it, each at most
+// once and in this order; anything else in the notes was written in Super
+// Productivity and stays as it is, line breaks included.
 const withPaperSyncLines = (notes: string, payload: Homework) => {
   const lines = notes.split(lineBreakPattern);
   const start = lines.indexOf(getTaskMarker(payload.id));
   const following = lines.slice(start + 1);
-  const detailCount = following.findIndex(
-    (line) => !detailPrefixes.some((prefix) => line.startsWith(prefix)),
+  const detailCount = detailPrefixes.reduce(
+    (count, prefix) =>
+      following[count]?.startsWith(prefix) ? count + 1 : count,
+    0,
   );
   return [
     ...lines.slice(0, start),
     ...paperSyncLines(payload),
-    ...(detailCount === -1 ? [] : following.slice(detailCount)),
-  ].join('\n');
+    ...following.slice(detailCount),
+  ].join(notes.includes('\r\n') ? '\r\n' : '\n');
 };
 const importEntry = (
   api: PluginApi,
