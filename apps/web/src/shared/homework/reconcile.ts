@@ -14,6 +14,9 @@ type SavedRow = {
 type SavedHomework = {
   readonly byId: ReadonlyMap<string, SavedRow>;
   readonly byWording: ReadonlyMap<string, Homework>;
+  // Homework whose wording was corrected before its first save, by the ID of
+  // the scan's reading, so a rescan that reads the same again matches it.
+  readonly byRecognition: ReadonlyMap<string, Homework>;
 };
 
 const matchSaved = (
@@ -32,9 +35,13 @@ const matchSaved = (
       linked.wordingId === id && linked.payload.dueDate === entry.dueDate;
     return { ...entry, action: unchanged ? 'skip' : 'modify' };
   }
-  const previous = saved.byId.get(id)?.payload ?? saved.byWording.get(id);
+  const previous =
+    saved.byId.get(id)?.payload ??
+    saved.byWording.get(id) ??
+    saved.byRecognition.get(id);
   if (!previous) {
-    return entry;
+    // Keep the first reading when a reviewed week is applied again.
+    return { ...entry, recognizedHomeworkId: entry.recognizedHomeworkId ?? id };
   }
   return {
     ...entry,
@@ -55,9 +62,14 @@ export const reconcileHomework = (data: OCRResponse) =>
     const sql = yield* PgClient.PgClient;
     // Include both queued and imported homework: either has already been reviewed.
     const stored =
-      yield* sql`SELECT payload FROM homework WHERE payload->>'week' = ${data.weekId}`;
+      yield* sql`SELECT payload, recognized_id AS "recognizedId" FROM homework WHERE payload->>'week' = ${data.weekId}`;
     const decoded = yield* Schema.decodeUnknownEffect(
-      Schema.Array(Schema.Struct({ payload: Homework })),
+      Schema.Array(
+        Schema.Struct({
+          payload: Homework,
+          recognizedId: Schema.NullOr(Schema.String),
+        }),
+      ),
     )(stored);
     const week = data.weekId;
     const rows = yield* Effect.forEach(decoded, ({ payload }) =>
@@ -68,6 +80,11 @@ export const reconcileHomework = (data: OCRResponse) =>
     const saved: SavedHomework = {
       byId: new Map(rows.map((row) => [row.payload.id, row])),
       byWording: new Map(rows.map((row) => [row.wordingId, row.payload])),
+      byRecognition: new Map(
+        decoded.flatMap(({ payload, recognizedId }) =>
+          recognizedId === null ? [] : [[recognizedId, payload] as const],
+        ),
+      ),
     };
     const entries = yield* Effect.forEach(data.entries, (entry) =>
       getHomeworkId(week, entry.day, entry.subject, entry.content).pipe(

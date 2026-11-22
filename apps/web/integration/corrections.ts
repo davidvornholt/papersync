@@ -202,3 +202,86 @@ it('a correction stays linked to each week it matches when the week changes and 
   );
   expect(result.after).toHaveLength(2);
 });
+
+it('a rescan recognizes homework whose reading was corrected before its first save', async () => {
+  const misread = { ...entry, content: `${entry.content} 1–8` };
+  const correction = `${entry.content} 1–3`;
+  const newLine = { ...entry, id: 'review-2', content: 'Read page 12' };
+  const scan = (entries: ReadonlyArray<typeof entry>) =>
+    Schema.decodeUnknownSync(OCRResponse)({
+      weekId: options.weekId,
+      confidence: 1,
+      entries,
+    });
+  const result = await runIsolated(
+    Effect.gen(function* () {
+      const [first] = (yield* reconcileHomework(scan([misread]))).entries;
+      if (!first) {
+        return null;
+      }
+      // Correct the misreading, then apply the week again before saving.
+      const reviewed = yield* reconcileReviewWeek(
+        [{ ...first, id: 'review-1', content: correction }],
+        options.weekId,
+      );
+      yield* enqueueHomework(reviewed, options);
+      const [queued] = yield* getPendingHomework;
+      if (!queued) {
+        return null;
+      }
+      yield* acknowledgeHomework(
+        queued.payload.id,
+        queued.revision,
+        'imported-task',
+      );
+      const rescan = (yield* reconcileHomework(scan([misread, newLine])))
+        .entries;
+      yield* enqueueHomework(
+        rescan
+          .filter((item) => item.action !== 'skip')
+          .map((item, index) => ({ ...item, id: `rescan-${index}` })),
+        options,
+      );
+      const afterRescan = yield* getPendingHomework;
+      // A later correction of the recognized entry still updates its task.
+      const [recognized] = rescan;
+      if (!recognized) {
+        return null;
+      }
+      yield* enqueueHomework(
+        [{ ...recognized, id: 'rescan-1', content: `${correction} again` }],
+        options,
+      );
+      return {
+        queued,
+        rescan,
+        afterRescan,
+        afterCorrection: yield* getPendingHomework,
+      };
+    }),
+  );
+  if (!result) {
+    throw new Error('The first save was not queued.');
+  }
+  const { id } = result.queued.payload;
+  expect(result.queued.payload.content).toBe(correction);
+  expect(
+    result.rescan.map((item) => [
+      item.action,
+      item.content,
+      item.savedHomeworkIds,
+    ]),
+  ).toEqual([
+    ['skip', correction, [id]],
+    ['add', newLine.content, undefined],
+  ]);
+  expect(result.afterRescan.map((item) => item.payload.content)).toEqual([
+    newLine.content,
+  ]);
+  expect(
+    result.afterCorrection
+      .filter((item) => item.payload.id === id)
+      .map((item) => item.payload.content),
+  ).toEqual([`${correction} again`]);
+  expect(result.afterCorrection).toHaveLength(2);
+});

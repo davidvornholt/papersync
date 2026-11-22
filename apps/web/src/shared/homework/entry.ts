@@ -7,4 +7,5 @@ export type ExtractedEntry = {
   readonly action: TaskAction;
   readonly dueDate?: string;
   readonly savedHomeworkIds?: ReadonlyArray<string>;
+  readonly recognizedHomeworkId?: string;
 };

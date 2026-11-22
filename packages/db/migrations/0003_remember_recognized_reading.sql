@@ -1,0 +1,1 @@
+ALTER TABLE "homework" ADD COLUMN "recognized_id" text;

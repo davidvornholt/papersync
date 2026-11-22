@@ -22,6 +22,13 @@
       "when": 1789393779766,
       "tag": "0002_collapse_timetable_periods",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1795385822972,
+      "tag": "0003_remember_recognized_reading",
+      "breakpoints": true
     }
   ]
 }

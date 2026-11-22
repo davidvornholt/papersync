@@ -24,7 +24,7 @@ const toHomework = (
         entry.subject,
         entry.content,
       ));
-    return yield* Schema.decodeUnknownEffect(Homework)({
+    const payload = yield* Schema.decodeUnknownEffect(Homework)({
       id,
       week: options.weekId,
       day: entry.day,
@@ -32,13 +32,27 @@ const toHomework = (
       content: entry.content.trim(),
       ...(entry.dueDate ? { dueDate: entry.dueDate } : {}),
     });
+    // Remember a reading corrected before the first save, so a rescan that
+    // reads it the same way again recognizes this homework.
+    const recognizedId =
+      entry.recognizedHomeworkId !== undefined &&
+      entry.recognizedHomeworkId !== id
+        ? entry.recognizedHomeworkId
+        : null;
+    return { payload, recognizedId };
   });
-const setHomework = (payload: Homework) =>
+const setHomework = ({
+  payload,
+  recognizedId,
+}: {
+  readonly payload: Homework;
+  readonly recognizedId: string | null;
+}) =>
   Effect.gen(function* () {
     const sql = yield* PgClient.PgClient;
     const revision = yield* hashContent(JSON.stringify(payload));
-    yield* sql`INSERT INTO homework (id, payload, revision) VALUES (${payload.id}, ${sql.json(payload)}, ${revision})
-    ON CONFLICT (id) DO UPDATE SET payload = EXCLUDED.payload, revision = EXCLUDED.revision`;
+    yield* sql`INSERT INTO homework (id, payload, revision, recognized_id) VALUES (${payload.id}, ${sql.json(payload)}, ${revision}, ${recognizedId})
+    ON CONFLICT (id) DO UPDATE SET payload = EXCLUDED.payload, revision = EXCLUDED.revision, recognized_id = COALESCE(homework.recognized_id, EXCLUDED.recognized_id)`;
   });
 export const enqueueHomework = (
   entries: ReadonlyArray<ExtractedEntry>,
@@ -54,6 +68,7 @@ export const enqueueHomework = (
           content: Schema.String,
           dueDate: Schema.optional(Schema.String),
           savedHomeworkIds: Schema.optional(Schema.Array(Schema.String)),
+          recognizedHomeworkId: Schema.optional(Schema.String),
         }),
       ),
     )(entries);
@@ -69,13 +84,13 @@ export const enqueueHomework = (
       id: string;
     }>`SELECT id FROM homework WHERE payload->>'week' = ${options.weekId}`;
     const savedIds = new Set(saved.map((row) => row.id));
-    const payloads = yield* Effect.forEach(decoded, (entry) =>
+    const rows = yield* Effect.forEach(decoded, (entry) =>
       toHomework(entry, options, savedIds),
     );
     yield* sql.withTransaction(
-      Effect.forEach(payloads, setHomework, { discard: true }),
+      Effect.forEach(rows, setHomework, { discard: true }),
     );
-    return payloads.length;
+    return rows.length;
   }).pipe(
     Effect.mapError(
       (cause) =>
