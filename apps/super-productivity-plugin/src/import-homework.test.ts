@@ -6,7 +6,7 @@ import {
 } from '@papersync/homework/contract';
 import { getTaskMarker } from '@papersync/homework/identity';
 import { Effect, Fiber } from 'effect';
-import type { PluginApi, Task } from './api';
+import type { PluginApi, Task, TaskInput } from './api';
 import { importHomework, serviceUrl } from './import-homework';
 import { createImportController } from './import-lifecycle';
 
@@ -64,6 +64,12 @@ const item: QueuedHomework = {
   },
   revision: 'revision-1',
 };
+const importedNotes = [
+  getTaskMarker(item.payload.id),
+  'Week: 2026-W37',
+  'Written on: Monday',
+  'Subject: Math',
+].join('\n');
 const makeApi = () => {
   selectedSubjects = ['0'];
   const tasks: Array<Task> = [];
@@ -81,7 +87,9 @@ const makeApi = () => {
       tasks.push({ id: 'task-1', ...input });
       return Promise.resolve('task-1');
     }),
-    updateTask: mock(() => Promise.resolve()),
+    updateTask: mock((_id: string, _changes: Partial<TaskInput>) =>
+      Promise.resolve(),
+    ),
     getSecret: mock(() => Promise.resolve('local-test-key')),
     setSecret: mock(() => Promise.resolve()),
     request: mock((_url, options) =>
@@ -109,7 +117,7 @@ it('an interrupted acknowledgement retries without duplicating a task or reopeni
     importHomework(api).pipe(Effect.result),
   );
   expect(failed._tag).toBe('Failure');
-  tasks[0] = { id: 'task-1', notes: getTaskMarker(item.payload.id) };
+  tasks[0] = { id: 'task-1', notes: importedNotes };
   await Effect.runPromise(importHomework(api));
   expect(api.addTask).toHaveBeenCalledTimes(1);
   expect(api.addTask).toHaveBeenCalledWith(
@@ -139,11 +147,7 @@ it('an archived task is acknowledged without recreating or editing it', async ()
 
 it('removes a reviewed due date without touching completion', async () => {
   const { api, tasks } = makeApi();
-  tasks.push({
-    id: 'task-1',
-    notes: getTaskMarker(item.payload.id),
-    dueDay: '2026-09-10',
-  });
+  tasks.push({ id: 'task-1', notes: importedNotes, dueDay: '2026-09-10' });
   const { dueDate: _dueDate, ...payloadWithoutDueDate } = item.payload;
   api.request.mockResolvedValue([
     { payload: payloadWithoutDueDate, revision: item.revision },
@@ -160,7 +164,7 @@ it('removes a reviewed due date without touching completion', async () => {
 
 it('a reviewed correction renames the imported task instead of adding one', async () => {
   const { api, tasks } = makeApi();
-  tasks.push({ id: 'task-1', notes: getTaskMarker(item.payload.id) });
+  tasks.push({ id: 'task-1', notes: importedNotes });
   api.request.mockResolvedValue([
     {
       payload: { ...item.payload, content: 'Finish the corrected worksheet' },
@@ -184,6 +188,73 @@ it('a reviewed correction renames the imported task instead of adding one', asyn
       }),
     }),
   );
+});
+
+it('a corrected day and subject update the task notes and keep notes written in Super Productivity', async () => {
+  const { api, tasks } = makeApi();
+  const reminder = 'Subject: Ask Biology teacher about the worksheet';
+  tasks.push({
+    id: 'task-1',
+    notes: `Bring the calculator\n${importedNotes}\n${reminder}`,
+  });
+  api.updateTask.mockImplementation(
+    (id: string, changes: Partial<TaskInput>) => {
+      const index = tasks.findIndex((task) => task.id === id);
+      tasks[index] = { ...tasks[index], ...changes, id };
+      return Promise.resolve();
+    },
+  );
+  api.request.mockImplementation((_url, options) =>
+    Promise.resolve(
+      options.method === 'POST'
+        ? { ok: true }
+        : [
+            {
+              payload: { ...item.payload, day: 'Tuesday', subject: 'Biology' },
+              revision: 'revision-2',
+            },
+          ],
+    ),
+  );
+
+  // The second import is a retry after an interrupted acknowledgement.
+  await Effect.runPromise(importHomework(api));
+  await Effect.runPromise(importHomework(api));
+
+  expect(api.updateTask.mock.calls).toEqual([
+    [
+      'task-1',
+      {
+        title: item.payload.content,
+        dueDay: '2026-09-10',
+        notes: [
+          'Bring the calculator',
+          getTaskMarker(item.payload.id),
+          'Week: 2026-W37',
+          'Written on: Tuesday',
+          'Subject: Biology',
+          reminder,
+        ].join('\n'),
+      },
+    ],
+    ['task-1', { title: item.payload.content, dueDay: '2026-09-10' }],
+  ]);
+  expect(api.addTask).not.toHaveBeenCalled();
+});
+
+it('unchanged notes with Windows line breaks are left as they are', async () => {
+  const { api, tasks } = makeApi();
+  tasks.push({
+    id: 'task-1',
+    notes: `${importedNotes}\nAsk about task 3`.replaceAll('\n', '\r\n'),
+  });
+
+  await Effect.runPromise(importHomework(api));
+
+  expect(api.updateTask).toHaveBeenCalledWith('task-1', {
+    title: item.payload.content,
+    dueDay: '2026-09-10',
+  });
 });
 
 it('invalid queue data cannot create tasks', async () => {

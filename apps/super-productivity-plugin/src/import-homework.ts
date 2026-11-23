@@ -1,5 +1,6 @@
 import {
   correctionsProtocol,
+  type Homework,
   PendingHomework,
   pluginProtocolHeader,
   type QueuedHomework,
@@ -28,6 +29,31 @@ const call = <T>(run: () => Promise<T>) =>
   });
 const hasMarker = (task: Task, id: string) =>
   task.notes?.split(lineBreakPattern).includes(getTaskMarker(id)) ?? false;
+const detailPrefixes = ['Week: ', 'Written on: ', 'Subject: '];
+const paperSyncLines = (payload: Homework) => [
+  getTaskMarker(payload.id),
+  `Week: ${payload.week}`,
+  `Written on: ${payload.day}`,
+  `Subject: ${payload.subject}`,
+];
+// PaperSync owns its marker and the detail lines right after it, each at most
+// once and in this order; anything else in the notes was written in Super
+// Productivity and stays as it is, line breaks included.
+const withPaperSyncLines = (notes: string, payload: Homework) => {
+  const lines = notes.split(lineBreakPattern);
+  const start = lines.indexOf(getTaskMarker(payload.id));
+  const following = lines.slice(start + 1);
+  const detailCount = detailPrefixes.reduce(
+    (count, prefix) =>
+      following[count]?.startsWith(prefix) ? count + 1 : count,
+    0,
+  );
+  return [
+    ...lines.slice(0, start),
+    ...paperSyncLines(payload),
+    ...following.slice(detailCount),
+  ].join(notes.includes('\r\n') ? '\r\n' : '\n');
+};
 const importEntry = (
   api: PluginApi,
   item: QueuedHomework,
@@ -49,20 +75,17 @@ const importEntry = (
       return archivedTask.id;
     }
     if (existing) {
+      const notes = withPaperSyncLines(existing.notes ?? '', payload);
       yield* call(() =>
         api.updateTask(existing.id, {
           title: payload.content,
           dueDay: payload.dueDate ?? null,
+          ...(notes === existing.notes ? {} : { notes }),
         }),
       );
       return existing.id;
     }
-    const notes = [
-      getTaskMarker(payload.id),
-      `Week: ${payload.week}`,
-      `Written on: ${payload.day}`,
-      `Subject: ${payload.subject}`,
-    ].join('\n');
+    const notes = paperSyncLines(payload).join('\n');
     const id = yield* call(() =>
       api.addTask({
         title: payload.content,
