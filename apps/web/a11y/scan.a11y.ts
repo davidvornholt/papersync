@@ -247,7 +247,6 @@ test('rescans collapse saved homework and allow deliberate corrections without l
   await expect(page.getByText(oldEntry.content, { exact: true })).toBeVisible();
   const savedLine = page.getByText(`Monday · Math · Due ${savedDueDate}`);
   await expect(savedLine).toBeVisible();
-  // The scan in progress keeps the saved date through a reload.
   await page.reload();
   await saved.click();
   await expect(savedLine).toBeVisible();
