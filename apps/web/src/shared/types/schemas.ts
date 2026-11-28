@@ -48,6 +48,9 @@ export const TaskEntry = Schema.Struct({
   // review, so a rescan that reads it the same way again recognizes the
   // homework saved from it even when it was corrected before saving.
   readingId: Schema.optional(Schema.String),
+  // The due date as the scan read it, null when it read none, so a rescan
+  // that reads the same date again keeps a corrected date.
+  readDueDate: Schema.optional(Schema.NullOr(ISODate)),
 });
 export type TaskEntry = typeof TaskEntry.Type;
 

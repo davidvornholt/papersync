@@ -32,21 +32,31 @@ const toHomework = (
       content: entry.content.trim(),
       ...(entry.dueDate ? { dueDate: entry.dueDate } : {}),
     });
-    return { payload, readingId: entry.readingId ?? null };
+    return {
+      payload,
+      readingId: entry.readingId ?? null,
+      readDueDate: entry.readDueDate ?? null,
+    };
   });
 const setHomework = ({
   payload,
   readingId,
+  readDueDate,
 }: {
   readonly payload: Homework;
   readonly readingId: string | null;
+  readonly readDueDate: string | null;
 }) =>
   Effect.gen(function* () {
     const sql = yield* PgClient.PgClient;
     const revision = yield* hashContent(JSON.stringify(payload));
-    // The first reading stays, so a rescan still recognizes it after later corrections.
-    yield* sql`INSERT INTO homework (id, payload, revision, reading_id) VALUES (${payload.id}, ${sql.json(payload)}, ${revision}, ${readingId})
-    ON CONFLICT (id) DO UPDATE SET payload = EXCLUDED.payload, revision = EXCLUDED.revision, reading_id = COALESCE(homework.reading_id, EXCLUDED.reading_id)`;
+    // The first reading stays, so a rescan still recognizes it after later
+    // corrections. The date read is the latest scan's, so a rescan reading it
+    // again keeps the date reviewed after it; an entry not read from a scan
+    // keeps the date read before.
+    yield* sql`INSERT INTO homework (id, payload, revision, reading_id, read_due_date) VALUES (${payload.id}, ${sql.json(payload)}, ${revision}, ${readingId}, ${readDueDate})
+    ON CONFLICT (id) DO UPDATE SET payload = EXCLUDED.payload, revision = EXCLUDED.revision, reading_id = COALESCE(homework.reading_id, EXCLUDED.reading_id),
+    read_due_date = CASE WHEN EXCLUDED.reading_id IS NULL THEN homework.read_due_date ELSE EXCLUDED.read_due_date END`;
   });
 export const enqueueHomework = (
   entries: ReadonlyArray<ExtractedEntry>,
@@ -63,6 +73,7 @@ export const enqueueHomework = (
           dueDate: Schema.optional(Schema.String),
           savedHomeworkIds: Schema.optional(Schema.Array(Schema.String)),
           readingId: Schema.optional(Schema.String),
+          readDueDate: Schema.optional(Schema.NullOr(Schema.String)),
         }),
       ),
     )(entries);

@@ -8,4 +8,5 @@ export type ExtractedEntry = {
   readonly dueDate?: string;
   readonly savedHomeworkIds?: ReadonlyArray<string>;
   readonly readingId?: string;
+  readonly readDueDate?: string | null;
 };

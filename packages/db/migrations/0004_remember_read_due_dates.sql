@@ -1,0 +1,1 @@
+ALTER TABLE "homework" ADD COLUMN "read_due_date" text;

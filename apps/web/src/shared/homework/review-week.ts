@@ -36,7 +36,8 @@ export const reconcileReviewWeek = (
     // Recheck duplicate status while preserving review IDs, edits, and dates.
     // An entry still as the scan read it shows the saved homework it matches,
     // so approving it cannot overwrite a correction with the misreading. An
-    // edit that differs from the matched homework is a correction of it.
+    // edit that differs from the matched homework is a correction of it. The
+    // reconciled date is the reviewer's unless they left the read date as is.
     return yield* Effect.forEach(input.entries, (entry, index) =>
       Effect.gen(function* () {
         const reconciled: TaskEntry = result.entries[index];
@@ -67,6 +68,7 @@ export const reconcileReviewWeek = (
                 content: reconciled.content,
               }
             : {}),
+          dueDate: reconciled.dueDate,
           action,
           ...(savedHomeworkIds === undefined ? {} : { savedHomeworkIds }),
         };
