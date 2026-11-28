@@ -9,7 +9,6 @@ import {
 } from '@/shared/types/schemas';
 import { HomeworkError } from './error';
 
-// The saved date can replace a misread one in a scan entry.
 const SavedPayload = Schema.Struct({
   ...Homework.fields,
   dueDate: Schema.optional(ISODate),
