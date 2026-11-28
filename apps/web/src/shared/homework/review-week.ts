@@ -28,7 +28,8 @@ export const reconcileReviewWeek = (
     const result = yield* reconcileHomework({
       weekId: input.weekId,
       confidence: 1,
-      entries: input.entries.map((entry) => ({
+      // The saved date belongs to the match in the week applied before.
+      entries: input.entries.map(({ savedDueDate: _, ...entry }) => ({
         ...entry,
         action: 'add' as const,
       })),
@@ -68,6 +69,7 @@ export const reconcileReviewWeek = (
               }
             : {}),
           action,
+          savedDueDate: reconciled.savedDueDate,
           ...(savedHomeworkIds === undefined ? {} : { savedHomeworkIds }),
         };
         return reviewed;

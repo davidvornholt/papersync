@@ -177,7 +177,12 @@ it('changing a reviewed week rechecks duplicates and preserves edits without que
   );
   const savedHomeworkIds = [result.pending[0]?.payload.id];
   expect(result.sameWeek).toEqual([
-    { ...result.edited, action: 'skip', savedHomeworkIds },
+    {
+      ...result.edited,
+      action: 'skip',
+      savedHomeworkIds,
+      savedDueDate: entry.dueDate,
+    },
   ]);
   expect(result.otherWeek).toEqual([
     { ...result.edited, action: 'add', savedHomeworkIds },
@@ -188,6 +193,7 @@ it('changing a reviewed week rechecks duplicates and preserves edits without que
       action: 'modify',
       dueDate: '2026-09-12',
       savedHomeworkIds,
+      savedDueDate: entry.dueDate,
     },
   ]);
   expect(result.invalid._tag).toBe('Failure');

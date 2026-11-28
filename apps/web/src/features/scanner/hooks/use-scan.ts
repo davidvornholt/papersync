@@ -2,7 +2,7 @@
 
 import { Schema } from 'effect';
 import { useRef, useState } from 'react';
-import type { ExtractedEntry } from '@/shared/homework/entry';
+import { type ExtractedEntry, markReviewed } from '@/shared/homework/entry';
 import { WeekId } from '@/shared/types/schemas';
 import { scanPageLimit } from '../services/scan-limits';
 import type { StoredReview } from './scan-draft-store';
@@ -21,21 +21,6 @@ import type {
   UseScanOptions,
   UseScanReturn,
 } from './use-scan-types';
-
-const markReviewed = (
-  entries: ReadonlyArray<ExtractedEntry>,
-  id: string,
-  updates: Partial<ExtractedEntry>,
-) =>
-  entries.map((entry) =>
-    entry.id === id
-      ? {
-          ...entry,
-          ...updates,
-          action: entry.action === 'skip' ? 'modify' : entry.action,
-        }
-      : entry,
-  );
 
 // Saving waits while the week is being applied, and while a photo is still
 // being prepared: it joins the scan after the analysis was shown.

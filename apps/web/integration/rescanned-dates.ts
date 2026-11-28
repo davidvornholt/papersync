@@ -1,5 +1,6 @@
 import { expect, it } from 'bun:test';
 import { Effect, Schema } from 'effect';
+import { markReviewed, savedDueDateOf } from '../src/shared/homework/entry';
 import {
   acknowledgeHomework,
   enqueueHomework,
@@ -63,6 +64,7 @@ for (const [label, correctedContent] of [
             item.action,
             item.content,
             item.dueDate,
+            item.savedDueDate,
           ]),
           queued: (yield* getPendingHomework).map(
             (item) => item.payload.content,
@@ -72,8 +74,9 @@ for (const [label, correctedContent] of [
     );
     expect(result).toEqual({
       rescan: [
-        ['skip', correctedContent, entry.dueDate],
-        ['add', newLine.content, entry.dueDate],
+        // The entry keeps the date read; the list shows the saved one.
+        ['skip', correctedContent, entry.dueDate, correctedDate],
+        ['add', newLine.content, entry.dueDate, undefined],
       ],
       queued: [newLine.content],
     });
@@ -134,14 +137,40 @@ it('applying the week to a rescan that reads the date as before recognizes the c
         options.weekId,
       );
       return reviewed.map(
-        (item): ReadonlyArray<string | undefined> => [
+        (item): ReadonlyArray<string | null | undefined> => [
           item.action,
           item.dueDate,
+          item.savedDueDate,
         ],
       );
     }),
   );
-  expect(result).toEqual([['skip', entry.dueDate]]);
+  expect(result).toEqual([['skip', entry.dueDate, correctedDate]]);
+});
+
+it('a rescan reports that homework saved without its misread deadline has none', async () => {
+  const scan = () =>
+    Schema.decodeUnknownSync(OCRResponse)({
+      weekId: options.weekId,
+      confidence: 1,
+      entries: [entry],
+    });
+  const result = await runIsolated(
+    Effect.gen(function* () {
+      const [first] = (yield* reconcileHomework(scan())).entries;
+      if (!first) {
+        return null;
+      }
+      // The scan read a deadline that is not on the paper.
+      yield* enqueueHomework(
+        [{ ...first, id: 'review-1', dueDate: undefined }],
+        options,
+      );
+      const rescan = (yield* reconcileHomework(scan())).entries;
+      return rescan.map((item) => [item.action, item.savedDueDate]);
+    }),
+  );
+  expect(result).toEqual([['skip', null]]);
 });
 
 it('a rescan that no longer reads a deadline saved from an older draft shows it for review', async () => {
@@ -316,4 +345,34 @@ it('saving a saved entry reviewed for its wording keeps its corrected date', asy
     }),
   );
   expect(result).toEqual([[`${entry.content} again`, correctedDate]]);
+});
+
+it('a saved entry whose date is set back to the date read is saved and offered with it', async () => {
+  const result = await runIsolated(
+    Effect.gen(function* () {
+      const rescan = yield* savedWithCorrectedDate;
+      if (!rescan) {
+        return null;
+      }
+      // "Review entry" shows the corrected date, and the student undoes it.
+      const opened = markReviewed([{ ...rescan, id: 'review-2' }], 'review-2', {
+        action: 'modify',
+        dueDate: savedDueDateOf(rescan),
+      });
+      const undone = markReviewed(opened, 'review-2', {
+        dueDate: entry.dueDate,
+      });
+      const away = yield* reconcileReviewWeek(undone, nextWeek);
+      const back = yield* reconcileReviewWeek(away, options.weekId);
+      yield* enqueueHomework(back, options);
+      return {
+        back: back.map((item) => [item.action, item.dueDate]),
+        queued: (yield* getPendingHomework).map((item) => item.payload.dueDate),
+      };
+    }),
+  );
+  expect(result).toEqual({
+    back: [['modify', entry.dueDate]],
+    queued: [entry.dueDate],
+  });
 });
