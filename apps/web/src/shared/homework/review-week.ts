@@ -21,10 +21,21 @@ export const reconcileReviewWeek = (
   weekId: string,
 ) =>
   Effect.gen(function* () {
-    const input = yield* Schema.decodeUnknownEffect(ReviewWeek)({
+    const decoded = yield* Schema.decodeUnknownEffect(ReviewWeek)({
       entries,
       weekId,
     });
+    // A skipped entry is untouched, since reviewing it makes it a change, so
+    // it starts again from the date the scan read rather than the date saved
+    // in the week it matched before.
+    const input = {
+      ...decoded,
+      entries: decoded.entries.map((entry) =>
+        entry.action === 'skip' && entry.readDueDate !== undefined
+          ? { ...entry, dueDate: entry.readDueDate ?? undefined }
+          : entry,
+      ),
+    };
     const result = yield* reconcileHomework({
       weekId: input.weekId,
       confidence: 1,

@@ -21,7 +21,8 @@ type SavedRow = {
   readonly wordingId: string;
   readonly readingId: string | null;
   // The due date the last reviewed scan read, null when it read none, and
-  // undefined when the homework was not read from a scan.
+  // undefined when the homework was not read from a scan. Rows saved before
+  // PaperSync recorded it hold their saved date (migration 0004).
   readonly readDueDate: string | null | undefined;
 };
 type SavedHomework = {

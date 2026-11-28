@@ -35,7 +35,12 @@ const toHomework = (
     return {
       payload,
       readingId: entry.readingId ?? null,
-      readDueDate: entry.readDueDate ?? null,
+      // A draft stored before PaperSync recorded the date read has none, so
+      // it compares with the saved date only, as before.
+      readDueDate:
+        entry.readDueDate === undefined
+          ? (entry.dueDate ?? null)
+          : entry.readDueDate,
     };
   });
 const setHomework = ({
