@@ -94,6 +94,7 @@ export const enqueueHomework = (
           savedHomeworkIds: Schema.optional(Schema.Array(Schema.String)),
           readingId: Schema.optional(Schema.String),
           readDueDate: Schema.optional(Schema.NullOr(Schema.String)),
+          isDueDateChosen: Schema.optional(Schema.Boolean),
         }),
       ),
     )(entries);

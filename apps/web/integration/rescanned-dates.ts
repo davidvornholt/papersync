@@ -1,5 +1,6 @@
 import { expect, it } from 'bun:test';
 import { Effect, Schema } from 'effect';
+import { markReviewed, savedDueDateOf } from '../src/shared/homework/entry';
 import {
   acknowledgeHomework,
   enqueueHomework,
@@ -344,4 +345,34 @@ it('saving a saved entry reviewed for its wording keeps its corrected date', asy
     }),
   );
   expect(result).toEqual([[`${entry.content} again`, correctedDate]]);
+});
+
+it('a saved entry whose date is set back to the date read is saved and offered with it', async () => {
+  const result = await runIsolated(
+    Effect.gen(function* () {
+      const rescan = yield* savedWithCorrectedDate;
+      if (!rescan) {
+        return null;
+      }
+      // "Review entry" shows the corrected date, and the student undoes it.
+      const opened = markReviewed([{ ...rescan, id: 'review-2' }], 'review-2', {
+        action: 'modify',
+        dueDate: savedDueDateOf(rescan),
+      });
+      const undone = markReviewed(opened, 'review-2', {
+        dueDate: entry.dueDate,
+      });
+      const away = yield* reconcileReviewWeek(undone, nextWeek);
+      const back = yield* reconcileReviewWeek(away, options.weekId);
+      yield* enqueueHomework(back, options);
+      return {
+        back: back.map((item) => [item.action, item.dueDate]),
+        queued: (yield* getPendingHomework).map((item) => item.payload.dueDate),
+      };
+    }),
+  );
+  expect(result).toEqual({
+    back: [['modify', entry.dueDate]],
+    queued: [entry.dueDate],
+  });
 });
