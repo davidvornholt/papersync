@@ -2,35 +2,50 @@ import { PgClient } from '@effect/sql-pg';
 import { Homework, PendingHomework } from '@papersync/homework/contract';
 import { getHomeworkId, hashContent } from '@papersync/homework/identity';
 import { Effect, Schema } from 'effect';
-import type { ExtractedEntry } from '@/shared/homework/entry';
+import {
+  type ExtractedEntry,
+  keepsReviewedDate,
+} from '@/shared/homework/entry';
 import { HomeworkError } from './error';
 
 type QueueOptions = {
   readonly weekId: string;
 };
+type SavedDates = {
+  readonly dueDate: string | null;
+  // Null when the homework was not read from a scan.
+  readonly read: { readonly dueDate: string | null } | null;
+};
 const toHomework = (
   entry: Omit<ExtractedEntry, 'action'>,
   options: QueueOptions,
-  savedIds: ReadonlySet<string>,
+  saved: ReadonlyMap<string, SavedDates>,
 ) =>
   Effect.gen(function* () {
     // A correction of saved homework keeps its ID, so the plugin updates the
     // task it imported instead of creating a second one.
     const id =
-      entry.savedHomeworkIds?.find((saved) => savedIds.has(saved)) ??
+      entry.savedHomeworkIds?.find((link) => saved.has(link)) ??
       (yield* getHomeworkId(
         options.weekId,
         entry.day,
         entry.subject,
         entry.content,
       ));
+    // Saving an entry reviewed for another reason, such as its wording, keeps
+    // a date corrected after an earlier scan that read it the same way.
+    const dates = saved.get(id);
+    const dueDate =
+      dates?.read && keepsReviewedDate(entry, dates.read.dueDate)
+        ? dates.dueDate
+        : entry.dueDate;
     const payload = yield* Schema.decodeUnknownEffect(Homework)({
       id,
       week: options.weekId,
       day: entry.day,
       subject: entry.subject,
       content: entry.content.trim(),
-      ...(entry.dueDate ? { dueDate: entry.dueDate } : {}),
+      ...(dueDate ? { dueDate } : {}),
     });
     return {
       payload,
@@ -90,12 +105,23 @@ export const enqueueHomework = (
       );
     }
     const sql = yield* PgClient.PgClient;
-    const saved = yield* sql<{
+    const stored = yield* sql<{
       id: string;
-    }>`SELECT id FROM homework WHERE payload->>'week' = ${options.weekId}`;
-    const savedIds = new Set(saved.map((row) => row.id));
+      dueDate: string | null;
+      readingId: string | null;
+      readDueDate: string | null;
+    }>`SELECT id, payload->>'dueDate' AS "dueDate", reading_id AS "readingId", read_due_date AS "readDueDate" FROM homework WHERE payload->>'week' = ${options.weekId}`;
+    const saved = new Map(
+      stored.map((row): [string, SavedDates] => [
+        row.id,
+        {
+          dueDate: row.dueDate,
+          read: row.readingId === null ? null : { dueDate: row.readDueDate },
+        },
+      ]),
+    );
     const rows = yield* Effect.forEach(decoded, (entry) =>
-      toHomework(entry, options, savedIds),
+      toHomework(entry, options, saved),
     );
     yield* sql.withTransaction(
       Effect.forEach(rows, setHomework, { discard: true }),

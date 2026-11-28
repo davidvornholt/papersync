@@ -72,7 +72,7 @@ for (const [label, correctedContent] of [
     );
     expect(result).toEqual({
       rescan: [
-        ['skip', correctedContent, correctedDate],
+        ['skip', correctedContent, entry.dueDate],
         ['add', newLine.content, entry.dueDate],
       ],
       queued: [newLine.content],
@@ -110,7 +110,7 @@ it('a rescan that reads a new deadline after a corrected one shows it for review
   expect(result).toEqual([['modify', movedDate]]);
 });
 
-it('applying the week to a rescan that reads the date as before keeps the corrected date', async () => {
+it('applying the week to a rescan that reads the date as before recognizes the corrected homework', async () => {
   const scan = (weekId: string | null) =>
     Schema.decodeUnknownSync(OCRResponse)({
       weekId,
@@ -141,7 +141,7 @@ it('applying the week to a rescan that reads the date as before keeps the correc
       );
     }),
   );
-  expect(result).toEqual([['skip', correctedDate]]);
+  expect(result).toEqual([['skip', entry.dueDate]]);
 });
 
 it('a rescan that no longer reads a deadline saved from an older draft shows it for review', async () => {
@@ -220,3 +220,100 @@ for (const [label, edit, expected] of [
     expect(result).toEqual([['add', expected]]);
   });
 }
+
+const savedWithCorrectedDate = Effect.gen(function* () {
+  const [first] = (yield* reconcileHomework(
+    Schema.decodeUnknownSync(OCRResponse)({
+      weekId: options.weekId,
+      confidence: 1,
+      entries: [entry],
+    }),
+  )).entries;
+  if (!first) {
+    return null;
+  }
+  yield* enqueueHomework(
+    [{ ...first, id: 'review-1', dueDate: correctedDate }],
+    options,
+  );
+  const [rescan] = (yield* reconcileHomework(
+    Schema.decodeUnknownSync(OCRResponse)({
+      weekId: options.weekId,
+      confidence: 1,
+      entries: [entry],
+    }),
+  )).entries;
+  return rescan ?? null;
+});
+
+it('returning to the scanned week after applying another keeps the corrected date', async () => {
+  const result = await runIsolated(
+    Effect.gen(function* () {
+      const rescan = yield* savedWithCorrectedDate;
+      if (!rescan) {
+        return null;
+      }
+      const other = yield* reconcileReviewWeek(
+        [{ ...rescan, id: 'review-2' }],
+        nextWeek,
+      );
+      const back = yield* reconcileReviewWeek(other, options.weekId);
+      return back.map((item) => item.action);
+    }),
+  );
+  expect(result).toEqual(['skip']);
+});
+
+it('a date the student entered survives applying weeks that match and then do not', async () => {
+  const edit = '2026-09-12';
+  const result = await runIsolated(
+    Effect.gen(function* () {
+      // Saved homework in the next week is already due on the date entered.
+      yield* enqueueHomework([{ ...entry, dueDate: edit }], {
+        weekId: nextWeek,
+      });
+      const rescan = yield* savedWithCorrectedDate;
+      if (!rescan) {
+        return null;
+      }
+      const edited = {
+        ...rescan,
+        id: 'review-2',
+        action: 'modify' as const,
+        dueDate: edit,
+      };
+      const matching = yield* reconcileReviewWeek([edited], nextWeek);
+      const empty = yield* reconcileReviewWeek(matching, '2026-W39');
+      return [...matching, ...empty].map(
+        (item): ReadonlyArray<string | undefined> => [
+          item.action,
+          item.dueDate,
+        ],
+      );
+    }),
+  );
+  expect(result).toEqual([
+    ['skip', edit],
+    ['add', edit],
+  ]);
+});
+
+it('saving a saved entry reviewed for its wording keeps its corrected date', async () => {
+  const result = await runIsolated(
+    Effect.gen(function* () {
+      const rescan = yield* savedWithCorrectedDate;
+      if (!rescan) {
+        return null;
+      }
+      yield* enqueueHomework(
+        [{ ...rescan, id: 'review-2', content: `${entry.content} again` }],
+        options,
+      );
+      return (yield* getPendingHomework).map((item) => [
+        item.payload.content,
+        item.payload.dueDate,
+      ]);
+    }),
+  );
+  expect(result).toEqual([[`${entry.content} again`, correctedDate]]);
+});

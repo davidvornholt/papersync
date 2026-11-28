@@ -7,6 +7,7 @@ import {
   type OCRResponse,
   type TaskEntry,
 } from '@/shared/types/schemas';
+import { keepsReviewedDate } from './entry';
 import { HomeworkError } from './error';
 
 const SavedPayload = Schema.Struct({
@@ -32,14 +33,11 @@ type SavedHomework = {
 type ReadEntry = TaskEntry & { readonly readingId: string };
 
 // A rescan that reads the date an earlier scan read keeps the date reviewed
-// after that scan, so a corrected misreading is not queued again. A date the
-// reviewer changed in this scan, or that reads differently, is a change.
+// after that scan (see `keepsReviewedDate`).
 const keepsSavedDate = (entry: ReadEntry, saved: SavedRow) =>
   saved.payload.dueDate === entry.dueDate ||
   (saved.readDueDate !== undefined &&
-    entry.readDueDate !== undefined &&
-    (entry.dueDate ?? null) === entry.readDueDate &&
-    entry.readDueDate === saved.readDueDate);
+    keepsReviewedDate(entry, saved.readDueDate));
 
 const matchSaved = (
   entry: ReadEntry,
@@ -53,8 +51,7 @@ const matchSaved = (
     .map((link) => saved.byId.get(link))
     .find((match) => match !== undefined);
   if (linked) {
-    const unchanged =
-      linked.wordingId === id && linked.payload.dueDate === entry.dueDate;
+    const unchanged = linked.wordingId === id && keepsSavedDate(entry, linked);
     return { ...entry, action: unchanged ? 'skip' : 'modify' };
   }
   const row =
@@ -65,17 +62,14 @@ const matchSaved = (
     return entry;
   }
   const previous = row.payload;
-  const unchanged = keepsSavedDate(entry, row);
   return {
     ...entry,
-    // Identity already ignores whitespace; retain the reviewed wording, and
-    // the reviewed date when the scan read it as before.
+    // Identity already ignores whitespace; retain the reviewed wording.
     day: previous.day,
     subject: previous.subject,
     content: previous.content,
-    dueDate: unchanged ? previous.dueDate : entry.dueDate,
     savedHomeworkIds: [...links, previous.id],
-    action: unchanged ? 'skip' : 'modify',
+    action: keepsSavedDate(entry, row) ? 'skip' : 'modify',
   };
 };
 
