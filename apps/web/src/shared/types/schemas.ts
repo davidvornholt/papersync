@@ -51,6 +51,10 @@ export const TaskEntry = Schema.Struct({
   // The due date as the scan read it, null when it read none, so a rescan
   // that reads the same date again keeps a corrected date.
   readDueDate: Schema.optional(Schema.NullOr(ISODate)),
+  // On an already-saved entry, the due date of the saved homework it matches,
+  // null when that has none. `dueDate` can differ: it stays as the scan read
+  // it, so applying another week starts from the paper.
+  savedDueDate: Schema.optional(Schema.NullOr(ISODate)),
 });
 export type TaskEntry = typeof TaskEntry.Type;
 

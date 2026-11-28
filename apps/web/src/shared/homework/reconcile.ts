@@ -52,7 +52,11 @@ const matchSaved = (
     .find((match) => match !== undefined);
   if (linked) {
     const unchanged = linked.wordingId === id && keepsSavedDate(entry, linked);
-    return { ...entry, action: unchanged ? 'skip' : 'modify' };
+    return {
+      ...entry,
+      savedDueDate: linked.payload.dueDate ?? null,
+      action: unchanged ? 'skip' : 'modify',
+    };
   }
   const row =
     saved.byId.get(id) ??
@@ -69,6 +73,7 @@ const matchSaved = (
     subject: previous.subject,
     content: previous.content,
     savedHomeworkIds: [...links, previous.id],
+    savedDueDate: previous.dueDate ?? null,
     action: keepsSavedDate(entry, row) ? 'skip' : 'modify',
   };
 };

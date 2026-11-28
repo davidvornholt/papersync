@@ -9,7 +9,17 @@ export type ExtractedEntry = {
   readonly savedHomeworkIds?: ReadonlyArray<string>;
   readonly readingId?: string;
   readonly readDueDate?: string | null;
+  readonly savedDueDate?: string | null;
 };
+
+// An already-saved entry as it was saved, which is what the review shows and
+// what a deliberate correction starts from.
+export const savedDueDateOf = (
+  entry: Pick<ExtractedEntry, 'dueDate' | 'savedDueDate'>,
+) =>
+  entry.savedDueDate === undefined
+    ? entry.dueDate
+    : (entry.savedDueDate ?? undefined);
 
 // A date still as the scan read it, when an earlier scan of the same homework
 // read it too, keeps the date reviewed after that scan, so a corrected

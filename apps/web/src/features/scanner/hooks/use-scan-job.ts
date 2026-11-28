@@ -38,6 +38,7 @@ const toReviewEntries = (finished: FinishedScanJob & { status: 'complete' }) =>
       savedHomeworkIds: entry.savedHomeworkIds,
       readingId: entry.readingId,
       readDueDate: entry.readDueDate,
+      savedDueDate: entry.savedDueDate,
     }),
   );
 

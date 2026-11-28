@@ -4,7 +4,7 @@ import { Button } from '@papersync/ui/button';
 import { AnimatePresence } from 'motion/react';
 import { StateView } from '@/shared/components/motion-layout';
 import { Spinner } from '@/shared/components/motion-loading';
-import type { ExtractedEntry } from '@/shared/homework/entry';
+import { type ExtractedEntry, savedDueDateOf } from '@/shared/homework/entry';
 import { EditableEntryItem } from './editable-entry-item';
 
 const percentageScale = 100;
@@ -77,23 +77,26 @@ export const ResultsPanelComplete = ({
               Review an entry to correct it.
             </p>
             <ul className="mt-3 space-y-3">
-              {savedEntries.map((entry) => (
-                <li key={entry.id} className="border border-hairline p-3">
-                  <p className="text-graphite text-sm">
-                    {entry.day} · {entry.subject}
-                    {entry.dueDate ? ` · Due ${entry.dueDate}` : ''}
-                  </p>
-                  <p className="mt-1">{entry.content}</p>
-                  <Button
-                    className="mt-2"
-                    onClick={() =>
-                      onUpdateEntry(entry.id, { action: 'modify' })
-                    }
-                  >
-                    Review entry
-                  </Button>
-                </li>
-              ))}
+              {savedEntries.map((entry) => {
+                const dueDate = savedDueDateOf(entry);
+                return (
+                  <li key={entry.id} className="border border-hairline p-3">
+                    <p className="text-graphite text-sm">
+                      {entry.day} · {entry.subject}
+                      {dueDate ? ` · Due ${dueDate}` : ''}
+                    </p>
+                    <p className="mt-1">{entry.content}</p>
+                    <Button
+                      className="mt-2"
+                      onClick={() =>
+                        onUpdateEntry(entry.id, { action: 'modify', dueDate })
+                      }
+                    >
+                      Review entry
+                    </Button>
+                  </li>
+                );
+              })}
             </ul>
           </details>
         ) : null}

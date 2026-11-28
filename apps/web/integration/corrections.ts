@@ -89,7 +89,10 @@ it('correcting saved homework revises its queued task, and rescans match either 
     ['skip', correction, [id]],
     ['skip', correction, [id]],
   ]);
-  expect(result.otherWeek).toEqual([{ ...result.corrected, action: 'add' }]);
+  // Nothing is saved in that week, so no saved date comes along.
+  expect(result.otherWeek).toEqual([
+    { ...result.corrected, action: 'add', savedDueDate: undefined },
+  ]);
   expect(result.backAgain).toEqual([result.corrected]);
 });
 

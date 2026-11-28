@@ -218,7 +218,14 @@ test('rescans collapse saved homework and allow deliberate corrections without l
     mimeType: 'image/png',
     buffer: Buffer.from(imageData, 'base64'),
   });
-  const oldEntry = { ...entry, action: 'skip' };
+  // Saved with a due date corrected from the one the scan reads.
+  const savedDueDate = '2026-01-05';
+  const oldEntry = {
+    ...entry,
+    action: 'skip',
+    readDueDate: entry.dueDate,
+    savedDueDate,
+  };
   const newEntry = {
     ...entry,
     content: 'An additional assignment',
@@ -238,8 +245,15 @@ test('rescans collapse saved homework and allow deliberate corrections without l
   const saved = page.getByText('1 already saved — show entries');
   await saved.click();
   await expect(page.getByText(oldEntry.content, { exact: true })).toBeVisible();
+  const savedLine = page.getByText(`Monday · Math · Due ${savedDueDate}`);
+  await expect(savedLine).toBeVisible();
+  // The scan in progress keeps the saved date through a reload.
+  await page.reload();
+  await saved.click();
+  await expect(savedLine).toBeVisible();
   expect(await scanWcag22AaViolations(page)).toEqual([]);
   await page.getByRole('button', { name: 'Review entry', exact: true }).click();
+  await expect(page.getByLabel('Due date').first()).toHaveValue(savedDueDate);
   const correction = page.getByLabel('Task').first();
   await correction.fill('Corrected');
   await correction.press('End');
