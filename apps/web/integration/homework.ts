@@ -141,6 +141,7 @@ it('rescans separate saved homework from new entries and changed paper details',
     entries: response.entries.map((item) => ({
       ...item,
       readingId: expect.any(String),
+      readDueDate: item.dueDate ?? null,
     })),
   });
   expect(result.remaining).toEqual([]);

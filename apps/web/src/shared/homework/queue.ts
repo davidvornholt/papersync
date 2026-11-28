@@ -2,51 +2,81 @@ import { PgClient } from '@effect/sql-pg';
 import { Homework, PendingHomework } from '@papersync/homework/contract';
 import { getHomeworkId, hashContent } from '@papersync/homework/identity';
 import { Effect, Schema } from 'effect';
-import type { ExtractedEntry } from '@/shared/homework/entry';
+import {
+  type ExtractedEntry,
+  keepsReviewedDate,
+} from '@/shared/homework/entry';
 import { HomeworkError } from './error';
 
 type QueueOptions = {
   readonly weekId: string;
 };
+type SavedDates = {
+  readonly dueDate: string | null;
+  // Null when the homework was not read from a scan.
+  readonly read: { readonly dueDate: string | null } | null;
+};
 const toHomework = (
   entry: Omit<ExtractedEntry, 'action'>,
   options: QueueOptions,
-  savedIds: ReadonlySet<string>,
+  saved: ReadonlyMap<string, SavedDates>,
 ) =>
   Effect.gen(function* () {
     // A correction of saved homework keeps its ID, so the plugin updates the
     // task it imported instead of creating a second one.
     const id =
-      entry.savedHomeworkIds?.find((saved) => savedIds.has(saved)) ??
+      entry.savedHomeworkIds?.find((link) => saved.has(link)) ??
       (yield* getHomeworkId(
         options.weekId,
         entry.day,
         entry.subject,
         entry.content,
       ));
+    // Saving an entry reviewed for another reason, such as its wording, keeps
+    // a date corrected after an earlier scan that read it the same way.
+    const dates = saved.get(id);
+    const dueDate =
+      dates?.read && keepsReviewedDate(entry, dates.read.dueDate)
+        ? dates.dueDate
+        : entry.dueDate;
     const payload = yield* Schema.decodeUnknownEffect(Homework)({
       id,
       week: options.weekId,
       day: entry.day,
       subject: entry.subject,
       content: entry.content.trim(),
-      ...(entry.dueDate ? { dueDate: entry.dueDate } : {}),
+      ...(dueDate ? { dueDate } : {}),
     });
-    return { payload, readingId: entry.readingId ?? null };
+    return {
+      payload,
+      readingId: entry.readingId ?? null,
+      // A draft stored before PaperSync recorded the date read has none, so
+      // it compares with the saved date only, as before.
+      readDueDate:
+        entry.readDueDate === undefined
+          ? (entry.dueDate ?? null)
+          : entry.readDueDate,
+    };
   });
 const setHomework = ({
   payload,
   readingId,
+  readDueDate,
 }: {
   readonly payload: Homework;
   readonly readingId: string | null;
+  readonly readDueDate: string | null;
 }) =>
   Effect.gen(function* () {
     const sql = yield* PgClient.PgClient;
     const revision = yield* hashContent(JSON.stringify(payload));
-    // The first reading stays, so a rescan still recognizes it after later corrections.
-    yield* sql`INSERT INTO homework (id, payload, revision, reading_id) VALUES (${payload.id}, ${sql.json(payload)}, ${revision}, ${readingId})
-    ON CONFLICT (id) DO UPDATE SET payload = EXCLUDED.payload, revision = EXCLUDED.revision, reading_id = COALESCE(homework.reading_id, EXCLUDED.reading_id)`;
+    // The first reading stays, so a rescan still recognizes it after later
+    // corrections. The date read is the latest scan's, so a rescan reading it
+    // again keeps the date reviewed after it; an entry not read from a scan
+    // keeps the date read before.
+    yield* sql`INSERT INTO homework (id, payload, revision, reading_id, read_due_date) VALUES (${payload.id}, ${sql.json(payload)}, ${revision}, ${readingId}, ${readDueDate})
+    ON CONFLICT (id) DO UPDATE SET payload = EXCLUDED.payload, revision = EXCLUDED.revision, reading_id = COALESCE(homework.reading_id, EXCLUDED.reading_id),
+    read_due_date = CASE WHEN EXCLUDED.reading_id IS NULL THEN homework.read_due_date ELSE EXCLUDED.read_due_date END`;
   });
 export const enqueueHomework = (
   entries: ReadonlyArray<ExtractedEntry>,
@@ -63,6 +93,7 @@ export const enqueueHomework = (
           dueDate: Schema.optional(Schema.String),
           savedHomeworkIds: Schema.optional(Schema.Array(Schema.String)),
           readingId: Schema.optional(Schema.String),
+          readDueDate: Schema.optional(Schema.NullOr(Schema.String)),
         }),
       ),
     )(entries);
@@ -74,12 +105,23 @@ export const enqueueHomework = (
       );
     }
     const sql = yield* PgClient.PgClient;
-    const saved = yield* sql<{
+    const stored = yield* sql<{
       id: string;
-    }>`SELECT id FROM homework WHERE payload->>'week' = ${options.weekId}`;
-    const savedIds = new Set(saved.map((row) => row.id));
+      dueDate: string | null;
+      readingId: string | null;
+      readDueDate: string | null;
+    }>`SELECT id, payload->>'dueDate' AS "dueDate", reading_id AS "readingId", read_due_date AS "readDueDate" FROM homework WHERE payload->>'week' = ${options.weekId}`;
+    const saved = new Map(
+      stored.map((row): [string, SavedDates] => [
+        row.id,
+        {
+          dueDate: row.dueDate,
+          read: row.readingId === null ? null : { dueDate: row.readDueDate },
+        },
+      ]),
+    );
     const rows = yield* Effect.forEach(decoded, (entry) =>
-      toHomework(entry, options, savedIds),
+      toHomework(entry, options, saved),
     );
     yield* sql.withTransaction(
       Effect.forEach(rows, setHomework, { discard: true }),

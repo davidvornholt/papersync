@@ -2,21 +2,42 @@ import { PgClient } from '@effect/sql-pg';
 import { Homework } from '@papersync/homework/contract';
 import { getHomeworkId, getReadingId } from '@papersync/homework/identity';
 import { Effect, Schema } from 'effect';
-import type { OCRResponse, TaskEntry } from '@/shared/types/schemas';
+import {
+  ISODate,
+  type OCRResponse,
+  type TaskEntry,
+} from '@/shared/types/schemas';
+import { keepsReviewedDate } from './entry';
 import { HomeworkError } from './error';
 
+const SavedPayload = Schema.Struct({
+  ...Homework.fields,
+  dueDate: Schema.optional(ISODate),
+});
 type SavedRow = {
-  readonly payload: Homework;
+  readonly payload: typeof SavedPayload.Type;
   // A corrected entry keeps the ID of the wording first saved, so a rescan
   // matches either that wording or the correction.
   readonly wordingId: string;
+  readonly readingId: string | null;
+  // The due date the last reviewed scan read, null when it read none, and
+  // undefined when the homework was not read from a scan. Rows saved before
+  // PaperSync recorded it hold their saved date (migration 0004).
+  readonly readDueDate: string | null | undefined;
 };
 type SavedHomework = {
   readonly byId: ReadonlyMap<string, SavedRow>;
-  readonly byWording: ReadonlyMap<string, Homework>;
-  readonly byReading: ReadonlyMap<string, Homework>;
+  readonly byWording: ReadonlyMap<string, SavedRow>;
+  readonly byReading: ReadonlyMap<string, SavedRow>;
 };
 type ReadEntry = TaskEntry & { readonly readingId: string };
+
+// A rescan that reads the date an earlier scan read keeps the date reviewed
+// after that scan (see `keepsReviewedDate`).
+const keepsSavedDate = (entry: ReadEntry, saved: SavedRow) =>
+  saved.payload.dueDate === entry.dueDate ||
+  (saved.readDueDate !== undefined &&
+    keepsReviewedDate(entry, saved.readDueDate));
 
 const matchSaved = (
   entry: ReadEntry,
@@ -28,19 +49,19 @@ const matchSaved = (
   const links = entry.savedHomeworkIds ?? [];
   const linked = links
     .map((link) => saved.byId.get(link))
-    .find((row) => row !== undefined);
+    .find((match) => match !== undefined);
   if (linked) {
-    const unchanged =
-      linked.wordingId === id && linked.payload.dueDate === entry.dueDate;
+    const unchanged = linked.wordingId === id && keepsSavedDate(entry, linked);
     return { ...entry, action: unchanged ? 'skip' : 'modify' };
   }
-  const previous =
-    saved.byId.get(id)?.payload ??
+  const row =
+    saved.byId.get(id) ??
     saved.byWording.get(id) ??
     saved.byReading.get(entry.readingId);
-  if (!previous) {
+  if (!row) {
     return entry;
   }
+  const previous = row.payload;
   return {
     ...entry,
     // Identity already ignores whitespace; retain the reviewed wording.
@@ -48,7 +69,7 @@ const matchSaved = (
     subject: previous.subject,
     content: previous.content,
     savedHomeworkIds: [...links, previous.id],
-    action: previous.dueDate === entry.dueDate ? 'skip' : 'modify',
+    action: keepsSavedDate(entry, row) ? 'skip' : 'modify',
   };
 };
 
@@ -57,7 +78,13 @@ const withReadingIds = (entries: OCRResponse['entries']) =>
   Effect.forEach(entries, (entry) =>
     entry.readingId === undefined
       ? getReadingId(entry.day, entry.subject, entry.content).pipe(
-          Effect.map((readingId): ReadEntry => ({ ...entry, readingId })),
+          Effect.map(
+            (readingId): ReadEntry => ({
+              ...entry,
+              readingId,
+              readDueDate: entry.dueDate ?? null,
+            }),
+          ),
         )
       : Effect.succeed({ ...entry, readingId: entry.readingId }),
   );
@@ -71,27 +98,37 @@ export const reconcileHomework = (data: OCRResponse) =>
     const sql = yield* PgClient.PgClient;
     // Include both queued and imported homework: either has already been reviewed.
     const stored =
-      yield* sql`SELECT payload, reading_id AS "readingId" FROM homework WHERE payload->>'week' = ${data.weekId}`;
+      yield* sql`SELECT payload, reading_id AS "readingId", read_due_date AS "readDueDate" FROM homework WHERE payload->>'week' = ${data.weekId}`;
     const decoded = yield* Schema.decodeUnknownEffect(
       Schema.Array(
         Schema.Struct({
-          payload: Homework,
+          payload: SavedPayload,
           readingId: Schema.NullOr(Schema.String),
+          readDueDate: Schema.NullOr(Schema.String),
         }),
       ),
     )(stored);
     const week = data.weekId;
-    const rows = yield* Effect.forEach(decoded, ({ payload }) =>
-      getHomeworkId(week, payload.day, payload.subject, payload.content).pipe(
-        Effect.map((wordingId): SavedRow => ({ payload, wordingId })),
-      ),
+    const rows = yield* Effect.forEach(
+      decoded,
+      ({ payload, readingId, readDueDate }) =>
+        getHomeworkId(week, payload.day, payload.subject, payload.content).pipe(
+          Effect.map(
+            (wordingId): SavedRow => ({
+              payload,
+              wordingId,
+              readingId,
+              readDueDate: readingId === null ? undefined : readDueDate,
+            }),
+          ),
+        ),
     );
     const saved: SavedHomework = {
       byId: new Map(rows.map((row) => [row.payload.id, row])),
-      byWording: new Map(rows.map((row) => [row.wordingId, row.payload])),
+      byWording: new Map(rows.map((row) => [row.wordingId, row])),
       byReading: new Map(
-        decoded.flatMap(({ payload, readingId }) =>
-          readingId === null ? [] : [[readingId, payload] as const],
+        rows.flatMap((row) =>
+          row.readingId === null ? [] : [[row.readingId, row] as const],
         ),
       ),
     };
